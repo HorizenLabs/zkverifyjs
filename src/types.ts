@@ -55,3 +55,10 @@ export interface TransactionInfo {
     };
     txClass?: string;
 }
+
+export interface AccountInfo {
+    address: string;
+    nonce: number;
+    freeBalance: string;
+    reservedBalance: string;
+}

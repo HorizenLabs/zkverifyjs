@@ -1,9 +1,10 @@
 import { ApiPromise, WsProvider } from '@polkadot/api';
+import '@polkadot/api-augment';
 import { KeyringPair } from '@polkadot/keyring/types';
 import { establishConnection } from '../connection';
 import { setupAccount } from '../account';
 import { verify, verifyAndWaitForAttestationEvent } from '../verify';
-import { ProofTransactionResult } from '../types';
+import { AccountInfo, ProofTransactionResult } from '../types';
 import { EventEmitter } from 'events';
 import { zkVerifySessionOptions } from "./types";
 
@@ -101,6 +102,21 @@ export class zkVerifySession {
         });
 
         return { events, transactionResult };
+    }
+
+    async accountInfo(): Promise<AccountInfo> {
+        if (!this.account) {
+            throw new Error('No account is associated with this session. Cannot retrieve balance.');
+        }
+
+        const { data: { free, reserved }, nonce } = await this.api.query.system.account(this.account.address);
+
+        return {
+            address: this.account.address,
+            nonce: nonce.toNumber(),
+            freeBalance: free.toString(),
+            reservedBalance: reserved.toString(),
+        };
     }
 
     async close(): Promise<void> {

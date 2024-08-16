@@ -147,44 +147,50 @@ executeTransaction();
 ### `zkVerifySession.start`
 
 ```typescript
-static async start(host: string, seedPhrase?: string, customWsUrl?: string): Promise<zkVerifySession>;
+const session = await zkVerifySession.start({ host, seedPhrase?, customWsUrl? });
 ```
 
 - `host`: The network to connect to (e.g., testnet).
 - `seedPhrase`: (Optional) The seed phrase for the account.
 - `customWsUrl`: (Optional) A custom WebSocket URL for connecting to the blockchain.
 
+### `zkVerifySession.close`
+
+```typescript
+await session.close();
+```
+Closes the zkVerifySession.
+
+### `zkVerifySession.accountInfo`
+
+```typescript
+const accountInfo: AccountInfo = await session.accountInfo();
+console.log(accountInfo.address);
+console.log(accountInfo.nonce);
+console.log(accountInfo.freeBalance);
+console.log(accountInfo.reservedBalance);
+```
+Returns account information: address, nonce, freeBalance and reservedBalance. Full session only, will not work in readOnly mode.
+
 ### `zkVerifySession.verify`
 
 ```typescript
-async verify(
-    proofType: string,
-    ...proofData: any[]
-): Promise<{
-    events: EventEmitter;
-    transactionResult: Promise<ProofTransactionResult>;
-}>;
+const { events, transactionResult } = await session.verify('fflonk', proof, publicSignals, vk);
 ```
 
 - `proofType`: The type of proof being sent.
-- `proofData`: The data required for the proof.
+- `proofData`: The data required for the proof - this is different for every proof type, accepted as `...proofData`.
 - Returns: An object containing an EventEmitter for real-time events and a Promise that resolves with the final transaction result.
 
 ### `zkVerifySession.verifyAndWaitForAttestationEvent`
 
 ```typescript
-async verifyAndWaitForAttestationEvent(
-    proofType: string,
-    ...proofData: any[]
-): Promise<{
-    events: EventEmitter;
-    transactionResult: Promise<ProofTransactionResult>;
-}>;
+const { events, transactionResult } = await session.verifyAndWaitForAttestationEvent('fflonk', proof, publicSignals, vk);
 ```
 
 - `proofType`: The type of proof being sent.
 - `proofData`: The data required for the proof.
-- Returns: An object containing an EventEmitter for real-time events and a Promise that resolves with the final transaction result, including waiting for the NewElement attestation confirmation.
+- Returns: An object containing an EventEmitter for real-time events and a Promise that resolves with the final transaction result, including waiting for the `poe.NewElement` attestation confirmation.
 
 ### Testing
 
