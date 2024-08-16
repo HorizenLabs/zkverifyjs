@@ -37,3 +37,10 @@ export interface ProofTransactionResult {
     proofLeaf: string | null;
 }
 
+export interface BlockInfo {
+    blockHash: string;
+    proofType: string;
+    attestationId: string | null;
+    proofLeaf: string | null;
+    status: 'inBlock' | 'finalized';
+}

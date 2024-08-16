@@ -5,6 +5,8 @@ import { AccountConnection } from '../connection/types';
 import { EventEmitter } from 'events';
 import { getProofProcessor } from '../utils/helpers';
 import { ProofTransactionResult } from "../types";
+import {ApiPromise, WsProvider} from "@polkadot/api";
+import {KeyringPair} from "@polkadot/keyring/types";
 
 async function executeProofTransaction(
     connection: AccountConnection,
@@ -54,8 +56,8 @@ async function executeProofTransaction(
     }
 }
 
-export async function sendProof(
-    connection: AccountConnection,
+export async function verify(
+    connection: { provider: WsProvider; api: ApiPromise; account: KeyringPair },
     proofType: string,
     emitter: EventEmitter,
     ...proofData: any[]
@@ -63,7 +65,7 @@ export async function sendProof(
     return executeProofTransaction(connection, proofType, emitter, false, ...proofData);
 }
 
-export async function sendProofAndWaitForAttestationEvent(
+export async function verifyAndWaitForAttestationEvent(
     connection: AccountConnection,
     proofType: string,
     emitter: EventEmitter,

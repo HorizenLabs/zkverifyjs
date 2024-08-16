@@ -1,19 +1,175 @@
-// TODO
+# zkverifyjs Instructions
 
-Add new network: Update config/index.ts
+The `zkverifyjs` package is a TypeScript library designed to facilitate sending proofs to zkVerify for verification, listening for transaction events, and waiting for transaction finalization. The package is built with an intuitive API that allows developers to handle real-time transaction events and await final results.
 
-Run tests
+## Table of Contents
 
-all
+- [Installation](#installation)
+- [Usage](#usage)
+    - [Creating a Session](#creating-a-session)
+    - [Verifying a Proof](#verifying-a-proof)
+    - [Listening to Events](#listening-to-events)
+    - [Awaiting the Final Transaction Result](#awaiting-the-final-transaction-result)
+    - [Example Usage](#example-usage)
+- [API Reference](#api-reference)
+    - [zkVerifySession.start](#zkverifysessionstart)
+    - [zkVerifySession.verify](#zkverifysessionverify)
+    - [zkVerifySession.verifyAndWaitForAttestationEvent](#zkverifysessionverifyandwaitforattestationevent)
+- [Testing](#testing)
 
+## Installation
+
+To install the package, use npm or yarn:
+
+```bash
+npm install zkverifyjs
+```
+
+## Usage
+
+### Creating a Session
+
+Before sending a proof, you need to start a session. A session establishes a connection to the zkVerify network and optionally sets up an account using a seed phrase (required for sending transactions).
+
+```typescript
+import { zkVerifySession } from 'zkverifyjs';
+
+const session = await zkVerifySession.start('testnet', 'your-seed-phrase');
+```
+
+- `host`: The pre-configured network to connect to (e.g., testnet).
+- `seedPhrase`: (Optional) The seed phrase for the account that will send the transaction.
+
+### Verifying a Proof
+
+To verify a proof, use the `verify` method. This method returns an object containing an EventEmitter for handling real-time events and a Promise for awaiting the transaction's final result.
+
+```typescript
+const { events, transactionResult } = await session.verify('fflonk', proof, publicSignals, vk);
+```
+
+### Listening to Events
+
+You can listen for transaction events using the events emitter. Common events include:
+
+- `includedInBlock`: Triggered when the transaction is included in a block.
+- `finalized`: Triggered when the transaction is finalized.
+- `attestationConfirmed`: Triggered when the NewElement event is raised by the zkVerify chain.
+- `error`: Triggered if an error occurs during the transaction process.
+
+```typescript
+const { events, transactionResult } = await session.verify('fflonk', proof, publicSignals, vk);
+
+events.on('includedInBlock', (eventData) => {
+    console.log('Transaction included in block:', eventData);
+});
+
+events.on('finalized', (eventData) => {
+    console.log('Transaction finalized:', eventData);
+});
+
+events.on('attestationConfirmed', (eventData) => {
+    console.log('Attestation Event Raised:', eventData);
+});
+
+events.on('error', (error) => {
+    console.error('An error occurred during the transaction:', error);
+});
+```
+
+### Awaiting the Final Transaction Result
+
+To await the final result of the transaction, use the transactionResult promise. This resolves with the final transaction details after the transaction is finalized in a block.
+
+```typescript
+const { events, transactionResult } = await session.verify('fflonk', proof, publicSignals, vk);
+const result = await transactionResult;
+console.log('Final transaction result:', result);
+```
+
+### Example Usage
+
+```typescript
+import { zkVerifySession } from 'zkverify-session';
+
+async function executeTransaction() {
+    const session = await zkVerifySession.start('testnet', 'your-seed-phrase');
+
+    const { events, transactionResult } = await session.verify('fflonk', proof, publicSignals, vk);
+
+    events.on('includedInBlock', (eventData) => {
+        console.log('Transaction included in block:', eventData);
+    });
+
+    events.on('finalized', (eventData) => {
+        console.log('Transaction finalized:', eventData);
+    });
+
+    events.on('error', (error) => {
+        console.error('An error occurred during the transaction:', error);
+    });
+
+    try {
+        const result = await transactionResult;
+        console.log('Transaction completed successfully:', result);
+    } catch (error) {
+        console.error('Transaction failed:', error);
+    }
+
+    await session.close();
+}
+
+executeTransaction();
+```
+
+### API Reference
+
+### `zkVerifySession.start`
+
+```typescript
+static async start(host: string, seedPhrase?: string, customWsUrl?: string): Promise<zkVerifySession>;
+```
+
+- `host`: The network to connect to (e.g., testnet).
+- `seedPhrase`: (Optional) The seed phrase for the account.
+- `customWsUrl`: (Optional) A custom WebSocket URL for connecting to the blockchain.
+
+### `zkVerifySession.verify`
+
+```typescript
+async verify(
+    proofType: string,
+    ...proofData: any[]
+): Promise<{
+    events: EventEmitter;
+    transactionResult: Promise<ProofTransactionResult>;
+}>;
+```
+
+- `proofType`: The type of proof being sent.
+- `proofData`: The data required for the proof.
+- Returns: An object containing an EventEmitter for real-time events and a Promise that resolves with the final transaction result.
+
+### `zkVerifySession.verifyAndWaitForAttestationEvent`
+
+```typescript
+async verifyAndWaitForAttestationEvent(
+    proofType: string,
+    ...proofData: any[]
+): Promise<{
+    events: EventEmitter;
+    transactionResult: Promise<ProofTransactionResult>;
+}>;
+```
+
+- `proofType`: The type of proof being sent.
+- `proofData`: The data required for the proof.
+- Returns: An object containing an EventEmitter for real-time events and a Promise that resolves with the final transaction result, including waiting for the NewElement attestation confirmation.
+
+### Testing
+
+To run the tests, use the following command:
+
+```shell
 npm test
-
-specific test in a file
-
-npx jest -t "should send fflonk proof correctly"
-
-All tests in a file
-
-npx jest tests/verify.test.ts
-
-
+```

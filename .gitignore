@@ -10,3 +10,4 @@ yarn.lock
 lcov.info
 benchmarking_errors.txt
 dist/
+.env

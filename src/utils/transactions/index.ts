@@ -58,7 +58,6 @@ const handleInBlock = (
 
     const blockInfo = createBlockInfo(proofType, blockHash, attestationId, proofLeaf, 'inBlock');
     emitter.emit('includedInBlock', blockInfo);
-
     return blockInfo;
 };
 
@@ -73,7 +72,8 @@ const handleFinalized = async (
 ): Promise<BlockInfo | null> => {
     if (dispatchError) {
         const decodedError = decodeDispatchError(api, dispatchError);
-        emitter.emit('reverted', { proofType, error: decodedError });
+        emitter.emit('error', { proofType, error: decodedError });
+
         return null;
     }
 
@@ -82,7 +82,7 @@ const handleFinalized = async (
     if (attestationId) {
         emitter.emit('finalized', blockInfo);
     } else {
-        emitter.emit('finalized', { ...blockInfo, error: 'Finalized but no attestation ID found.' });
+        emitter.emit('error', { ...blockInfo, error: 'Finalized but no attestation ID found.' });
     }
 
     return blockInfo;
@@ -94,20 +94,14 @@ const waitForAttestation = async (
     emitter: EventEmitter
 ): Promise<boolean> => {
     if (!attestationId) {
-        emitter.emit('attestationFailed', { success: false, error: 'No attestation ID found.' });
+        emitter.emit('error', new Error('No attestation ID found.'));
         return false;
     }
-
     try {
         await waitForNewAttestation(api, attestationId, emitter);
-        emitter.emit('attestationConfirmed', { success: true });
         return true;
     } catch (error: unknown) {
-        if (error instanceof Error) {
-            emitter.emit('attestationFailed', { success: false, error: `Attestation waiting failed: ${error.message}` });
-        } else {
-            emitter.emit('attestationFailed', { success: false, error: 'Attestation waiting failed with an unknown error.' });
-        }
+        emitter.emit('error', error instanceof Error ? error : new Error('Attestation waiting failed with an unknown error.'));
         return false;
     }
 };
@@ -145,7 +139,7 @@ export const handleTransaction = async (
             try {
                 if (dispatchError) {
                     const decodedError = decodeDispatchError(api, dispatchError);
-                    emitter.emit('reverted', { proofType, error: decodedError });
+                    emitter.emit('error', { proofType, error: decodedError });
                     resolve({
                         finalized: false,
                         attestationConfirmed: false,
@@ -153,6 +147,7 @@ export const handleTransaction = async (
                         blockHash,
                         proofLeaf,
                     });
+
                     return;
                 }
 
@@ -179,7 +174,7 @@ export const handleTransaction = async (
                         proofLeaf,
                     });
                 } else if (status.isDropped || status.isInvalid) {
-                    emitter.emit('reverted', { proofType, error: 'Transaction was dropped or marked as invalid.' });
+                    emitter.emit('error', new Error('Transaction was dropped or marked as invalid.'));
                     resolve({
                         finalized: false,
                         attestationConfirmed: false,
@@ -188,7 +183,7 @@ export const handleTransaction = async (
                         proofLeaf,
                     });
                 } else if (status.isRetracted) {
-                    emitter.emit('retracted', { proofType, status: 'Transaction was retracted.' });
+                    emitter.emit('error', new Error('Transaction was retracted.'));
                     resolve({
                         finalized: false,
                         attestationConfirmed: false,
@@ -197,7 +192,7 @@ export const handleTransaction = async (
                         proofLeaf,
                     });
                 } else if (status.isUsurped) {
-                    emitter.emit('usurped', { proofType, status: 'Transaction was replaced by another transaction with the same nonce.' });
+                    emitter.emit('error', new Error('Transaction was replaced by another transaction with the same nonce.'));
                     resolve({
                         finalized: false,
                         attestationConfirmed: false,

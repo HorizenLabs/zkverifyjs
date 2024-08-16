@@ -40,12 +40,12 @@ export async function waitForNewAttestation(
             const unsubscribe = await api.query.system.events((events: EventRecord[]) => {
                 events.forEach((record) => {
                     const { event } = record;
-                    const types = event.typeDef;
 
                     if (event.section === "poe" && event.method === "NewAttestation") {
                         const currentAttestationId = event.data[0].toString();
                         if (currentAttestationId === attestationId) {
                             unsubscribe();
+                            // Emit the attestationConfirmed event here
                             emitter.emit('attestationConfirmed', {
                                 attestationId: currentAttestationId,
                                 proofLeaf: event.data[1].toString(),
@@ -56,11 +56,11 @@ export async function waitForNewAttestation(
                 });
             }) as unknown as () => void;
         } catch (error) {
-            emitter.emit('error', `Error subscribing to system events: ${error instanceof Error ? error.message : 'Unknown error'}`);
-            reject(error);
+            reject(new Error(`Error subscribing to system events: ${error instanceof Error ? error.message : 'Unknown error'}`));
         }
     });
 }
+
 
 /**
  * Waits for the zkVerify node to sync.

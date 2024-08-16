@@ -1,26 +1,26 @@
-import {ApiPromise, WsProvider} from '@polkadot/api';
-import {KeyringPair} from '@polkadot/keyring/types';
-import {establishConnection} from '../connection';
-import {setupAccount} from '../account';
-import {sendProof, sendProofAndWaitForAttestationEvent} from '../sendProof';
-import {ProofTransactionResult} from '../types';
-import {EventEmitter} from 'events';
+import { ApiPromise, WsProvider } from '@polkadot/api';
+import { KeyringPair } from '@polkadot/keyring/types';
+import { establishConnection } from '../connection';
+import { setupAccount } from '../account';
+import { verify, verifyAndWaitForAttestationEvent } from '../verify';
+import { ProofTransactionResult } from '../types';
+import { EventEmitter } from 'events';
+import {SupportedNetwork} from "../config";
 
 export class zkVerifySession {
     private readonly api: ApiPromise;
     private readonly provider: WsProvider;
     private readonly account?: KeyringPair;
-    private readonly emitter: EventEmitter;
 
     constructor(api: ApiPromise, provider: WsProvider, account?: KeyringPair) {
         this.api = api;
         this.provider = provider;
         this.account = account;
-        this.emitter = new EventEmitter();
     }
 
-    static async start(host: string, seedPhrase?: string, customWsUrl?: string): Promise<zkVerifySession> {
+    static async start(host: SupportedNetwork, seedPhrase?: string, customWsUrl?: string): Promise<zkVerifySession> {
         const { api, provider } = await establishConnection(host, customWsUrl);
+
         let session: zkVerifySession;
 
         try {
@@ -35,53 +35,67 @@ export class zkVerifySession {
         return session;
     }
 
-    async sendProof(
+    async verify(
         proofType: string,
         ...proofData: any[]
-    ): Promise<ProofTransactionResult> {
+    ): Promise<{
+        events: EventEmitter;
+        transactionResult: Promise<ProofTransactionResult>;
+    }> {
         if (!this.account) {
             throw new Error('No account is set up for this session. A seed phrase is required to send transactions.');
         }
 
-        try {
-            return await sendProof(
-                {api: this.api, provider: this.provider, account: this.account},
+        const events = new EventEmitter();
+
+        const transactionResult = new Promise<ProofTransactionResult>((resolve, reject) => {
+            verify(
+                { api: this.api!, provider: this.provider!, account: this.account! },
                 proofType,
-                this.emitter,
+                events,
                 ...proofData
-            );
-        } catch (error) {
-            await this.close();
-            throw new Error(`Failed to send proof: ${error instanceof Error ? error.message : 'Unknown error'}`);
-        }
+            ).then((result) => {
+                resolve(result);
+            }).catch(error => {
+                events.emit('error', error);
+                reject(error);
+            });
+        });
+
+        return { events, transactionResult };
     }
 
-    async sendProofAndWaitForAttestationEvent(
+
+    async verifyAndWaitForAttestationEvent(
         proofType: string,
         ...proofData: any[]
-    ): Promise<ProofTransactionResult> {
+    ): Promise<{
+        events: EventEmitter;
+        transactionResult: Promise<ProofTransactionResult>;
+    }> {
         if (!this.account) {
             throw new Error('No account is set up for this session. A seed phrase is required to send transactions.');
         }
 
-        try {
-            const result = await sendProofAndWaitForAttestationEvent(
-                { api: this.api, provider: this.provider, account: this.account },
+        const events = new EventEmitter();
+
+        const transactionResult = new Promise<ProofTransactionResult>((resolve, reject) => {
+            verifyAndWaitForAttestationEvent(
+                { api: this.api!, provider: this.provider!, account: this.account! },
                 proofType,
-                this.emitter,
+                events,
                 ...proofData
-            );
+            ).then((result) => {
+                resolve(result);
+            }).catch(error => {
+                events.emit('error', error);
+                reject(error);
+            });
+        });
 
-            return result;
-        } catch (error) {
-            await this.close();
-            throw new Error(`Failed to send proof: ${error instanceof Error ? error.message : 'Unknown error'}`);
-        }
+        return { events, transactionResult };
     }
 
-    on(event: string, listener: (...args: any[]) => void) {
-        this.emitter.on(event, listener);
-    }
 
     async close(): Promise<void> {
         try {

@@ -1,23 +1,18 @@
 import { ApiPromise, WsProvider } from '@polkadot/api';
-import { defaultUrls } from '../config';
+import { SupportedNetwork, defaultUrls } from '../config';
+import { EstablishedConnection } from './types';
 import { waitForNodeToSync } from '../utils/helpers';
-
-type SupportedHost = keyof typeof defaultUrls;
 
 /**
  * Establishes a connection to the zkVerify blockchain by initializing the API and provider.
  *
- * @param {string} host - The network host ('testnet', 'mainnet', or 'custom').
+ * @param {SupportedNetwork} host - The network host ('testnet', 'mainnet', or 'custom').
  * @param {string} [customWsUrl] - The custom WebSocket URL (only used if host is 'custom').
- * @returns {Promise<{ api: ApiPromise, provider: WsProvider }>} The initialized API and provider.
+ * @returns {Promise<EstablishedConnection>} The initialized API and provider.
  * @throws Will throw an error if the connection fails or if the provided configuration is invalid.
  */
-export const establishConnection = async (host: string, customWsUrl?: string): Promise<{ api: ApiPromise, provider: WsProvider }> => {
+export const establishConnection = async (host: SupportedNetwork, customWsUrl?: string): Promise<EstablishedConnection> => {
     let websocketUrl: string;
-
-    if (host !== 'custom' && customWsUrl) {
-        throw new Error('Custom WebSocket URL provided. Please select "custom" as the host if you want to use a custom WebSocket endpoint.');
-    }
 
     if (host === 'custom') {
         if (!customWsUrl) {
@@ -25,10 +20,13 @@ export const establishConnection = async (host: string, customWsUrl?: string): P
         }
         websocketUrl = customWsUrl;
     } else {
+        if (customWsUrl) {
+            throw new Error('Custom WebSocket URL provided. Please select "custom" as the host if you want to use a custom WebSocket endpoint.');
+        }
         if (!(host in defaultUrls)) {
             throw new Error(`Unsupported network host: ${host}`);
         }
-        websocketUrl = defaultUrls[host as SupportedHost];
+        websocketUrl = defaultUrls[host];
     }
 
     try {
