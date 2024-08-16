@@ -42,15 +42,8 @@ async function executeProofTransaction(
         }
 
         const transaction = submitProof(api, pallet, proofParams);
-        const result = await handleTransaction(api, transaction, account, proofType, emitter, waitForAttestation);
 
-        return {
-            attestationId: result.attestationId,
-            finalized: result.finalized,
-            attestationConfirmed: result.attestationConfirmed,
-            blockHash: result.blockHash,
-            proofLeaf: result.proofLeaf,
-        };
+        return await handleTransaction(api, transaction, account, proofType, emitter, waitForAttestation);
     } catch (error) {
         throw new Error(`Failed to send proof: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }

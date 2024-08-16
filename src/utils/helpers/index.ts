@@ -20,22 +20,28 @@ export function handleEvents(events: EventRecord[], callback: (data: any[]) => v
 
 /**
  * Waits for a specific NewAttestation event.
+ *
  * @param api - The ApiPromise instance.
  * @param attestationId - The attestation ID to wait for.
  * @param emitter - The EventEmitter instance to emit events.
- * @returns A promise that resolves to the attestation data.
- * @throws An error if the attestation ID is null or the wait times out.
+ *
+ * @returns A promise that resolves to true if the attestation is confirmed, false otherwise.
+ *
+ * @throws An error if the attestation ID is null or if there is an issue subscribing to events.
+ *
+ * @emits attestationConfirmed - When the specified attestation is confirmed.
+ * @emits error - If there is an error waiting for the attestation or if the attestation ID is null.
  */
 export async function waitForNewAttestation(
     api: ApiPromise,
     attestationId: string | null,
     emitter: EventEmitter
-): Promise<[number, string]> {
-    return new Promise<[number, string]>(async (resolve, reject) => {
-        if (!attestationId) {
-            return reject(new Error("Attestation ID is null, cannot wait for event."));
-        }
-
+): Promise<boolean> {
+    if (!attestationId) {
+        emitter.emit('error', new Error('No attestation ID found.'));
+        return false;
+    }
+    return new Promise<boolean>(async (resolve) => {
         try {
             const unsubscribe = await api.query.system.events((events: EventRecord[]) => {
                 events.forEach((record) => {
@@ -45,18 +51,18 @@ export async function waitForNewAttestation(
                         const currentAttestationId = event.data[0].toString();
                         if (currentAttestationId === attestationId) {
                             unsubscribe();
-                            // Emit the attestationConfirmed event here
                             emitter.emit('attestationConfirmed', {
                                 attestationId: currentAttestationId,
                                 proofLeaf: event.data[1].toString(),
                             });
-                            resolve([parseInt(currentAttestationId), event.data[1].toString()]);
+                            resolve(true);
                         }
                     }
                 });
             }) as unknown as () => void;
         } catch (error) {
-            reject(new Error(`Error subscribing to system events: ${error instanceof Error ? error.message : 'Unknown error'}`));
+            emitter.emit('error', error instanceof Error ? error : new Error('Attestation waiting failed with an unknown error.'));
+            resolve(false);
         }
     });
 }
@@ -86,14 +92,14 @@ export async function waitForNodeToSync(api: ApiPromise): Promise<void> {
  * @param {string} pallet - The pallet name.
  * @param {any[]} params - The parameters to pass to the extrinsic.
  * @returns {SubmittableExtrinsic<'promise'>} The created SubmittableExtrinsic.
- * @throws {Error} - Throws an error with detailed information if proof submission fails.
+ * @throws {Error} - Throws an error with detailed information if extrinsic creation fails.
  */
 export const submitProof = (api: ApiPromise, pallet: string, params: any[]): SubmittableExtrinsic<'promise'> => {
     try {
         return api.tx[pallet].submitProof(...params);
     } catch (error: any) {
         const errorDetails = `
-            Error submitting proof:
+            Error creating submittable extrinsic:
             Pallet: ${pallet}
             Params: ${JSON.stringify(params, null, 2)}
             Error: ${error.message}

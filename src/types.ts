@@ -30,11 +30,9 @@ export interface ProofProcessor {
 }
 
 export interface ProofTransactionResult {
-    attestationId: string | null;
+    transactionInfo: TransactionInfo;
     finalized: boolean;
     attestationConfirmed: boolean;
-    blockHash: string | null;
-    proofLeaf: string | null;
 }
 
 export interface TransactionInfo {
