@@ -31,14 +31,34 @@ npm install zkverifyjs
 
 Before sending a proof, you need to start a session. A session establishes a connection to the zkVerify network and optionally sets up an account using a seed phrase (required for sending transactions).
 
+1. Read-Only Session with Supported Network:
+```typescript
+const session = await zkVerifySession.start({ host: 'testnet' });
+```
+2. Read-Only Session with Custom WebSocket:
+```typescript
+const session = await zkVerifySession.start({ host: 'custom', customWsUrl: 'wss://custom-url' });
+```
+3. Full Session (send transactions) with Supported Network:
+```typescript
+const session = await zkVerifySession.start({ host: 'testnet', seedPhrase: 'your-seed-phrase' });
+```
+4. Full Session (send transactions)  with Custom WebSocket:
+```typescript
+const session = await zkVerifySession.start({ host: 'custom', seedPhrase: 'your-seed-phrase', customWsUrl: 'wss://custom-url' });
+```
+
+- `host`: The pre-configured network to connect to (e.g., testnet). Use `custom` to use your own websocket url alongside the `customWsUrl` option.
+- `seedPhrase`: (Optional) The seed phrase for the account that will send the transaction.
+- `customWsUrl`: (Optional) Must be provided if `host='custom'`.
+
+Not providing a seed phrase will start a read-only session, transaction methods cannot be used, and only calls to read data are allowed:
+
 ```typescript
 import { zkVerifySession } from 'zkverifyjs';
 
-const session = await zkVerifySession.start('testnet', 'your-seed-phrase');
+const readOnlySession = await zkVerifySession.start('testnet');
 ```
-
-- `host`: The pre-configured network to connect to (e.g., testnet).
-- `seedPhrase`: (Optional) The seed phrase for the account that will send the transaction.
 
 ### Verifying a Proof
 

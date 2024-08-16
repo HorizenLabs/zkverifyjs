@@ -3,6 +3,7 @@ import { KeyringPair } from '@polkadot/keyring/types';
 import { SubmittableExtrinsic } from '@polkadot/api/types';
 import { handleEvents, waitForNewAttestation } from '../helpers';
 import { EventEmitter } from 'events';
+import { BlockInfo } from "../../types";
 
 const decodeDispatchError = (api: ApiPromise, dispatchError: any): string => {
     if (dispatchError.isModule) {
@@ -13,14 +14,6 @@ const decodeDispatchError = (api: ApiPromise, dispatchError: any): string => {
         return dispatchError.toString();
     }
 };
-
-interface BlockInfo {
-    blockHash: string;
-    proofType: string;
-    attestationId: string | null;
-    proofLeaf: string | null;
-    status: 'inBlock' | 'finalized';
-}
 
 const createBlockInfo = (
     proofType: string,

@@ -5,20 +5,28 @@ import { setupAccount } from '../account';
 import { verify, verifyAndWaitForAttestationEvent } from '../verify';
 import { ProofTransactionResult } from '../types';
 import { EventEmitter } from 'events';
-import {SupportedNetwork} from "../config";
+import { zkVerifySessionOptions } from "./types";
 
 export class zkVerifySession {
     private readonly api: ApiPromise;
     private readonly provider: WsProvider;
     private readonly account?: KeyringPair;
+    public readonly readOnly: boolean;
 
     constructor(api: ApiPromise, provider: WsProvider, account?: KeyringPair) {
         this.api = api;
         this.provider = provider;
         this.account = account;
+        this.readOnly = !account;
     }
 
-    static async start(host: SupportedNetwork, seedPhrase?: string, customWsUrl?: string): Promise<zkVerifySession> {
+    static async start(options: zkVerifySessionOptions): Promise<zkVerifySession> {
+        const { host, seedPhrase, customWsUrl } = options;
+
+        if (host === 'custom' && !customWsUrl) {
+            throw new Error('Custom WebSocket URL must be provided when host is set to "custom".');
+        }
+
         const { api, provider } = await establishConnection(host, customWsUrl);
 
         let session: zkVerifySession;
@@ -42,15 +50,15 @@ export class zkVerifySession {
         events: EventEmitter;
         transactionResult: Promise<ProofTransactionResult>;
     }> {
-        if (!this.account) {
-            throw new Error('No account is set up for this session. A seed phrase is required to send transactions.');
+        if (this.readOnly) {
+            throw new Error('This session is read-only. A seed phrase is required to send transactions.');
         }
 
         const events = new EventEmitter();
 
         const transactionResult = new Promise<ProofTransactionResult>((resolve, reject) => {
             verify(
-                { api: this.api!, provider: this.provider!, account: this.account! },
+                { api: this.api, provider: this.provider, account: this.account! },
                 proofType,
                 events,
                 ...proofData
@@ -64,7 +72,6 @@ export class zkVerifySession {
 
         return { events, transactionResult };
     }
-
 
     async verifyAndWaitForAttestationEvent(
         proofType: string,
@@ -73,15 +80,15 @@ export class zkVerifySession {
         events: EventEmitter;
         transactionResult: Promise<ProofTransactionResult>;
     }> {
-        if (!this.account) {
-            throw new Error('No account is set up for this session. A seed phrase is required to send transactions.');
+        if (this.readOnly) {
+            throw new Error('This session is read-only. A seed phrase is required to send transactions.');
         }
 
         const events = new EventEmitter();
 
         const transactionResult = new Promise<ProofTransactionResult>((resolve, reject) => {
             verifyAndWaitForAttestationEvent(
-                { api: this.api!, provider: this.provider!, account: this.account! },
+                { api: this.api, provider: this.provider, account: this.account! },
                 proofType,
                 events,
                 ...proofData
@@ -95,7 +102,6 @@ export class zkVerifySession {
 
         return { events, transactionResult };
     }
-
 
     async close(): Promise<void> {
         try {
