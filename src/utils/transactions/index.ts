@@ -1,9 +1,9 @@
-import { ApiPromise } from '@polkadot/api';
+import { ApiPromise, SubmittableResult } from '@polkadot/api';
 import { KeyringPair } from '@polkadot/keyring/types';
 import { SubmittableExtrinsic } from '@polkadot/api/types';
-import { handleEvents, waitForNewAttestation } from '../helpers';
 import { EventEmitter } from 'events';
-import { BlockInfo } from "../../types";
+import { TransactionInfo } from "../../types";
+import { waitForNewAttestation } from "../helpers";
 
 const decodeDispatchError = (api: ApiPromise, dispatchError: any): string => {
     if (dispatchError.isModule) {
@@ -15,70 +15,38 @@ const decodeDispatchError = (api: ApiPromise, dispatchError: any): string => {
     }
 };
 
-const createBlockInfo = (
+const createTransactionInfo = (
     proofType: string,
     blockHash: string,
     attestationId: string | null,
     proofLeaf: string | null,
-    status: 'inBlock' | 'finalized'
-): BlockInfo => {
+    status: 'inBlock' | 'finalized',
+    txHash?: string,
+    extrinsicIndex?: number,
+    feeInfo?: {
+        payer: string;
+        actualFee: string;
+        tip: string;
+        paysFee: string;
+    },
+    weightInfo?: {
+        refTime: string;
+        proofSize: string;
+    },
+    txClass?: string
+): TransactionInfo => {
     return {
         blockHash,
         proofType,
         attestationId,
         proofLeaf,
         status,
+        txHash,
+        extrinsicIndex,
+        feeInfo,
+        weightInfo,
+        txClass,
     };
-};
-
-const handleInBlock = (
-    events: any[],
-    proofType: string,
-    blockHash: string,
-    setAttestationId: (id: string | null) => void,
-    emitter: EventEmitter
-): BlockInfo => {
-    let attestationId: string | null = null;
-    let proofLeaf: string | null = null;
-
-    handleEvents(events, (data) => {
-        if (data && data.length > 1) {
-            attestationId = data[1].toString();
-            proofLeaf = data[0].toString();
-            setAttestationId(attestationId);
-        }
-    });
-
-    const blockInfo = createBlockInfo(proofType, blockHash, attestationId, proofLeaf, 'inBlock');
-    emitter.emit('includedInBlock', blockInfo);
-    return blockInfo;
-};
-
-const handleFinalized = async (
-    proofType: string,
-    attestationId: string | null,
-    blockHash: string | null,
-    proofLeaf: string | null,
-    dispatchError: any,
-    api: ApiPromise,
-    emitter: EventEmitter
-): Promise<BlockInfo | null> => {
-    if (dispatchError) {
-        const decodedError = decodeDispatchError(api, dispatchError);
-        emitter.emit('error', { proofType, error: decodedError });
-
-        return null;
-    }
-
-    const blockInfo = createBlockInfo(proofType, blockHash || '', attestationId, proofLeaf, 'finalized');
-
-    if (attestationId) {
-        emitter.emit('finalized', blockInfo);
-    } else {
-        emitter.emit('error', { ...blockInfo, error: 'Finalized but no attestation ID found.' });
-    }
-
-    return blockInfo;
 };
 
 const waitForAttestation = async (
@@ -99,6 +67,122 @@ const waitForAttestation = async (
     }
 };
 
+const handleInBlock = (
+    api: ApiPromise,
+    events: SubmittableResult['events'],
+    proofType: string,
+    blockHash: string,
+    txHash: string,
+    setAttestationId: (id: string | null) => void,
+    emitter: EventEmitter
+): TransactionInfo => {
+    let attestationId: string | null = null;
+    let proofLeaf: string | null = null;
+    let extrinsicIndex: number | undefined;
+    let feeInfo: { payer: string; actualFee: string; tip: string; paysFee: string } | undefined;
+    let weightInfo: { refTime: string; proofSize: string } | undefined;
+    let txClass: string | undefined;
+
+    events.forEach(({ event, phase }) => {
+        if (phase.isApplyExtrinsic) {
+            extrinsicIndex = phase.asApplyExtrinsic.toNumber();
+        }
+
+        if (event.section === 'transactionPayment' && event.method === 'TransactionFeePaid') {
+            feeInfo = {
+                payer: event.data[0].toString(),
+                actualFee: event.data[1].toString(),
+                tip: event.data[2].toString(),
+                paysFee: 'Yes',
+            };
+        }
+
+        if (event.section === 'system' && event.method === 'ExtrinsicSuccess') {
+            const dispatchInfo = event.data[0] as any;
+            weightInfo = {
+                refTime: dispatchInfo.weight.refTime?.toString(),
+                proofSize: dispatchInfo.weight.proofSize?.toString(),
+            };
+            txClass = dispatchInfo.class.toString();
+
+            if (feeInfo) {
+                feeInfo.paysFee = dispatchInfo.paysFee.toString();
+            }
+        }
+
+        if (event.section === 'system' && event.method === 'ExtrinsicFailed') {
+            const [dispatchError] = event.data;
+            const decodedError = decodeDispatchError(api, dispatchError);
+            emitter.emit('error', new Error(`Transaction failed with error: ${decodedError}`));
+        }
+
+        if (event.section === 'poe' && event.method === 'NewElement') {
+            attestationId = event.data[1].toString();
+            proofLeaf = event.data[0].toString();
+            setAttestationId(attestationId);
+        }
+    });
+
+    const blockInfo = createTransactionInfo(
+        proofType,
+        blockHash,
+        attestationId,
+        proofLeaf,
+        'inBlock',
+        txHash,
+        extrinsicIndex,
+        feeInfo,
+        weightInfo,
+        txClass
+    );
+
+    emitter.emit('includedInBlock', blockInfo);
+
+    return blockInfo;
+};
+
+const handleFinalized = async (
+    api: ApiPromise,
+    proofType: string,
+    attestationId: string | null,
+    blockHash: string | null,
+    proofLeaf: string | null,
+    dispatchError: any,
+    emitter: EventEmitter,
+    txHash?: string,
+    extrinsicIndex?: number,
+    feeInfo?: { payer: string; actualFee: string; tip: string; paysFee: string },
+    weightInfo?: { refTime: string; proofSize: string },
+    txClass?: string
+): Promise<TransactionInfo | null> => {
+    if (dispatchError) {
+        const decodedError = decodeDispatchError(api, dispatchError);
+        emitter.emit('error', { proofType, error: decodedError });
+
+        return null;
+    }
+    const blockInfo = createTransactionInfo(
+        proofType,
+        blockHash || '',
+        attestationId,
+        proofLeaf,
+        'finalized',
+        txHash,
+        extrinsicIndex,
+        feeInfo,
+        weightInfo,
+        txClass
+    );
+
+    if (attestationId) {
+        emitter.emit('finalized', blockInfo);
+    } else {
+        emitter.emit('error', { ...blockInfo, error: 'Finalized but no attestation ID found.' });
+    }
+
+    return blockInfo;
+};
+
 export const handleTransaction = async (
     api: ApiPromise,
     submitProof: SubmittableExtrinsic<"promise">,
@@ -112,10 +196,20 @@ export const handleTransaction = async (
     attestationId: string | null;
     blockHash: string | null;
     proofLeaf: string | null;
+    txHash?: string;
+    extrinsicIndex?: number;
+    feeInfo?: { payer: string; actualFee: string; tip: string; paysFee: string };
+    weightInfo?: { refTime: string; proofSize: string };
+    txClass?: string;
 }> => {
     let attestationId: string | null = null;
     let blockHash: string | null = null;
     let proofLeaf: string | null = null;
+    let txHash: string | undefined;
+    let extrinsicIndex: number | undefined;
+    let feeInfo: { payer: string; actualFee: string; tip: string; paysFee: string } | undefined;
+    let weightInfo: { refTime: string; proofSize: string } | undefined;
+    let txClass: string | undefined;
 
     const setAttestationId = (id: string | null) => {
         attestationId = id;
@@ -127,31 +221,23 @@ export const handleTransaction = async (
         attestationId: string | null;
         blockHash: string | null;
         proofLeaf: string | null;
+        txHash?: string;
+        extrinsicIndex?: number;
+        feeInfo?: { payer: string; actualFee: string; tip: string; paysFee: string };
+        weightInfo?: { refTime: string; proofSize: string };
+        txClass?: string;
     }>((resolve, reject) => {
-        submitProof.signAndSend(account, async ({ events, status, dispatchError }) => {
+        submitProof.signAndSend(account, async (result: SubmittableResult) => {
             try {
-                if (dispatchError) {
-                    const decodedError = decodeDispatchError(api, dispatchError);
-                    emitter.emit('error', { proofType, error: decodedError });
-                    resolve({
-                        finalized: false,
-                        attestationConfirmed: false,
-                        attestationId,
-                        blockHash,
-                        proofLeaf,
-                    });
-
-                    return;
-                }
-
-                if (status.isInBlock) {
-                    const blockInfo = handleInBlock(events, proofType, status.asInBlock.toString(), setAttestationId, emitter);
-                    blockHash = blockInfo.blockHash;
+                if (result.status.isInBlock) {
+                    txHash = result.txHash.toString();
+                    blockHash = result.status.asInBlock.toString();
+                    const blockInfo = handleInBlock(api, result.events, proofType, blockHash, txHash, setAttestationId, emitter);
                     proofLeaf = blockInfo.proofLeaf;
                 }
 
-                if (status.isFinalized) {
-                    const blockInfo = await handleFinalized(proofType, attestationId, blockHash, proofLeaf, dispatchError, api, emitter);
+                if (result.status.isFinalized) {
+                    const blockInfo = await handleFinalized(api, proofType, attestationId, blockHash, proofLeaf, result.dispatchError, emitter, txHash, extrinsicIndex, feeInfo, weightInfo, txClass);
                     const finalized = !!blockInfo;
 
                     let attestationConfirmed = false;
@@ -165,8 +251,13 @@ export const handleTransaction = async (
                         attestationId,
                         blockHash,
                         proofLeaf,
+                        txHash,
+                        extrinsicIndex,
+                        feeInfo,
+                        weightInfo,
+                        txClass,
                     });
-                } else if (status.isDropped || status.isInvalid) {
+                } else if (result.status.isDropped || result.status.isInvalid) {
                     emitter.emit('error', new Error('Transaction was dropped or marked as invalid.'));
                     resolve({
                         finalized: false,
@@ -174,8 +265,13 @@ export const handleTransaction = async (
                         attestationId,
                         blockHash,
                         proofLeaf,
+                        txHash,
+                        extrinsicIndex,
+                        feeInfo,
+                        weightInfo,
+                        txClass,
                     });
-                } else if (status.isRetracted) {
+                } else if (result.status.isRetracted) {
                     emitter.emit('error', new Error('Transaction was retracted.'));
                     resolve({
                         finalized: false,
@@ -183,8 +279,13 @@ export const handleTransaction = async (
                         attestationId,
                         blockHash,
                         proofLeaf,
+                        txHash,
+                        extrinsicIndex,
+                        feeInfo,
+                        weightInfo,
+                        txClass,
                     });
-                } else if (status.isUsurped) {
+                } else if (result.status.isUsurped) {
                     emitter.emit('error', new Error('Transaction was replaced by another transaction with the same nonce.'));
                     resolve({
                         finalized: false,
@@ -192,8 +293,13 @@ export const handleTransaction = async (
                         attestationId,
                         blockHash,
                         proofLeaf,
+                        txHash,
+                        extrinsicIndex,
+                        feeInfo,
+                        weightInfo,
+                        txClass,
                     });
-                } else if (status.isBroadcast) {
+                } else if (result.status.isBroadcast) {
                     emitter.emit('broadcast', { proofType, status: 'Transaction broadcasted.' });
                 }
             } catch (error) {
