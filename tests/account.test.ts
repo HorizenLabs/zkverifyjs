@@ -38,7 +38,7 @@ describe('zkVerifySession - accountInfo', () => {
         const session = await zkVerifySession.start({ host: 'testnet' });
 
         try {
-            await expect(session.accountInfo()).rejects.toThrow('No account is associated with this session. Cannot retrieve balance.');
+            await expect(session.accountInfo()).rejects.toThrow('This session is read-only. A seed phrase is required on session start in order to send transactions.');
         } finally {
             await session.close();
         }

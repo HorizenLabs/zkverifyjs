@@ -125,3 +125,9 @@ export async function getProofProcessor(proofType: string): Promise<any> {
         throw new Error(`Failed to load proof processor for type: ${proofType}. Error: ${error}`);
     }
 }
+
+export function checkReadOnly(readOnly: boolean): void {
+    if (readOnly) {
+        throw new Error('This session is read-only. A seed phrase is required on session start in order to send transactions.');
+    }
+}

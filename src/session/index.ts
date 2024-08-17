@@ -3,11 +3,12 @@ import '@polkadot/api-augment';
 import { KeyringPair } from '@polkadot/keyring/types';
 import { zkVerifySessionOptions } from "./types";
 import { verifyProof, verifyProofAndWaitForAttestationEvent } from '../api/verify';
-import { accountInfo } from '../api/account'
-import { startSession } from '../api/start'
-import { closeSession } from '../api/close'
+import { accountInfo } from '../api/account';
+import { startSession } from '../api/start';
+import { closeSession } from '../api/close';
 import { AccountInfo, ProofTransactionResult } from "../types";
 import { EventEmitter } from "events";
+import { checkReadOnly } from '../utils/helpers';
 
 export class zkVerifySession {
     private readonly api: ApiPromise;
@@ -30,9 +31,7 @@ export class zkVerifySession {
         events: EventEmitter;
         transactionResult: Promise<ProofTransactionResult>;
     }> {
-        if (this.readOnly) {
-            throw new Error('This session is read-only. A seed phrase is required to send transactions.');
-        }
+        checkReadOnly(this.readOnly);
         return verifyProof(this.api, this.provider, this.account!, proofType, ...proofData);
     }
 
@@ -40,17 +39,13 @@ export class zkVerifySession {
         events: EventEmitter;
         transactionResult: Promise<ProofTransactionResult>;
     }> {
-        if (this.readOnly) {
-            throw new Error('This session is read-only. A seed phrase is required to send transactions.');
-        }
+        checkReadOnly(this.readOnly);
         return verifyProofAndWaitForAttestationEvent(this.api, this.provider, this.account!, proofType, ...proofData);
     }
 
     async accountInfo(): Promise<AccountInfo> {
-        if (!this.account) {
-            throw new Error('No account is associated with this session. Cannot retrieve balance.');
-        }
-        return accountInfo(this.api, this.account);
+        checkReadOnly(this.readOnly);
+        return accountInfo(this.api, this.account!);
     }
 
     async close(): Promise<void> {
