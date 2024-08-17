@@ -9,7 +9,7 @@ export const handleTransactionEvents = (
     events: SubmittableResult['events'],
     transactionInfo: TransactionInfo,
     emitter: EventEmitter,
-    setAttestationId: (id: string | null) => void
+    setAttestationId: (id: number | null) => void
 ): TransactionInfo => {
 
     events.forEach(({ event, phase }) => {
@@ -46,7 +46,7 @@ export const handleTransactionEvents = (
         }
 
         if (event.section === 'poe' && event.method === 'NewElement') {
-            transactionInfo.attestationId = event.data[1].toString();
+            transactionInfo.attestationId = Number(event.data[1]);
             transactionInfo.leafDigest = event.data[0].toString();
             setAttestationId(transactionInfo.attestationId);
         }

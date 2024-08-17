@@ -7,6 +7,7 @@ import { accountInfo } from '../api/account';
 import { startSession } from '../api/start';
 import { closeSession } from '../api/close';
 import { subscribeToNewAttestations, unsubscribeFromNewAttestations } from '../api/attestation';
+import { getProofDetails } from '../api/proof'
 import { AccountInfo, AttestationEvent, ProofTransactionResult } from "../types";
 import { EventEmitter } from "events";
 import { checkReadOnly } from '../utils/helpers';
@@ -102,6 +103,25 @@ export class zkVerifySession {
     }> {
         checkReadOnly(this.readOnly);
         return verifyProofAndWaitForAttestationEvent(this.api, this.provider, this.account!, proofType, ...proofData);
+    }
+
+    /**
+     * Retrieve proof details.
+     *
+     * @param {number} attestationId - The attestation ID for which the proof path is to be retrieved.
+     * @param {string} leafDigest - The leaf digest to be used in the proof path retrieval.
+     * @param {string} attestation - The root of the Merkle tree of the attestation (from AttestationEvent).
+     * @returns {Promise<{ proofPath: any, attestation: string, leafIndex: number, numberOfLeaves: number, leaf: string }>}
+     *          An object containing the proof path details.
+     */
+    async getProofDetails(attestationId: number, leafDigest: string, attestation: string): Promise<{
+        proofPath: any,
+        attestation: string,
+        leafIndex: number,
+        numberOfLeaves: number,
+        leaf: string
+    }> {
+        return getProofDetails(this.api, attestationId, leafDigest, attestation);
     }
 
     /**

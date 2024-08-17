@@ -38,7 +38,7 @@ export interface ProofTransactionResult {
 export interface TransactionInfo {
     blockHash: string;
     proofType: string;
-    attestationId: string | null;
+    attestationId: number | null;
     leafDigest: string | null;
     status: 'inBlock' | 'finalized';
     txHash?: string;

@@ -2,7 +2,7 @@ import { ApiPromise, SubmittableResult } from '@polkadot/api';
 import { KeyringPair } from '@polkadot/keyring/types';
 import { SubmittableExtrinsic } from '@polkadot/api/types';
 import { EventEmitter } from 'events';
-import { ProofTransactionResult, TransactionInfo } from "../../types";
+import {AttestationEvent, ProofTransactionResult, TransactionInfo} from "../../types";
 import { waitForNewAttestation } from "../helpers";
 import { decodeDispatchError } from "./errors";
 import { handleTransactionEvents } from "./events";
@@ -13,7 +13,7 @@ const handleInBlock = (
     proofType: string,
     blockHash: string,
     txHash: string,
-    setAttestationId: (id: string | null) => void,
+    setAttestationId: (id: number | null) => void,
     emitter: EventEmitter
 ): TransactionInfo => {
     let transactionInfo: TransactionInfo = {
@@ -80,9 +80,11 @@ export const handleTransaction = async (
         attestationEvent: undefined,
     };
 
-    const setAttestationId = (id: string | null) => {
+    const setAttestationId = (id: number | null) => {
         transactionInfo.attestationId = id;
     };
+
+    let attestationPromise: Promise<AttestationEvent | undefined> | null = null;
 
     return new Promise<ProofTransactionResult>((resolve, reject) => {
         submitProof.signAndSend(account, async (result: SubmittableResult) => {
@@ -91,17 +93,21 @@ export const handleTransaction = async (
                     transactionInfo.txHash = result.txHash.toString();
                     transactionInfo.blockHash = result.status.asInBlock.toString();
                     transactionInfo = handleInBlock(api, result.events, proofType, transactionInfo.blockHash, transactionInfo.txHash, setAttestationId, emitter);
+
+                    if (waitForNewAttestationEvent && transactionInfo.attestationId) {
+                        attestationPromise = waitForNewAttestation(api, transactionInfo.attestationId, emitter);
+                    }
                 }
 
                 if (result.status.isFinalized) {
                     transactionInfo = await handleFinalized(api, transactionInfo, result.dispatchError, emitter);
                     const finalized = !!transactionInfo;
 
-                    if (waitForNewAttestationEvent && finalized && transactionInfo.attestationId) {
+                    if (waitForNewAttestationEvent && attestationPromise) {
                         try {
-                            transactionInfo.attestationEvent = await waitForNewAttestation(api, transactionInfo.attestationId, emitter);
+                            transactionInfo.attestationEvent = await attestationPromise;
                         } catch (error) {
-                            reject(error);
+                            return reject(error);
                         }
                     }
 
@@ -124,7 +130,6 @@ export const handleTransaction = async (
         });
     });
 };
-
 
 const resolveTransaction = (
     resolve: (value: {

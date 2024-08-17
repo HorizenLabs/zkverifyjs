@@ -35,7 +35,7 @@ export function handleEvents(events: EventRecord[], callback: (data: any[]) => v
  */
 export async function waitForNewAttestation(
     api: ApiPromise,
-    attestationId: string | null,
+    attestationId: number | undefined,
     emitter: EventEmitter
 ): Promise<AttestationEvent> {
     if (!attestationId) {
@@ -51,12 +51,13 @@ export async function waitForNewAttestation(
                     const { event } = record;
 
                     if (event.section === "poe" && event.method === "NewAttestation") {
-                        const currentAttestationId = event.data[0].toString();
+                        const currentAttestationId = Number(event.data[0]);
+
                         if (currentAttestationId === attestationId) {
                             unsubscribe();
 
                             const attestationEvent: AttestationEvent = {
-                                id: Number(currentAttestationId),
+                                id: currentAttestationId,
                                 attestation: event.data[1].toString(),
                             };
 
