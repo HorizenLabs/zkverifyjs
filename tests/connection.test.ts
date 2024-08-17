@@ -1,4 +1,4 @@
-import { zkVerifySession } from '../src/session';
+import { zkVerifySession } from '../src';
 
 describe('zkVerifySession class', () => {
     it('should establish a connection and close it successfully', async () => {
