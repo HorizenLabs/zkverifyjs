@@ -20,7 +20,7 @@ const handleInBlock = (
         blockHash,
         proofType,
         attestationId: null,
-        proofLeaf: null,
+        leafDigest: null,
         status: 'inBlock',
         txHash,
         extrinsicIndex: undefined,
@@ -70,24 +70,21 @@ export const handleTransaction = async (
         blockHash: '',
         proofType,
         attestationId: null,
-        proofLeaf: null,
+        leafDigest: null,
         status: 'inBlock',
         txHash: undefined,
         extrinsicIndex: undefined,
         feeInfo: undefined,
         weightInfo: undefined,
         txClass: undefined,
+        attestationEvent: undefined,
     };
 
     const setAttestationId = (id: string | null) => {
         transactionInfo.attestationId = id;
     };
 
-    return new Promise<{
-        finalized: boolean;
-        attestationConfirmed: boolean;
-        transactionInfo: TransactionInfo;
-    }>((resolve, reject) => {
+    return new Promise<ProofTransactionResult>((resolve, reject) => {
         submitProof.signAndSend(account, async (result: SubmittableResult) => {
             try {
                 if (result.status.isInBlock) {
@@ -100,12 +97,15 @@ export const handleTransaction = async (
                     transactionInfo = await handleFinalized(api, transactionInfo, result.dispatchError, emitter);
                     const finalized = !!transactionInfo;
 
-                    let attestationConfirmed = false;
                     if (waitForNewAttestationEvent && finalized && transactionInfo.attestationId) {
-                        attestationConfirmed = await waitForNewAttestation(api, transactionInfo.attestationId, emitter);
+                        try {
+                            transactionInfo.attestationEvent = await waitForNewAttestation(api, transactionInfo.attestationId, emitter);
+                        } catch (error) {
+                            reject(error);
+                        }
                     }
 
-                    resolveTransaction(resolve, finalized, attestationConfirmed, transactionInfo);
+                    resolveTransaction(resolve, finalized, !!transactionInfo.attestationEvent, transactionInfo);
                 } else if (result.status.isDropped || result.status.isInvalid) {
                     emitter.emit('error', new Error('Transaction was dropped or marked as invalid.'));
                     resolveTransaction(resolve, false, false, transactionInfo);

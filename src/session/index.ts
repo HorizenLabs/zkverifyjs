@@ -6,7 +6,8 @@ import { verifyProof, verifyProofAndWaitForAttestationEvent } from '../api/verif
 import { accountInfo } from '../api/account';
 import { startSession } from '../api/start';
 import { closeSession } from '../api/close';
-import { AccountInfo, ProofTransactionResult } from "../types";
+import { subscribeToNewAttestations, unsubscribeFromNewAttestations } from '../api/attestation';
+import { AccountInfo, AttestationEvent, ProofTransactionResult } from "../types";
 import { EventEmitter } from "events";
 import { checkReadOnly } from '../utils/helpers';
 import { setupAccount } from '../account';
@@ -20,26 +21,33 @@ export class zkVerifySession {
      * @type {ApiPromise}
      */
     public readonly api: ApiPromise;
-
+    /**
+     * Indicates whether the session is in read-only mode (no account available).
+     * @type {boolean}
+     */
+    public readOnly: boolean;
     /**
      * The WebSocket provider used to connect to the zkVerify network.
      * @type {WsProvider}
      * @private
      */
     private readonly provider: WsProvider;
-
     /**
      * The active account for the session, if provided.
      * @type {KeyringPair | undefined}
      * @private
      */
     private account?: KeyringPair;
-
     /**
-     * Indicates whether the session is in read-only mode (no account available).
-     * @type {boolean}
+     * An EventEmitter instance used to handle the subscription to NewAttestation events.
+     * This emitter is created when the user subscribes to NewAttestation events via
+     * `subscribeToNewAttestations` and is cleared when the user unsubscribes or when
+     * the subscription ends automatically after receiving a specific attestation.
+     *
+     * @private
+     * @type {EventEmitter | undefined}
      */
-    public readOnly: boolean;
+    private newAttestationEmitter?: EventEmitter;
 
     /**
      * Creates an instance of zkVerifySession.
@@ -127,10 +135,28 @@ export class zkVerifySession {
      */
     removeAccount(): void {
         if (this.account) {
-            (this.account as any) = undefined;
             this.account = undefined;
         }
         this.readOnly = true;
+    }
+
+    /**
+     * Subscribes to NewAttestation events.
+     * @param {Function} callback - The function to call with the event data when a NewAttestation event occurs.
+     * @param {string} [attestationId] - Optional attestation ID to filter events by and unsubscribe after.
+     */
+    subscribeToNewAttestations(callback: (data: AttestationEvent) => void, attestationId?: string): void {
+        this.newAttestationEmitter = subscribeToNewAttestations(this.api, callback, attestationId);
+    }
+
+    /**
+     * Unsubscribes from NewAttestation events.
+     */
+    unsubscribe(): void {
+        if (this.newAttestationEmitter) {
+            unsubscribeFromNewAttestations(this.newAttestationEmitter);
+            this.newAttestationEmitter = undefined;
+        }
     }
 
     /**

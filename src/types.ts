@@ -39,7 +39,7 @@ export interface TransactionInfo {
     blockHash: string;
     proofType: string;
     attestationId: string | null;
-    proofLeaf: string | null;
+    leafDigest: string | null;
     status: 'inBlock' | 'finalized';
     txHash?: string;
     extrinsicIndex?: number;
@@ -54,6 +54,7 @@ export interface TransactionInfo {
         proofSize: string;
     };
     txClass?: string;
+    attestationEvent?: AttestationEvent;
 }
 
 export interface AccountInfo {
@@ -61,4 +62,9 @@ export interface AccountInfo {
     nonce: number;
     freeBalance: string;
     reservedBalance: string;
+}
+
+export interface AttestationEvent {
+    id: number;
+    attestation: string;
 }

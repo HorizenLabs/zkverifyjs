@@ -2,16 +2,27 @@ import fs from 'fs';
 import path from 'path';
 import 'dotenv/config';
 import { ProofTransactionResult, zkVerifySession } from '../src';
+import {AttestationEvent} from "../src/types";
 
-jest.setTimeout(120000);
+jest.setTimeout(180000);
 
-describe('verify - Fflonk', () => {
-    it('should send the fflonk proof for verification, return a valid result, and emit the expected events', async () => {
+describe('verify and subscribe - Fflonk', () => {
+    it('should send the fflonk proof for verification and respond on finalization without waiting for the NewAttestation event, subscribe to NewAttestation events, and receive the expected event from the subscription', async () => {
         const dataPath = path.join(__dirname, 'data', 'fflonk.json');
         const fflonkData = JSON.parse(fs.readFileSync(dataPath, 'utf8'));
         const { proof, publicSignals, vk } = fflonkData;
 
         const session = await zkVerifySession.start({ host: 'testnet', seedPhrase: process.env.SEED_PHRASE });
+
+        const newAttestationPromise = new Promise<void>((resolve, reject) => {
+            session.subscribeToNewAttestations((data: AttestationEvent) => {
+                console.log('Received NewAttestation:', data.id, data.attestation);
+                expect(data.id).toBeDefined();
+                expect(data.attestation).toBeDefined();
+                resolve();
+            });
+        });
+
         const { events, transactionResult } = await session.verify('fflonk', proof, publicSignals, vk);
 
         let includedInBlockEmitted = false;
@@ -23,7 +34,7 @@ describe('verify - Fflonk', () => {
             expect(eventData.blockHash).not.toBeNull();
             expect(eventData.proofType).toBe('fflonk');
             expect(eventData.attestationId).not.toBeNull();
-            expect(eventData.proofLeaf).not.toBeNull();
+            expect(eventData.leafDigest).not.toBeNull();
             expect(eventData.status).toBe('inBlock');
             expect(eventData.txHash).toBeDefined();
             expect(eventData.extrinsicIndex).toBeDefined();
@@ -38,7 +49,7 @@ describe('verify - Fflonk', () => {
             expect(eventData.blockHash).not.toBeNull();
             expect(eventData.proofType).toBe('fflonk');
             expect(eventData.attestationId).not.toBeNull();
-            expect(eventData.proofLeaf).not.toBeNull();
+            expect(eventData.leafDigest).not.toBeNull();
             expect(eventData.status).toBe('finalized');
             expect(eventData.txHash).toBeDefined();
             expect(eventData.extrinsicIndex).toBeDefined();
@@ -57,7 +68,7 @@ describe('verify - Fflonk', () => {
         expect(transactionInfo.blockHash).not.toBeNull();
         expect(transactionInfo.proofType).toBe('fflonk');
         expect(transactionInfo.attestationId).not.toBeNull();
-        expect(transactionInfo.proofLeaf).not.toBeNull();
+        expect(transactionInfo.leafDigest).not.toBeNull();
         expect(transactionInfo.status).toBe('finalized');
         expect(transactionInfo.txHash).toBeDefined();
         expect(transactionInfo.extrinsicIndex).toBeDefined();
@@ -67,6 +78,8 @@ describe('verify - Fflonk', () => {
 
         expect(includedInBlockEmitted).toBe(true);
         expect(finalizedEmitted).toBe(true);
+
+        await newAttestationPromise;
 
         await session.close();
     });

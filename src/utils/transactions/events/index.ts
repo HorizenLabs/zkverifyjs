@@ -47,7 +47,7 @@ export const handleTransactionEvents = (
 
         if (event.section === 'poe' && event.method === 'NewElement') {
             transactionInfo.attestationId = event.data[1].toString();
-            transactionInfo.proofLeaf = event.data[0].toString();
+            transactionInfo.leafDigest = event.data[0].toString();
             setAttestationId(transactionInfo.attestationId);
         }
     });

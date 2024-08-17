@@ -4,6 +4,7 @@ import { EventRecord } from '@polkadot/types/interfaces';
 import { SubmittableExtrinsic } from '@polkadot/api/types';
 import path from 'path';
 import { EventEmitter } from "events";
+import {AttestationEvent} from "../../types";
 
 /**
  * Handles events emitted by the zkVerify blockchain.
@@ -19,13 +20,13 @@ export function handleEvents(events: EventRecord[], callback: (data: any[]) => v
 }
 
 /**
- * Waits for a specific NewAttestation event.
+ * Waits for a specific NewAttestation event and returns the associated data.
  *
  * @param api - The ApiPromise instance.
  * @param attestationId - The attestation ID to wait for.
  * @param emitter - The EventEmitter instance to emit events.
  *
- * @returns A promise that resolves to true if the attestation is confirmed, false otherwise.
+ * @returns A promise that resolves to an AttestationEvent object if the attestation is confirmed, or rejects with an error.
  *
  * @throws An error if the attestation ID is null or if there is an issue subscribing to events.
  *
@@ -36,12 +37,14 @@ export async function waitForNewAttestation(
     api: ApiPromise,
     attestationId: string | null,
     emitter: EventEmitter
-): Promise<boolean> {
+): Promise<AttestationEvent> {
     if (!attestationId) {
-        emitter.emit('error', new Error('No attestation ID found.'));
-        return false;
+        const error = new Error('No attestation ID found.');
+        emitter.emit('error', error);
+        throw error;
     }
-    return new Promise<boolean>(async (resolve) => {
+
+    return new Promise<AttestationEvent>(async (resolve, reject) => {
         try {
             const unsubscribe = await api.query.system.events((events: EventRecord[]) => {
                 events.forEach((record) => {
@@ -51,18 +54,21 @@ export async function waitForNewAttestation(
                         const currentAttestationId = event.data[0].toString();
                         if (currentAttestationId === attestationId) {
                             unsubscribe();
-                            emitter.emit('attestationConfirmed', {
-                                attestationId: currentAttestationId,
-                                proofLeaf: event.data[1].toString(),
-                            });
-                            resolve(true);
+
+                            const attestationEvent: AttestationEvent = {
+                                id: Number(currentAttestationId),
+                                attestation: event.data[1].toString(),
+                            };
+
+                            emitter.emit('attestationConfirmed', attestationEvent);
+                            resolve(attestationEvent);
                         }
                     }
                 });
             }) as unknown as () => void;
         } catch (error) {
             emitter.emit('error', error instanceof Error ? error : new Error('Attestation waiting failed with an unknown error.'));
-            resolve(false);
+            reject(error);
         }
     });
 }
