@@ -38,7 +38,7 @@ describe('zkVerifySession - accountInfo', () => {
         const session = await zkVerifySession.start({ host: 'testnet' });
 
         try {
-            await expect(session.accountInfo()).rejects.toThrow('This session is read-only. A seed phrase is required on session start in order to send transactions.');
+            await expect(session.accountInfo()).rejects.toThrow('This action requires an active account. The session is currently in read-only mode because no account is associated with it. Please provide an account at session start, or add one to the current session using `addAccount`.');
         } finally {
             await session.close();
         }

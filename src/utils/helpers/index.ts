@@ -128,6 +128,6 @@ export async function getProofProcessor(proofType: string): Promise<any> {
 
 export function checkReadOnly(readOnly: boolean): void {
     if (readOnly) {
-        throw new Error('This session is read-only. A seed phrase is required on session start in order to send transactions.');
+        throw new Error('This action requires an active account. The session is currently in read-only mode because no account is associated with it. Please provide an account at session start, or add one to the current session using `addAccount`.');
     }
 }
