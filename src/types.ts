@@ -68,3 +68,11 @@ export interface AttestationEvent {
     id: number;
     attestation: string;
 }
+
+export interface MerkleProof {
+    root: string;
+    proof: string[];
+    numberOfLeaves: number;
+    leafIndex: number;
+    leaf: string;
+}

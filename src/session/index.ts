@@ -1,44 +1,35 @@
-import { ApiPromise, WsProvider } from '@polkadot/api';
-import '@polkadot/api-augment';
-import { KeyringPair } from '@polkadot/keyring/types';
-import { zkVerifySessionOptions } from "./types";
-import { verifyProof, verifyProofAndWaitForAttestationEvent } from '../api/verify';
+import '@polkadot/api-augment'; // Required for api.query.system.account responses
+import { zkVerifySessionOptions, VerifyOptions } from "./types";
+import { verifyProof } from '../api/verify';
 import { accountInfo } from '../api/account';
 import { startSession } from '../api/start';
 import { closeSession } from '../api/close';
 import { subscribeToNewAttestations, unsubscribeFromNewAttestations } from '../api/attestation';
-import { getProofDetails } from '../api/proof'
-import { AccountInfo, AttestationEvent, ProofTransactionResult } from "../types";
+import { getProofDetails } from '../api/poe';
+import { AccountInfo, AttestationEvent, MerkleProof, ProofTransactionResult } from "../types";
 import { EventEmitter } from "events";
 import { checkReadOnly } from '../utils/helpers';
 import { setupAccount } from '../account';
+import { AccountConnection, EstablishedConnection } from "../connection/types";
+import { ApiPromise, WsProvider } from "@polkadot/api";
+import { KeyringPair } from "@polkadot/keyring/types";
 
 /**
  * zkVerifySession class provides an interface to zkVerify, direct access to the Polkadot.js API.
  */
 export class zkVerifySession {
     /**
-     * The Polkadot.js API instance.
-     * @type {ApiPromise}
+     * The connection object that includes API, provider, and account.
+     * @type {AccountConnection | EstablishedConnection}
      */
-    public readonly api: ApiPromise;
+    private connection: AccountConnection | EstablishedConnection;
+
     /**
      * Indicates whether the session is in read-only mode (no account available).
      * @type {boolean}
      */
     public readOnly: boolean;
-    /**
-     * The WebSocket provider used to connect to the zkVerify network.
-     * @type {WsProvider}
-     * @private
-     */
-    private readonly provider: WsProvider;
-    /**
-     * The active account for the session, if provided.
-     * @type {KeyringPair | undefined}
-     * @private
-     */
-    private account?: KeyringPair;
+
     /**
      * An EventEmitter instance used to handle the subscription to NewAttestation events.
      * This emitter is created when the user subscribes to NewAttestation events via
@@ -52,15 +43,11 @@ export class zkVerifySession {
 
     /**
      * Creates an instance of zkVerifySession.
-     * @param {ApiPromise} api - The Polkadot.js API instance.
-     * @param {WsProvider} provider - The WebSocket provider for the zkVerify network.
-     * @param {KeyringPair} [account] - The user's account (optional).
+     * @param {AccountConnection | EstablishedConnection} connection - The connection object that includes API, provider, and optionally an account.
      */
-    constructor(api: ApiPromise, provider: WsProvider, account?: KeyringPair) {
-        this.api = api;
-        this.provider = provider;
-        this.account = account;
-        this.readOnly = !account;
+    constructor(connection: AccountConnection | EstablishedConnection) {
+        this.connection = connection;
+        this.readOnly = !('account' in connection);
     }
 
     /**
@@ -70,58 +57,35 @@ export class zkVerifySession {
      * @returns {Promise<zkVerifySession>} A promise that resolves to a zkVerifySession instance.
      */
     static async start(options: zkVerifySessionOptions): Promise<zkVerifySession> {
-        return startSession(options);
+        const connection = await startSession(options);
+        return new zkVerifySession(connection);
     }
 
     /**
-     * Verifies a proof with the specified proof type and data.
-     * @param {string} proofType - The type of proof to verify.
+     * Verifies a proof with the specified proof data.
+     * The proof type, nonce are specified in the options object.
+     * @param {VerifyOptions} options - An object containing the proof type, optional nonce, and optional waitForNewAttestationEvent boolean.
      * @param {...any[]} proofData - The data required for the proof verification.
      * @returns {Promise<{ events: EventEmitter; transactionResult: Promise<ProofTransactionResult>; }>}
-     *          An object containing an event emitter and a promise that resolves with the transaction result.
-     * @throws Will throw an error if the session is in read-only mode.
      */
-    async verify(proofType: string, ...proofData: any[]): Promise<{
+    async verify(options: VerifyOptions, ...proofData: any[]): Promise<{
         events: EventEmitter;
         transactionResult: Promise<ProofTransactionResult>;
     }> {
         checkReadOnly(this.readOnly);
-        return verifyProof(this.api, this.provider, this.account!, proofType, ...proofData);
+        return verifyProof(this.connection as AccountConnection, options, ...proofData);
     }
 
     /**
-     * Verifies a proof and waits for an attestation event with the specified proof type and data.
-     * @param {string} proofType - The type of proof to verify.
-     * @param {...any[]} proofData - The data required for the proof verification.
-     * @returns {Promise<{ events: EventEmitter; transactionResult: Promise<ProofTransactionResult>; }>}
-     *          An object containing an event emitter and a promise that resolves with the transaction result.
-     * @throws Will throw an error if the session is in read-only mode.
-     */
-    async verifyAndWaitForAttestationEvent(proofType: string, ...proofData: any[]): Promise<{
-        events: EventEmitter;
-        transactionResult: Promise<ProofTransactionResult>;
-    }> {
-        checkReadOnly(this.readOnly);
-        return verifyProofAndWaitForAttestationEvent(this.api, this.provider, this.account!, proofType, ...proofData);
-    }
-
-    /**
-     * Retrieve proof details.
+     * Proof Of Existence: Retrieve existing verified proof details.
      *
      * @param {number} attestationId - The attestation ID for which the proof path is to be retrieved.
      * @param {string} leafDigest - The leaf digest to be used in the proof path retrieval.
-     * @param {string} attestation - The root of the Merkle tree of the attestation (from AttestationEvent).
-     * @returns {Promise<{ proofPath: any, attestation: string, leafIndex: number, numberOfLeaves: number, leaf: string }>}
-     *          An object containing the proof path details.
+     * @param {string} [blockHash] - Optional block hash to retrieve the proof at a specific block.
+     * @returns {Promise<MerkleProof>} An object containing the proof path details.
      */
-    async getProofDetails(attestationId: number, leafDigest: string, attestation: string): Promise<{
-        proofPath: any,
-        attestation: string,
-        leafIndex: number,
-        numberOfLeaves: number,
-        leaf: string
-    }> {
-        return getProofDetails(this.api, attestationId, leafDigest, attestation);
+    async poe(attestationId: number, leafDigest: string, blockHash?: string): Promise<MerkleProof> {
+        return getProofDetails(this.connection.api, attestationId, leafDigest, blockHash);
     }
 
     /**
@@ -131,7 +95,7 @@ export class zkVerifySession {
      */
     async accountInfo(): Promise<AccountInfo> {
         checkReadOnly(this.readOnly);
-        return accountInfo(this.api, this.account!);
+        return accountInfo(this.connection.api, (this.connection as AccountConnection).account!);
     }
 
     /**
@@ -141,10 +105,15 @@ export class zkVerifySession {
      * @throws Will throw an error if an account is already active in the session.
      */
     addAccount(seedPhrase: string): void {
-        if (this.account) {
+        if ('account' in this.connection) {
             throw new Error('An account is already active in this session.');
         }
-        this.account = setupAccount(seedPhrase);
+
+        this.connection = {
+            api: this.connection.api,
+            provider: this.connection.provider,
+            account: setupAccount(seedPhrase),
+        };
         this.readOnly = false;
     }
 
@@ -154,10 +123,13 @@ export class zkVerifySession {
      * @returns {void}
      */
     removeAccount(): void {
-        if (this.account) {
-            this.account = undefined;
+        if ('account' in this.connection) {
+            this.connection = {
+                api: this.connection.api,
+                provider: this.connection.provider,
+            };
+            this.readOnly = true;
         }
-        this.readOnly = true;
     }
 
     /**
@@ -166,7 +138,7 @@ export class zkVerifySession {
      * @param {string} [attestationId] - Optional attestation ID to filter events by and unsubscribe after.
      */
     subscribeToNewAttestations(callback: (data: AttestationEvent) => void, attestationId?: string): void {
-        this.newAttestationEmitter = subscribeToNewAttestations(this.api, callback, attestationId);
+        this.newAttestationEmitter = subscribeToNewAttestations(this.connection.api, callback, attestationId);
     }
 
     /**
@@ -184,6 +156,30 @@ export class zkVerifySession {
      * @returns {Promise<void>} A promise that resolves when the session is closed.
      */
     async close(): Promise<void> {
-        return closeSession(this.api, this.provider);
+        return closeSession(this.connection.api, this.connection.provider);
+    }
+
+    /**
+     * Getter for the API instance.
+     * @returns {ApiPromise} The Polkadot.js API instance.
+     */
+    get api(): ApiPromise {
+        return this.connection.api;
+    }
+
+    /**
+     * Getter for the provider.
+     * @returns {WsProvider} The WebSocket provider.
+     */
+    get provider(): WsProvider {
+        return this.connection.provider;
+    }
+
+    /**
+     * Getter for the account, if available.
+     * @returns {KeyringPair | undefined} The active account, or undefined if in read-only mode.
+     */
+    get account(): KeyringPair | undefined {
+        return 'account' in this.connection ? this.connection.account : undefined;
     }
 }

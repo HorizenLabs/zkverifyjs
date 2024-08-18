@@ -13,3 +13,37 @@ export const proofTypeToPallet: Record<string, string> = {
     zksync: "settlementZksyncPallet",
     risc0: "settlementRisc0Pallet",
 };
+
+export const zkvTypes = {
+    MerkleProof: {
+        root: 'H256',
+        proof: 'Vec<H256>',
+        number_of_leaves: 'u32',
+        leaf_index: 'u32',
+        leaf: 'H256',
+    },
+};
+
+export const zkvRpc = {
+    poe: {
+        proofPath: {
+            description: 'Get the Merkle root and path of a stored proof',
+            params: [
+                {
+                    name: 'attestation_id',
+                    type: 'u64',
+                },
+                {
+                    name: 'proof_hash',
+                    type: 'H256',
+                },
+                {
+                    name: 'at',
+                    type: 'BlockHash',
+                    isOptional: true,
+                },
+            ],
+            type: 'MerkleProof',
+        },
+    },
+};

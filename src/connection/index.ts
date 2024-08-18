@@ -2,6 +2,7 @@ import { ApiPromise, WsProvider } from '@polkadot/api';
 import { SupportedNetwork, defaultUrls } from '../config';
 import { EstablishedConnection } from './types';
 import { waitForNodeToSync } from '../utils/helpers';
+import { zkvTypes, zkvRpc } from '../config';
 
 /**
  * Establishes a connection to the zkVerify blockchain by initializing the API and provider.
@@ -31,7 +32,7 @@ export const establishConnection = async (host: SupportedNetwork, customWsUrl?: 
 
     try {
         const provider = new WsProvider(websocketUrl);
-        const api = await ApiPromise.create({ provider });
+        const api = await ApiPromise.create({ provider, types: zkvTypes, rpc: zkvRpc });
 
         await waitForNodeToSync(api);
 

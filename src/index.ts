@@ -1,3 +1,2 @@
 export { zkVerifySession } from './session';
-export { ProofData, ProofTransactionResult } from './types';
-export { verify, verifyAndWaitForAttestationEvent } from './verify';
+export { ProofData, ProofTransactionResult, MerkleProof, AccountInfo, AttestationEvent } from './types';

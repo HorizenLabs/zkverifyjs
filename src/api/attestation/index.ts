@@ -31,7 +31,6 @@ export function subscribeToNewAttestations(
                         id: Number(event.data[0]),
                         attestation: event.data[1].toString()
                     };
-                    console.log('NewAttestation event data:', attestationEvent);
                     callback(attestationEvent);
 
                     if (attestationId && currentAttestationId === attestationId) {
@@ -46,7 +45,6 @@ export function subscribeToNewAttestations(
 
     emitter.on('unsubscribe', () => {
         emitter.removeAllListeners();
-        console.log('Unsubscribed from NewAttestation events.');
     });
 
     return emitter;

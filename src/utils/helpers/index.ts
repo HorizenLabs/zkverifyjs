@@ -33,7 +33,7 @@ export function handleEvents(events: EventRecord[], callback: (data: any[]) => v
  * @emits attestationConfirmed - When the specified attestation is confirmed.
  * @emits error - If there is an error waiting for the attestation or if the attestation ID is null.
  */
-export async function waitForNewAttestation(
+export async function waitForNewAttestationEvent(
     api: ApiPromise,
     attestationId: number | undefined,
     emitter: EventEmitter

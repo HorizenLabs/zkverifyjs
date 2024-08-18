@@ -2,7 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import 'dotenv/config';
 import { ProofTransactionResult, zkVerifySession } from '../src';
-import {AttestationEvent} from "../src/types";
+import { AttestationEvent } from "../src";
 
 jest.setTimeout(180000);
 
@@ -23,12 +23,18 @@ describe('verify and subscribe - Fflonk', () => {
             });
         });
 
-        const { events, transactionResult } = await session.verify('fflonk', proof, publicSignals, vk);
+        const { events, transactionResult } = await session.verify(
+            { proofType: 'fflonk'},
+            proof,
+            publicSignals,
+            vk
+        );
 
         let includedInBlockEmitted = false;
         let finalizedEmitted = false;
 
         events.on('includedInBlock', (eventData) => {
+            console.log("includedInBlock Event Received: " + eventData);
             includedInBlockEmitted = true;
             expect(eventData).toBeDefined();
             expect(eventData.blockHash).not.toBeNull();
@@ -44,6 +50,7 @@ describe('verify and subscribe - Fflonk', () => {
         });
 
         events.on('finalized', (eventData) => {
+            console.log("finalized Event Received: " + eventData);
             finalizedEmitted = true;
             expect(eventData).toBeDefined();
             expect(eventData.blockHash).not.toBeNull();

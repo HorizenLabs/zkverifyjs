@@ -88,7 +88,7 @@ describe('zkVerifySession class', () => {
         session = await zkVerifySession.start({ host: 'testnet' });
         expect(session.readOnly).toBe(true);
         await expect(
-            session.verify('proofType', 'proofData')
+            session.verify({ proofType: 'proofType'}, 'proofData')
         ).rejects.toThrow('This action requires an active account. The session is currently in read-only mode because no account is associated with it. Please provide an account at session start, or add one to the current session using `addAccount`.');
     });
 
@@ -97,7 +97,7 @@ describe('zkVerifySession class', () => {
         expect(session.readOnly).toBe(false);
 
         session.verify = jest.fn(mockVerify);
-        const { events, transactionResult } = await session.verify('proofType', 'proofData');
+        const { events, transactionResult } = await session.verify({ proofType: 'proofType'}, 'proofData');
 
         expect(events).toBeDefined();
         expect(transactionResult).toBeDefined();
@@ -129,29 +129,20 @@ describe('zkVerifySession class', () => {
         });
     });
 
-    it('should handle multiple verify calls', async () => {
+    it('should handle multiple verify calls concurrently', async () => {
         session = await zkVerifySession.start({ host: 'testnet', seedPhrase: process.env.SEED_PHRASE });
         expect(session.readOnly).toBe(false);
 
         session.verify = jest.fn(mockVerify);
 
-        const result1 = await session.verify('proofType1', 'proofData1');
-        const result2 = await session.verify('proofType2', 'proofData2');
+        const [result1, result2] = await Promise.all([
+            session.verify({ proofType: 'proofType1' }, 'proofData1'),
+            session.verify({ proofType: 'proofType2' }, 'proofData2')
+        ]);
 
         expect(result1.events).toBeDefined();
         expect(result2.events).toBeDefined();
         expect(result1.transactionResult).toBeDefined();
         expect(result2.transactionResult).toBeDefined();
-    });
-
-    it('should properly handle verifyAndWaitForAttestationEvent', async () => {
-        session = await zkVerifySession.start({ host: 'testnet', seedPhrase: process.env.SEED_PHRASE });
-        expect(session.readOnly).toBe(false);
-
-        session.verifyAndWaitForAttestationEvent = jest.fn(mockVerify);
-
-        const { events, transactionResult } = await session.verifyAndWaitForAttestationEvent('proofType', 'proofData');
-        expect(events).toBeDefined();
-        expect(transactionResult).toBeDefined();
     });
 });

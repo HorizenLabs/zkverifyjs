@@ -5,24 +5,22 @@ import { AccountConnection } from '../connection/types';
 import { EventEmitter } from 'events';
 import { getProofProcessor } from '../utils/helpers';
 import { ProofTransactionResult } from "../types";
-import {ApiPromise, WsProvider} from "@polkadot/api";
-import {KeyringPair} from "@polkadot/keyring/types";
+import { VerifyOptions } from "../session/types";
 
-async function executeProofTransaction(
+export async function verify(
     connection: AccountConnection,
-    proofType: string,
+    options: VerifyOptions,
     emitter: EventEmitter,
-    waitForAttestation: boolean,
     ...proofData: any[]
 ): Promise<ProofTransactionResult> {
-    if (!proofType) {
+    if (!options.proofType) {
         throw new Error('Proof type is required.');
     }
 
-    const processor = await getProofProcessor(proofType);
+    const processor = await getProofProcessor(options.proofType);
 
     if (!processor) {
-        throw new Error(`Unsupported proof type: ${proofType}`);
+        throw new Error(`Unsupported proof type: ${options.proofType}`);
     }
 
     const { formattedProof, formattedVk, formattedPubs } = processor.processProofData(...proofData);
@@ -36,33 +34,15 @@ async function executeProofTransaction(
     const { api, account } = connection;
 
     try {
-        const pallet = proofTypeToPallet[proofType.trim()];
+        const pallet = proofTypeToPallet[options.proofType.trim()];
         if (!pallet) {
-            throw new Error(`Unsupported proof type: ${proofType}`);
+            throw new Error(`Unsupported proof type: ${options.proofType}`);
         }
 
         const transaction = submitProof(api, pallet, proofParams);
 
-        return await handleTransaction(api, transaction, account, proofType, emitter, waitForAttestation);
+        return await handleTransaction(api, transaction, account, emitter, options)
     } catch (error) {
         throw new Error(`Failed to send proof: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
-}
-
-export async function verify(
-    connection: { provider: WsProvider; api: ApiPromise; account: KeyringPair },
-    proofType: string,
-    emitter: EventEmitter,
-    ...proofData: any[]
-): Promise<ProofTransactionResult> {
-    return executeProofTransaction(connection, proofType, emitter, false, ...proofData);
-}
-
-export async function verifyAndWaitForAttestationEvent(
-    connection: AccountConnection,
-    proofType: string,
-    emitter: EventEmitter,
-    ...proofData: any[]
-): Promise<ProofTransactionResult> {
-    return executeProofTransaction(connection, proofType, emitter, true, ...proofData);
 }

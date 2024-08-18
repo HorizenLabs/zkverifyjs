@@ -5,3 +5,9 @@ export interface zkVerifySessionOptions {
     seedPhrase?: string;
     customWsUrl?: string;
 }
+
+export interface VerifyOptions {
+    proofType: string;
+    nonce?: number;
+    waitForNewAttestationEvent?: boolean;
+}
