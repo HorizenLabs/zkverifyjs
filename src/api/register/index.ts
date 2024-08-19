@@ -21,9 +21,11 @@ export async function registerVk(
     if (!processor) {
         throw new Error(`Unsupported proof type: ${proofType}`);
     }
+    if (verificationKey == null || verificationKey === '') {
+        throw new Error('verificationKey cannot be null, undefined, or an empty string');
+    }
 
-    const { formattedVk } = processor.formatVk(verificationKey);
-
+    const formattedVk = processor.formatVk(verificationKey);
     const pallet = proofTypeToPallet[proofType.trim()];
     if (!pallet) {
         throw new Error(`Unsupported proof type: ${proofType}`);

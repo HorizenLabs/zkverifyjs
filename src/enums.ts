@@ -3,13 +3,24 @@ export enum TransactionType {
     VKRegistration = 2,
 }
 
+export enum TransactionStatus {
+    Broadcast = 'broadcast',
+    Dropped = 'dropped',
+    Finalized = 'finalized',
+    InBlock = 'inBlock',
+    Invalid = 'invalid',
+    Pending = 'pending',
+    Retracted = 'retracted',
+    Usurped = 'usurped'
+}
+
 export enum ZkVerifyEvents {
-    Unsubscribe = 'unsubscribe',
-    IncludedInBlock = 'includedInBlock',
+    AttestationBeforeExpected = 'attestationBeforeExpected',
+    AttestationConfirmed = 'attestationConfirmed',
+    AttestationMissed = 'attestationMissed',
+    Broadcast = 'broadcast',
     ErrorEvent = 'error',
     Finalized = 'finalized',
-    Broadcast = 'broadcast',
-    AttestationConfirmed = 'attestationConfirmed',
-    AttestationBeforeExpected = 'attestationBeforeExpected',
-    AttestationMissed = 'attestationMissed',
+    IncludedInBlock = 'includedInBlock',
+    Unsubscribe = 'unsubscribe'
 }

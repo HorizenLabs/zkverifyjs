@@ -46,6 +46,10 @@ describe('verify and getProofDetails - Fflonk', () => {
         });
 
         const result: VerifyTransactionInfo = await transactionResult;
+        console.log(`Final Transaction Result: ${JSON.stringify(result)}`);
+        expect(result.attestationConfirmed).toBe(true);
+        expect(result.attestationEvent).toBeDefined();
+        expect(result.attestationId).toBeGreaterThan(0);
 
         expect(includedInBlockEmitted).toBe(true);
         expect(finalizedEmitted).toBe(true);

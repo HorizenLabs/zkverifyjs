@@ -4,6 +4,7 @@ import { SubmittableResult } from '@polkadot/api';
 import { TransactionInfo, VerifyTransactionInfo, VKRegistrationTransactionInfo } from "../../../types";
 import { decodeDispatchError } from "../errors";
 import { TransactionType, ZkVerifyEvents } from '../../../enums';
+import {proofTypeToPallet} from "../../../config";
 
 export const handleTransactionEvents = (
     api: ApiPromise,
@@ -57,7 +58,7 @@ export const handleTransactionEvents = (
             setAttestationId(attestationId);
         }
 
-        if (transactionType === TransactionType.VKRegistration && event.method === 'StatementHash') {
+        if (transactionType === TransactionType.VKRegistration && event.section == proofTypeToPallet[transactionInfo.proofType] && event.method == "VkRegistered") {
             statementHash = event.data[0].toString();
         }
     });

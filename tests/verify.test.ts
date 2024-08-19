@@ -4,7 +4,7 @@ import 'dotenv/config';
 import { zkVerifySession } from '../src';
 import { AttestationEvent } from "../src";
 import { VerifyTransactionInfo } from "../src/types";
-import { ZkVerifyEvents } from "../src/enums";
+import {TransactionStatus, ZkVerifyEvents} from "../src/enums";
 
 jest.setTimeout(180000);
 
@@ -64,7 +64,7 @@ describe('verify and subscribe - Fflonk', () => {
             expect(eventData.proofType).toBe('fflonk');
             expect(eventData.attestationId).not.toBeNull();
             expect(eventData.leafDigest).not.toBeNull();
-            expect(eventData.status).toBe('inBlock');
+            expect(eventData.status).toBe(TransactionStatus.InBlock);
             expect(eventData.txHash).toBeDefined();
             expect(eventData.extrinsicIndex).toBeDefined();
             expect(eventData.feeInfo).toBeDefined();
@@ -80,7 +80,7 @@ describe('verify and subscribe - Fflonk', () => {
             expect(eventData.proofType).toBe('fflonk');
             expect(eventData.attestationId).not.toBeNull();
             expect(eventData.leafDigest).not.toBeNull();
-            expect(eventData.status).toBe('finalized');
+            expect(eventData.status).toBe(TransactionStatus.Finalized);
             expect(eventData.txHash).toBeDefined();
             expect(eventData.extrinsicIndex).toBeDefined();
             expect(eventData.feeInfo).toBeDefined();
@@ -97,7 +97,7 @@ describe('verify and subscribe - Fflonk', () => {
         expect(transactionInfo.proofType).toBe('fflonk');
         expect(transactionInfo.attestationId).not.toBeNull();
         expect(transactionInfo.leafDigest).not.toBeNull();
-        expect(transactionInfo.status).toBe('finalized');
+        expect(transactionInfo.status).toBe(TransactionStatus.Finalized);
         expect(transactionInfo.txHash).toBeDefined();
         expect(transactionInfo.extrinsicIndex).toBeDefined();
         expect(transactionInfo.feeInfo).toBeDefined();

@@ -1,3 +1,5 @@
+import {TransactionStatus} from "./enums";
+
 export interface ProofInner {
     a: string;
     b: string;
@@ -36,10 +38,9 @@ export interface ProofTransactionResult {
 }
 
 export interface TransactionInfo {
-    attestationId: number | undefined;
     blockHash: string;
     proofType: string;
-    status: 'inBlock' | 'finalized';
+    status: TransactionStatus;
     txHash?: string;
     extrinsicIndex?: number;
     feeInfo?: {
@@ -54,6 +55,18 @@ export interface TransactionInfo {
     };
     txClass?: string;
 }
+
+export interface VerifyTransactionInfo extends TransactionInfo {
+    attestationId: number | undefined;
+    leafDigest: string | null;
+    attestationConfirmed: boolean;
+    attestationEvent?: AttestationEvent;
+}
+
+export interface VKRegistrationTransactionInfo extends TransactionInfo {
+    statementHash?: string;
+}
+
 
 export interface VerifyTransactionInfo extends TransactionInfo {
     leafDigest: string | null;

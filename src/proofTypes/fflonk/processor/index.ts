@@ -1,5 +1,9 @@
-import { FflonkVerificationKey, FflonkProof, FflonkPublicSignals } from "../types";
-import { formatProof as formatFflonkProof, formatPubs as formatFflonkPubs, formatVk as formatFflonkVk } from "../formatter";
+import { FflonkProof, FflonkPublicSignals, FflonkVerificationKey } from "../types";
+import {
+    formatProof as formatFflonkProof,
+    formatPubs as formatFflonkPubs,
+    formatVk as formatFflonkVk
+} from "../formatter";
 import { ProofProcessor } from "../../../types";
 
 class FflonkProcessor implements ProofProcessor {
