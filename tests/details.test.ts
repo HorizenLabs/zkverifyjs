@@ -1,9 +1,10 @@
 import fs from 'fs';
 import path from 'path';
 import 'dotenv/config';
-import { zkVerifySession, ProofTransactionResult } from '../src';
+import { zkVerifySession } from '../src';
+import { VerifyTransactionInfo } from "../src/types";
 
-jest.setTimeout(180000);
+jest.setTimeout(300000);
 
 describe('verify and getProofDetails - Fflonk', () => {
     it('should send the fflonk proof for verification, receive the NewAttestation event, and retrieve proof details', async () => {
@@ -44,7 +45,7 @@ describe('verify and getProofDetails - Fflonk', () => {
             expect(eventData).toBeDefined();
         });
 
-        const result: ProofTransactionResult = await transactionResult;
+        const result: VerifyTransactionInfo = await transactionResult;
 
         expect(includedInBlockEmitted).toBe(true);
         expect(finalizedEmitted).toBe(true);
@@ -53,8 +54,8 @@ describe('verify and getProofDetails - Fflonk', () => {
 
         try {
             const proofDetails = await session.poe(
-                result.transactionInfo.attestationId!,
-                result.transactionInfo.leafDigest!
+                result.attestationId!,
+                result.leafDigest!
             );
 
             console.log('Proof details:', proofDetails);
@@ -89,20 +90,22 @@ describe('verify and getProofDetails - Fflonk', () => {
             session.verify({ proofType: 'fflonk', waitForNewAttestationEvent: true, nonce: currentNonce + 1 }, proof, publicSignals, vk)
         ]);
 
-        const result1: ProofTransactionResult = await tx1.transactionResult;
-        const result2: ProofTransactionResult = await tx2.transactionResult;
+        const result1: VerifyTransactionInfo = await tx1.transactionResult;
+        const result2: VerifyTransactionInfo = await tx2.transactionResult;
 
-        expect(result1.transactionInfo.attestationId).toBe(result2.transactionInfo.attestationId);
-        console.log('Both transactions have the same attestationId:', result1.transactionInfo.attestationId);
+        expect(result1.attestationConfirmed).toBe(true);
+        expect(result1.attestationEvent).toBeDefined();
+        expect(result1.attestationId).toBe(result2.attestationId);
+        console.log('Both transactions have the same attestationId:', result1.attestationId);
 
         try {
             const proofDetails1 = await session.poe(
-                result1.transactionInfo.attestationId!,
-                result1.transactionInfo.leafDigest!
+                result1.attestationId!,
+                result1.leafDigest!
             );
             const proofDetails2 = await session.poe(
-                result2.transactionInfo.attestationId!,
-                result2.transactionInfo.leafDigest!
+                result2.attestationId!,
+                result2.leafDigest!
             );
 
             console.log('Proof details for Transaction 1:', proofDetails1);

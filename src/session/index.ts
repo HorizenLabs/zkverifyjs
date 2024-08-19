@@ -6,13 +6,20 @@ import { startSession } from '../api/start';
 import { closeSession } from '../api/close';
 import { subscribeToNewAttestations, unsubscribeFromNewAttestations } from '../api/attestation';
 import { getProofDetails } from '../api/poe';
-import { AccountInfo, AttestationEvent, MerkleProof, ProofTransactionResult } from "../types";
+import {
+    AccountInfo,
+    AttestationEvent,
+    MerkleProof,
+    VerifyTransactionInfo,
+    VKRegistrationTransactionInfo
+} from "../types";
 import { EventEmitter } from "events";
 import { checkReadOnly } from '../utils/helpers';
 import { setupAccount } from '../account';
 import { AccountConnection, EstablishedConnection } from "../connection/types";
 import { ApiPromise, WsProvider } from "@polkadot/api";
 import { KeyringPair } from "@polkadot/keyring/types";
+import { registerVk } from "../api/register";
 
 /**
  * zkVerifySession class provides an interface to zkVerify, direct access to the Polkadot.js API.
@@ -70,10 +77,15 @@ export class zkVerifySession {
      */
     async verify(options: VerifyOptions, ...proofData: any[]): Promise<{
         events: EventEmitter;
-        transactionResult: Promise<ProofTransactionResult>;
+        transactionResult: Promise<VerifyTransactionInfo>;
     }> {
         checkReadOnly(this.readOnly);
         return verifyProof(this.connection as AccountConnection, options, ...proofData);
+    }
+
+    async registerVerificationKey(options: VerifyOptions, verificationKey: any): Promise<{ events: EventEmitter; transactionResult: Promise<VKRegistrationTransactionInfo>; }> {
+        checkReadOnly(this.readOnly);
+        return registerVk(this.connection as AccountConnection, options, verificationKey);
     }
 
     /**
@@ -137,17 +149,18 @@ export class zkVerifySession {
      * @param {Function} callback - The function to call with the event data when a NewAttestation event occurs.
      * @param {string} [attestationId] - Optional attestation ID to filter events by and unsubscribe after.
      */
-    subscribeToNewAttestations(callback: (data: AttestationEvent) => void, attestationId?: string): void {
+    subscribeToNewAttestations(callback: (data: AttestationEvent) => void, attestationId?: number): EventEmitter {
         this.newAttestationEmitter = subscribeToNewAttestations(this.connection.api, callback, attestationId);
+        return this.newAttestationEmitter;
     }
 
     /**
      * Unsubscribes from NewAttestation events.
+     * Emits the 'unsubscribe' event which causes removeAllListeners() on the newAttestationEmitter
      */
     unsubscribe(): void {
         if (this.newAttestationEmitter) {
             unsubscribeFromNewAttestations(this.newAttestationEmitter);
-            this.newAttestationEmitter = undefined;
         }
     }
 

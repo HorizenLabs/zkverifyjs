@@ -1,6 +1,7 @@
 import { ApiPromise } from '@polkadot/api';
 import { EventEmitter } from 'events';
 import { AttestationEvent } from '../../types';
+import { ZkVerifyEvents } from "../../enums";
 
 /**
  * Subscribes to NewAttestation events on the chain and triggers the provided callback as they occur.
@@ -9,13 +10,13 @@ import { AttestationEvent } from '../../types';
  *
  * @param {ApiPromise} api - The Polkadot.js API instance.
  * @param {Function} callback - The callback function to call with the event data when a NewAttestation event occurs.
- * @param {string} [attestationId] - Optional attestation ID to filter events by and subsequently unsubscribe.
+ * @param {number} [attestationId] - Optional attestation ID to filter events by and subsequently unsubscribe.
  * @returns {EventEmitter} An EventEmitter that handles the subscription.
  */
 export function subscribeToNewAttestations(
     api: ApiPromise,
     callback: (data: AttestationEvent) => void,
-    attestationId?: string
+    attestationId?: number
 ): EventEmitter {
     const emitter = new EventEmitter();
 
@@ -24,26 +25,53 @@ export function subscribeToNewAttestations(
             const { event } = record;
 
             if (event.section === "poe" && event.method === "NewAttestation") {
-                const currentAttestationId = event.data[0].toString();
+                const currentAttestationId = Number(event.data[0]);
 
-                if (!attestationId || currentAttestationId === attestationId) {
+                if (attestationId) {
+                    if (currentAttestationId > attestationId) {
+                        emitter.emit(ZkVerifyEvents.AttestationMissed, {
+                            expectedId: attestationId,
+                            receivedId: currentAttestationId,
+                            event: record.event
+                        });
+                        emitter.emit(ZkVerifyEvents.Unsubscribe);
+                        emitter.removeAllListeners();
+                        return;
+                    }
+
+                    if (currentAttestationId < attestationId) {
+                        emitter.emit(ZkVerifyEvents.AttestationBeforeExpected, {
+                            expectedId: attestationId,
+                            receivedId: currentAttestationId,
+                            event: record.event
+                        });
+                        return;
+                    }
+
+                    if (currentAttestationId === attestationId) {
+                        const attestationEvent: AttestationEvent = {
+                            id: currentAttestationId,
+                            attestation: event.data[1].toString(),
+                        };
+                        callback(attestationEvent);
+                        emitter.emit(ZkVerifyEvents.AttestationConfirmed, attestationEvent);
+                        emitter.emit(ZkVerifyEvents.Unsubscribe);
+                        emitter.removeAllListeners();
+                    }
+                } else {
                     const attestationEvent: AttestationEvent = {
-                        id: Number(event.data[0]),
-                        attestation: event.data[1].toString()
+                        id: currentAttestationId,
+                        attestation: event.data[1].toString(),
                     };
                     callback(attestationEvent);
-
-                    if (attestationId && currentAttestationId === attestationId) {
-                        emitter.emit('unsubscribe');
-                    }
                 }
             }
         });
     }).catch(error => {
-        emitter.emit('error', error);
+        emitter.emit(ZkVerifyEvents.ErrorEvent, error);
     });
 
-    emitter.on('unsubscribe', () => {
+    emitter.on(ZkVerifyEvents.Unsubscribe, () => {
         emitter.removeAllListeners();
     });
 
@@ -57,5 +85,5 @@ export function subscribeToNewAttestations(
  * @param {EventEmitter} emitter - The EventEmitter to unsubscribe.
  */
 export function unsubscribeFromNewAttestations(emitter: EventEmitter): void {
-    emitter.emit('unsubscribe');
+    emitter.emit(ZkVerifyEvents.Unsubscribe);
 }

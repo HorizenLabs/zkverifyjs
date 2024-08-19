@@ -1,8 +1,10 @@
 import fs from 'fs';
 import path from 'path';
 import 'dotenv/config';
-import { ProofTransactionResult, zkVerifySession } from '../src';
+import { zkVerifySession } from '../src';
 import { AttestationEvent } from "../src";
+import { VerifyTransactionInfo } from "../src/types";
+import { ZkVerifyEvents } from "../src/enums";
 
 jest.setTimeout(180000);
 
@@ -14,27 +16,48 @@ describe('verify and subscribe - Fflonk', () => {
 
         const session = await zkVerifySession.start({ host: 'testnet', seedPhrase: process.env.SEED_PHRASE });
 
-        const newAttestationPromise = new Promise<void>((resolve, reject) => {
-            session.subscribeToNewAttestations((data: AttestationEvent) => {
-                console.log('Received NewAttestation:', data.id, data.attestation);
-                expect(data.id).toBeDefined();
-                expect(data.attestation).toBeDefined();
-                resolve();
-            });
-        });
+        let includedInBlockEmitted = false;
+        let finalizedEmitted = false;
+        let attestationConfirmedEmitted = false;
+        let attestationBeforeExpectedEmitted = false;
+        let attestationMissedEmitted = false;
+        let errorEventEmitted = false;
 
         const { events, transactionResult } = await session.verify(
-            { proofType: 'fflonk'},
+            { proofType: 'fflonk' },
             proof,
             publicSignals,
             vk
         );
 
-        let includedInBlockEmitted = false;
-        let finalizedEmitted = false;
+        const newAttestationPromise = new Promise<void>((resolve, reject) => {
+            const attestationEmitter = session.subscribeToNewAttestations((data: AttestationEvent) => {
+                console.log('NewAttestation Event Received:', data.id, data.attestation);
+                expect(data.id).toBeDefined();
+                expect(data.attestation).toBeDefined();
+                attestationConfirmedEmitted = true;
+                resolve();
+            });
 
-        events.on('includedInBlock', (eventData) => {
-            console.log("includedInBlock Event Received: " + eventData);
+            attestationEmitter
+                .on(ZkVerifyEvents.AttestationBeforeExpected, (eventData) => {
+                    console.log("Attestation Before Expected Event Received: ", eventData);
+                    attestationBeforeExpectedEmitted = true;
+                })
+                .on(ZkVerifyEvents.AttestationMissed, (eventData) => {
+                    console.error("Attestation Missed Event Received: ", eventData);
+                    attestationMissedEmitted = true;
+                    reject(new Error(`Missed attestation ID: ${eventData.expectedId}, received: ${eventData.receivedId}`));
+                })
+                .on(ZkVerifyEvents.ErrorEvent, (error) => {
+                    console.error("Error Event Received: ", error);
+                    errorEventEmitted = true;
+                    reject(error);
+                });
+        });
+
+        events.on(ZkVerifyEvents.IncludedInBlock, (eventData) => {
+            console.log("includedInBlock Event Received: ", eventData);
             includedInBlockEmitted = true;
             expect(eventData).toBeDefined();
             expect(eventData.blockHash).not.toBeNull();
@@ -49,8 +72,8 @@ describe('verify and subscribe - Fflonk', () => {
             expect(eventData.txClass).toBeDefined();
         });
 
-        events.on('finalized', (eventData) => {
-            console.log("finalized Event Received: " + eventData);
+        events.on(ZkVerifyEvents.Finalized, (eventData) => {
+            console.log("finalized Event Received: ", eventData);
             finalizedEmitted = true;
             expect(eventData).toBeDefined();
             expect(eventData.blockHash).not.toBeNull();
@@ -65,12 +88,10 @@ describe('verify and subscribe - Fflonk', () => {
             expect(eventData.txClass).toBeDefined();
         });
 
-        const result: ProofTransactionResult = await transactionResult;
-        console.log('Final transaction result:', result);
-        expect(result).toBeDefined();
-        expect(result.finalized).toBe(true);
-        expect(result.attestationConfirmed).toBeDefined();
-        const { transactionInfo } = result;
+        const transactionInfo: VerifyTransactionInfo = await transactionResult;
+        await newAttestationPromise;
+
+        console.log('Final transaction result:', transactionInfo);
         expect(transactionInfo).toBeDefined();
         expect(transactionInfo.blockHash).not.toBeNull();
         expect(transactionInfo.proofType).toBe('fflonk');
@@ -82,11 +103,14 @@ describe('verify and subscribe - Fflonk', () => {
         expect(transactionInfo.feeInfo).toBeDefined();
         expect(transactionInfo.weightInfo).toBeDefined();
         expect(transactionInfo.txClass).toBeDefined();
+        expect(transactionInfo.attestationConfirmed).toBe(false);
 
         expect(includedInBlockEmitted).toBe(true);
         expect(finalizedEmitted).toBe(true);
-
-        await newAttestationPromise;
+        expect(attestationConfirmedEmitted).toBe(true);
+        expect(attestationBeforeExpectedEmitted).toBe(false);
+        expect(attestationMissedEmitted).toBe(false);
+        expect(errorEventEmitted).toBe(false);
 
         await session.close();
     });

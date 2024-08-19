@@ -36,10 +36,9 @@ export interface ProofTransactionResult {
 }
 
 export interface TransactionInfo {
+    attestationId: number | undefined;
     blockHash: string;
     proofType: string;
-    attestationId: number | null;
-    leafDigest: string | null;
     status: 'inBlock' | 'finalized';
     txHash?: string;
     extrinsicIndex?: number;
@@ -54,7 +53,16 @@ export interface TransactionInfo {
         proofSize: string;
     };
     txClass?: string;
+}
+
+export interface VerifyTransactionInfo extends TransactionInfo {
+    leafDigest: string | null;
+    attestationConfirmed: boolean;
     attestationEvent?: AttestationEvent;
+}
+
+export interface VKRegistrationTransactionInfo extends TransactionInfo {
+    statementHash?: string;
 }
 
 export interface AccountInfo {

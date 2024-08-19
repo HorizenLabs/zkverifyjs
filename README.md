@@ -19,6 +19,8 @@ The `zkverifyjs` package is a TypeScript library designed to facilitate sending 
     - [zkVerifySession.accountInfo](#zkverifysessionaccountinfo)
     - [zkVerifySession.addAccount](#zkverifysessionaddaccount)
     - [zkVerifySession.removeAccount](#zkverifysessionremoveaccount)
+    - [zkVerifySession.subscribeToNewAttestations](#zkverifysessionsubscribetonewattestations)
+    - [zkVerifySession.unsubscribe](#zkverifysessionunsubscribe)
     - [zkVerifySession.api](#zkverifysessionapi)
     - [zkVerifySession.provider](#zkverifysessionprovider)
     - [zkVerifySession.account](#zkverifysessionaccount)
@@ -215,6 +217,21 @@ session.addAccount(seedPhrase);
 session.removeAccount();
 ```
 - Removes the active account from the current session, does nothing if no account is currently active.
+
+### `zkVerifySession.subscribeToNewAttestations`
+
+```typescript
+session.subscribeToNewAttestations(callback, attestationId);
+```
+- `callback`: A Function to be called whenever a NewAttestation event occurs. The function receives an AttestationEvent object as its argument.
+- `attestationId`:  (Optional) A string representing the attestation ID to filter events by. If provided, the subscription will automatically unsubscribe after receiving the specified attestation event.
+
+### `zkVerifySession.unsubscribe`
+
+```typescript
+session.unsubscribe();
+```
+- This method unsubscribes from any active NewAttestation event subscriptions. It is used to stop listening for NewAttestation events when they are no longer needed.
 
 ### `zkVerifySession.api`
 

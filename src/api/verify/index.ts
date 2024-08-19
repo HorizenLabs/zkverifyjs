@@ -1,10 +1,9 @@
-import { ApiPromise, WsProvider } from '@polkadot/api';
-import { KeyringPair } from '@polkadot/keyring/types';
 import { EventEmitter } from 'events';
-import { ProofTransactionResult } from '../../types';
+import { VerifyTransactionInfo } from '../../types';
 import { verify } from '../../verify';
 import { VerifyOptions } from "../../session/types";
 import { AccountConnection } from "../../connection/types";
+import { ZkVerifyEvents } from "../../enums";
 
 export async function verifyProof(
     connection: AccountConnection,
@@ -12,11 +11,11 @@ export async function verifyProof(
     ...proofData: any[]
 ): Promise<{
     events: EventEmitter;
-    transactionResult: Promise<ProofTransactionResult>;
+    transactionResult: Promise<VerifyTransactionInfo>;
 }> {
     const events = new EventEmitter();
 
-    const transactionResult = new Promise<ProofTransactionResult>((resolve, reject) => {
+    const transactionResult = new Promise<VerifyTransactionInfo>((resolve, reject) => {
         verify(
             connection,
             options,
@@ -24,7 +23,7 @@ export async function verifyProof(
             ...proofData
         ).then(resolve)
             .catch((error) => {
-                events.emit('error', error);
+                events.emit(ZkVerifyEvents.ErrorEvent, error);
                 reject(error);
             });
     });

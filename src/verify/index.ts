@@ -1,18 +1,18 @@
-import { submitProof } from '../utils/helpers';
+import { getProofProcessor, submitProofExtrinsic } from '../utils/helpers';
 import { handleTransaction } from '../utils/transactions';
 import { proofTypeToPallet } from '../config';
 import { AccountConnection } from '../connection/types';
 import { EventEmitter } from 'events';
-import { getProofProcessor } from '../utils/helpers';
-import { ProofTransactionResult } from "../types";
+import { VerifyTransactionInfo } from "../types";
 import { VerifyOptions } from "../session/types";
+import { TransactionType } from "../enums";
 
 export async function verify(
     connection: AccountConnection,
     options: VerifyOptions,
     emitter: EventEmitter,
     ...proofData: any[]
-): Promise<ProofTransactionResult> {
+): Promise<VerifyTransactionInfo> {
     if (!options.proofType) {
         throw new Error('Proof type is required.');
     }
@@ -39,9 +39,9 @@ export async function verify(
             throw new Error(`Unsupported proof type: ${options.proofType}`);
         }
 
-        const transaction = submitProof(api, pallet, proofParams);
+        const transaction = submitProofExtrinsic(api, pallet, proofParams);
 
-        return await handleTransaction(api, transaction, account, emitter, options)
+        return await handleTransaction(api, transaction, account, emitter, options, TransactionType.Verify) as VerifyTransactionInfo
     } catch (error) {
         throw new Error(`Failed to send proof: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }

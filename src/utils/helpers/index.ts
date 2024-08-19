@@ -1,10 +1,11 @@
 import 'dotenv/config';
-import { ApiPromise, WsProvider } from '@polkadot/api';
+import { ApiPromise } from '@polkadot/api';
 import { EventRecord } from '@polkadot/types/interfaces';
 import { SubmittableExtrinsic } from '@polkadot/api/types';
 import path from 'path';
 import { EventEmitter } from "events";
-import {AttestationEvent} from "../../types";
+import { AttestationEvent } from "../../types";
+import { ZkVerifyEvents } from "../../enums";
 
 /**
  * Handles events emitted by the zkVerify blockchain.
@@ -40,7 +41,7 @@ export async function waitForNewAttestationEvent(
 ): Promise<AttestationEvent> {
     if (!attestationId) {
         const error = new Error('No attestation ID found.');
-        emitter.emit('error', error);
+        emitter.emit(ZkVerifyEvents.ErrorEvent, error);
         throw error;
     }
 
@@ -61,19 +62,32 @@ export async function waitForNewAttestationEvent(
                                 attestation: event.data[1].toString(),
                             };
 
-                            emitter.emit('attestationConfirmed', attestationEvent);
+                            emitter.emit(ZkVerifyEvents.AttestationConfirmed, attestationEvent);
                             resolve(attestationEvent);
+                        } else if (currentAttestationId < attestationId) {
+                            emitter.emit(ZkVerifyEvents.AttestationBeforeExpected, {
+                                expectedId: attestationId,
+                                receivedId: currentAttestationId,
+                                event: record.event
+                            });
+                        } else if (currentAttestationId > attestationId) {
+                            emitter.emit(ZkVerifyEvents.AttestationMissed, {
+                                expectedId: attestationId,
+                                receivedId: currentAttestationId,
+                                event: record.event
+                            });
+                            unsubscribe();
+                            reject(new Error(`Missed the attestation ID ${attestationId}. Received a later attestation ID ${currentAttestationId}.`));
                         }
                     }
                 });
             }) as unknown as () => void;
         } catch (error) {
-            emitter.emit('error', error instanceof Error ? error : new Error('Attestation waiting failed with an unknown error.'));
+            emitter.emit(ZkVerifyEvents.ErrorEvent, error instanceof Error ? error : new Error('Attestation waiting failed with an unknown error.'));
             reject(error);
         }
     });
 }
-
 
 /**
  * Waits for the zkVerify node to sync.
@@ -101,7 +115,7 @@ export async function waitForNodeToSync(api: ApiPromise): Promise<void> {
  * @returns {SubmittableExtrinsic<'promise'>} The created SubmittableExtrinsic.
  * @throws {Error} - Throws an error with detailed information if extrinsic creation fails.
  */
-export const submitProof = (api: ApiPromise, pallet: string, params: any[]): SubmittableExtrinsic<'promise'> => {
+export const submitProofExtrinsic = (api: ApiPromise, pallet: string, params: any[]): SubmittableExtrinsic<'promise'> => {
     try {
         return api.tx[pallet].submitProof(...params);
     } catch (error: any) {

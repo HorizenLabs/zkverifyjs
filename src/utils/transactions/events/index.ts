@@ -1,16 +1,22 @@
 import { ApiPromise } from '@polkadot/api';
 import { EventEmitter } from 'events';
 import { SubmittableResult } from '@polkadot/api';
-import { TransactionInfo } from "../../../types";
+import { TransactionInfo, VerifyTransactionInfo, VKRegistrationTransactionInfo } from "../../../types";
 import { decodeDispatchError } from "../errors";
+import { TransactionType, ZkVerifyEvents } from '../../../enums';
 
 export const handleTransactionEvents = (
     api: ApiPromise,
     events: SubmittableResult['events'],
     transactionInfo: TransactionInfo,
     emitter: EventEmitter,
-    setAttestationId: (id: number | null) => void
-): TransactionInfo => {
+    setAttestationId: (id: number | undefined) => void,
+    transactionType: TransactionType,
+): VerifyTransactionInfo | VKRegistrationTransactionInfo => {
+
+    let statementHash: string | undefined;
+    let attestationId: number | undefined = undefined;
+    let leafDigest: string | null = null;
 
     events.forEach(({ event, phase }) => {
         if (phase.isApplyExtrinsic) {
@@ -42,15 +48,31 @@ export const handleTransactionEvents = (
         if (event.section === 'system' && event.method === 'ExtrinsicFailed') {
             const [dispatchError] = event.data;
             const decodedError = decodeDispatchError(api, dispatchError);
-            emitter.emit('error', new Error(`Transaction failed with error: ${decodedError}`));
+            emitter.emit(ZkVerifyEvents.ErrorEvent, new Error(`Transaction failed with error: ${decodedError}`));
         }
 
-        if (event.section === 'poe' && event.method === 'NewElement') {
-            transactionInfo.attestationId = Number(event.data[1]);
-            transactionInfo.leafDigest = event.data[0].toString();
-            setAttestationId(transactionInfo.attestationId);
+        if (transactionType === TransactionType.Verify && event.section === 'poe' && event.method === 'NewElement') {
+            attestationId = Number(event.data[1]);
+            leafDigest = event.data[0].toString();
+            setAttestationId(attestationId);
+        }
+
+        if (transactionType === TransactionType.VKRegistration && event.method === 'StatementHash') {
+            statementHash = event.data[0].toString();
         }
     });
 
-    return transactionInfo;
+    if (transactionType === TransactionType.Verify) {
+        return {
+            ...transactionInfo,
+            attestationId,
+            leafDigest,
+            attestationConfirmed: false
+        } as VerifyTransactionInfo;
+    }
+
+    return {
+        ...transactionInfo,
+        statementHash
+    } as VKRegistrationTransactionInfo;
 };

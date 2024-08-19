@@ -2,11 +2,12 @@ import { ApiPromise, SubmittableResult } from '@polkadot/api';
 import { KeyringPair } from '@polkadot/keyring/types';
 import { SubmittableExtrinsic } from '@polkadot/api/types';
 import { EventEmitter } from 'events';
-import { AttestationEvent, ProofTransactionResult, TransactionInfo } from "../../types";
+import { AttestationEvent, VerifyTransactionInfo, VKRegistrationTransactionInfo, TransactionInfo } from "../../types";
 import { waitForNewAttestationEvent } from "../helpers";
 import { decodeDispatchError } from "./errors";
 import { handleTransactionEvents } from "./events";
 import { VerifyOptions } from "../../session/types";
+import { TransactionType, ZkVerifyEvents } from "../../enums";
 
 const handleInBlock = (
     api: ApiPromise,
@@ -14,14 +15,14 @@ const handleInBlock = (
     proofType: string,
     blockHash: string,
     txHash: string,
-    setAttestationId: (id: number | null) => void,
-    emitter: EventEmitter
+    setAttestationId: (id: number | undefined) => void,
+    emitter: EventEmitter,
+    transactionType: TransactionType
 ): TransactionInfo => {
     let transactionInfo: TransactionInfo = {
+        attestationId: undefined,
         blockHash,
         proofType,
-        attestationId: null,
-        leafDigest: null,
         status: 'inBlock',
         txHash,
         extrinsicIndex: undefined,
@@ -30,8 +31,8 @@ const handleInBlock = (
         txClass: undefined,
     };
 
-    transactionInfo = handleTransactionEvents(api, events, transactionInfo, emitter, setAttestationId);
-    emitter.emit('includedInBlock', transactionInfo);
+    transactionInfo = handleTransactionEvents(api, events, transactionInfo, emitter, setAttestationId, transactionType);
+    emitter.emit(ZkVerifyEvents.IncludedInBlock, transactionInfo);
 
     return transactionInfo;
 };
@@ -44,16 +45,16 @@ const handleFinalized = async (
 ): Promise<TransactionInfo> => {
     if (dispatchError) {
         const decodedError = decodeDispatchError(api, dispatchError);
-        emitter.emit('error', { proofType: transactionInfo.proofType, error: decodedError });
+        emitter.emit(ZkVerifyEvents.ErrorEvent, { proofType: transactionInfo.proofType, error: decodedError });
         return transactionInfo;
     }
 
     transactionInfo.status = 'finalized';
 
     if (transactionInfo.attestationId) {
-        emitter.emit('finalized', transactionInfo);
+        emitter.emit(ZkVerifyEvents.Finalized, transactionInfo);
     } else {
-        emitter.emit('error', { ...transactionInfo, error: 'Finalized but no attestation ID found.' });
+        emitter.emit(ZkVerifyEvents.ErrorEvent, { ...transactionInfo, error: 'Finalized but no attestation ID found.' });
     }
 
     return transactionInfo;
@@ -61,44 +62,52 @@ const handleFinalized = async (
 
 export const handleTransaction = async (
     api: ApiPromise,
-    submitProof: SubmittableExtrinsic<"promise">,
+    submitExtrinsic: SubmittableExtrinsic<"promise">,
     account: KeyringPair,
     emitter: EventEmitter,
-    options: VerifyOptions
-): Promise<ProofTransactionResult> => {
+    options: VerifyOptions,
+    transactionType: TransactionType
+): Promise<VerifyTransactionInfo | VKRegistrationTransactionInfo> => {
     const { proofType, waitForNewAttestationEvent: shouldWaitForAttestation = false, nonce } = options;
 
     let transactionInfo: TransactionInfo = {
+        attestationId: undefined,
         blockHash: '',
         proofType,
-        attestationId: null,
-        leafDigest: null,
         status: 'inBlock',
         txHash: undefined,
         extrinsicIndex: undefined,
         feeInfo: undefined,
         weightInfo: undefined,
         txClass: undefined,
-        attestationEvent: undefined,
     };
 
-    const setAttestationId = (id: number | null) => {
-        transactionInfo.attestationId = id;
+    const setAttestationId = (id: number | undefined) => {
+        (transactionInfo as VerifyTransactionInfo).attestationId = id;
     };
 
     let attestationPromise: Promise<AttestationEvent | undefined> | null = null;
+    let statementHash: string | undefined;
 
-    return new Promise<ProofTransactionResult>((resolve, reject) => {
-        submitProof
+    return new Promise<VerifyTransactionInfo | VKRegistrationTransactionInfo>((resolve, reject) => {
+        submitExtrinsic
             .signAndSend(account, { nonce }, async (result: SubmittableResult) => {
                 try {
                     if (result.status.isInBlock) {
                         transactionInfo.txHash = result.txHash.toString();
                         transactionInfo.blockHash = result.status.asInBlock.toString();
-                        transactionInfo = handleInBlock(api, result.events, proofType, transactionInfo.blockHash, transactionInfo.txHash, setAttestationId, emitter);
+                        transactionInfo = handleInBlock(api, result.events, proofType, transactionInfo.blockHash, transactionInfo.txHash, setAttestationId, emitter, transactionType);
 
-                        if (shouldWaitForAttestation && transactionInfo.attestationId) {
-                            attestationPromise = waitForNewAttestationEvent(api, transactionInfo.attestationId, emitter);
+                        if (transactionType === TransactionType.Verify) {
+                            if (shouldWaitForAttestation && (transactionInfo as VerifyTransactionInfo).attestationId) {
+                                attestationPromise = waitForNewAttestationEvent(api, (transactionInfo as VerifyTransactionInfo).attestationId!, emitter);
+                            }
+                        }
+
+                        if (transactionType === TransactionType.VKRegistration) {
+                            statementHash = result.events
+                                .find(event => event.event.method === 'StatementHash')?.event.data[0].toString();
+                            (transactionInfo as VKRegistrationTransactionInfo).statementHash = statementHash;
                         }
                     }
 
@@ -106,26 +115,26 @@ export const handleTransaction = async (
                         transactionInfo = await handleFinalized(api, transactionInfo, result.dispatchError, emitter);
                         const finalized = !!transactionInfo;
 
-                        if (shouldWaitForAttestation && attestationPromise) {
+                        if (transactionType === TransactionType.Verify && shouldWaitForAttestation && attestationPromise) {
                             try {
-                                transactionInfo.attestationEvent = await attestationPromise;
+                                (transactionInfo as VerifyTransactionInfo).attestationEvent = await attestationPromise;
                             } catch (error) {
                                 return reject(error);
                             }
                         }
 
-                        resolveTransaction(resolve, finalized, !!transactionInfo.attestationEvent, transactionInfo);
+                        resolveTransaction(resolve, finalized, !!(transactionInfo as VerifyTransactionInfo).attestationEvent, transactionInfo);
                     } else if (result.status.isDropped || result.status.isInvalid) {
-                        emitter.emit('error', new Error('Transaction was dropped or marked as invalid.'));
+                        emitter.emit(ZkVerifyEvents.ErrorEvent, new Error('Transaction was dropped or marked as invalid.'));
                         resolveTransaction(resolve, false, false, transactionInfo);
                     } else if (result.status.isRetracted) {
-                        emitter.emit('error', new Error('Transaction was retracted.'));
+                        emitter.emit(ZkVerifyEvents.ErrorEvent, new Error('Transaction was retracted.'));
                         resolveTransaction(resolve, false, false, transactionInfo);
                     } else if (result.status.isUsurped) {
-                        emitter.emit('error', new Error('Transaction was replaced by another transaction with the same nonce.'));
+                        emitter.emit(ZkVerifyEvents.ErrorEvent, new Error('Transaction was replaced by another transaction with the same nonce.'));
                         resolveTransaction(resolve, false, false, transactionInfo);
                     } else if (result.status.isBroadcast) {
-                        emitter.emit('broadcast', { proofType, status: 'Transaction broadcasted.' });
+                        emitter.emit(ZkVerifyEvents.Broadcast, { proofType, status: 'Transaction broadcasted.' });
                     }
                 } catch (error) {
                     reject(error);
@@ -135,18 +144,15 @@ export const handleTransaction = async (
 };
 
 const resolveTransaction = (
-    resolve: (value: {
-        finalized: boolean;
-        attestationConfirmed: boolean;
-        transactionInfo: TransactionInfo;
-    }) => void,
+    resolve: (value: VerifyTransactionInfo | VKRegistrationTransactionInfo) => void,
     finalized: boolean,
     attestationConfirmed: boolean,
     transactionInfo: TransactionInfo
 ) => {
-    resolve({
-        finalized,
-        attestationConfirmed,
-        transactionInfo,
-    });
+    if (finalized) {
+        if ('attestationId' in transactionInfo) {
+            (transactionInfo as VerifyTransactionInfo).attestationConfirmed = attestationConfirmed;
+        }
+    }
+    resolve(transactionInfo as VerifyTransactionInfo | VKRegistrationTransactionInfo);
 };
