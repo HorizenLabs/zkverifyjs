@@ -18,18 +18,6 @@ class Groth16Processor implements ProofProcessor {
     formatPubs(pubs: string[]): string[] {
         return formatGroth16Pubs(pubs);
     }
-
-    processProofData(proofData: { proof: any, vk: any, publicSignals: string[] }): {
-        formattedProof: Proof<ProofInner>,
-        formattedVk: any,
-        formattedPubs: string[]
-    } {
-        return {
-            formattedProof: this.formatProof(proofData.proof, proofData.publicSignals),
-            formattedVk: this.formatVk(proofData.vk),
-            formattedPubs: this.formatPubs(proofData.publicSignals)
-        };
-    }
 }
 
 export default new Groth16Processor();

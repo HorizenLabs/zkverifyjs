@@ -22,20 +22,9 @@ export const handleError = (
 ): void => {
     let decodedError = error instanceof Error ? error.message : decodeDispatchError(api, error);
 
-    if (status && transactionInfo.status !== TransactionStatus.Finalized) {
-        if (status.isDropped) {
-            transactionInfo.status = TransactionStatus.Dropped;
-            decodedError = 'Transaction was dropped.';
-        } else if (status.isInvalid) {
-            transactionInfo.status = TransactionStatus.Invalid;
-            decodedError = 'Transaction was marked as invalid.';
-        } else if (status.isRetracted) {
-            transactionInfo.status = TransactionStatus.Retracted;
-            decodedError = 'Transaction was retracted.';
-        } else if (status.isUsurped) {
-            transactionInfo.status = TransactionStatus.Usurped;
-            decodedError = 'Transaction was usurped.';
-        }
+    if (status && status.isInvalid && transactionInfo.status !== TransactionStatus.Finalized) {
+        transactionInfo.status = TransactionStatus.Invalid;
+        decodedError = 'Transaction was marked as invalid.';
     }
 
     if (emitter.listenerCount(ZkVerifyEvents.ErrorEvent) > 0) {

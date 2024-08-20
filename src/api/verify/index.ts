@@ -3,7 +3,7 @@ import { handleTransaction } from '../../utils/transactions';
 import { proofTypeToPallet } from '../../config';
 import { AccountConnection } from '../../connection/types';
 import { EventEmitter } from 'events';
-import { VerifyTransactionInfo } from "../../types";
+import { ProofProcessor, VerifyTransactionInfo } from "../../types";
 import { VerifyOptions } from "../../session/types";
 import { TransactionType } from "../../enums";
 
@@ -17,7 +17,7 @@ export async function verify(
         throw new Error('Proof type is required.');
     }
 
-    const processor = await getProofProcessor(options.proofType);
+    const processor: ProofProcessor = await getProofProcessor(options.proofType);
 
     if (!processor) {
         throw new Error(`Unsupported proof type: ${options.proofType}`);

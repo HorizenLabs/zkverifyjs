@@ -1,5 +1,5 @@
 import { Groth16VerificationKey } from "../types";
-import {Proof, ProofInner} from "../../types";
+import { Proof, ProofInner } from "../../../types";
 
 /**
  * Formats the zk-SNARK proof data for Groth16.
