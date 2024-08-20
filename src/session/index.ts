@@ -1,6 +1,6 @@
 import '@polkadot/api-augment'; // Required for api.query.system.account responses
 import { zkVerifySessionOptions, VerifyOptions } from "./types";
-import { verifyProof } from '../api/verify';
+import { verify } from '../api/verify';
 import { accountInfo } from '../api/account';
 import { startSession } from '../api/start';
 import { closeSession } from '../api/close';
@@ -20,6 +20,7 @@ import { AccountConnection, EstablishedConnection } from "../connection/types";
 import { ApiPromise, WsProvider } from "@polkadot/api";
 import { KeyringPair } from "@polkadot/keyring/types";
 import { registerVk } from "../api/register";
+import {ZkVerifyEvents} from "../enums";
 
 /**
  * zkVerifySession class provides an interface to zkVerify, direct access to the Polkadot.js API.
@@ -80,7 +81,19 @@ export class zkVerifySession {
         transactionResult: Promise<VerifyTransactionInfo>;
     }> {
         checkReadOnly(this.readOnly);
-        return verifyProof(this.connection as AccountConnection, options, ...proofData);
+
+        const events = new EventEmitter();
+
+        const transactionResult = (async () => {
+            try {
+                return await verify(this.connection as AccountConnection, options, events, ...proofData);
+            } catch (error) {
+                events.emit(ZkVerifyEvents.ErrorEvent, error);
+                throw error;
+            }
+        })();
+
+        return { events, transactionResult };
     }
 
     async registerVerificationKey(options: VerifyOptions, verificationKey: any): Promise<{ events: EventEmitter; transactionResult: Promise<VKRegistrationTransactionInfo>; }> {
