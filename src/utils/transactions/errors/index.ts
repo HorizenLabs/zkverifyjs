@@ -22,7 +22,7 @@ export const handleError = (
 ): void => {
     let decodedError = error instanceof Error ? error.message : decodeDispatchError(api, error);
 
-    if (status) {
+    if (status && transactionInfo.status !== TransactionStatus.Finalized) {
         if (status.isDropped) {
             transactionInfo.status = TransactionStatus.Dropped;
             decodedError = 'Transaction was dropped.';

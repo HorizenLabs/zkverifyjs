@@ -123,12 +123,14 @@ export const handleTransaction = async (
                                 return reject(error);
                             }
                         }
-                        resolveTransaction(resolve, transactionInfo);
-                    } else if (result.status.isDropped || result.status.isInvalid || result.status.isRetracted || result.status.isUsurped) {
-                        handleError(emitter, api, transactionInfo as VerifyTransactionInfo | VKRegistrationTransactionInfo, new Error('Transaction encountered an issue.'), result.status);
-                        resolveTransaction(resolve, transactionInfo);
-                    } else if (result.status.isBroadcast) {
-                        emitter.emit(ZkVerifyEvents.Broadcast, { proofType, status: 'Transaction broadcasted.' });
+
+                        return resolveTransaction(resolve, transactionInfo);
+                    }
+
+                    if (!result.status.isFinalized) {
+                        if (result.status.isDropped || result.status.isInvalid || result.status.isRetracted || result.status.isUsurped) {
+                            handleError(emitter, api, transactionInfo as VerifyTransactionInfo | VKRegistrationTransactionInfo, new Error('Transaction encountered an issue.'), result.status);
+                        }
                     }
                 } catch (error) {
                     handleError(emitter, api, transactionInfo as VerifyTransactionInfo | VKRegistrationTransactionInfo, error);
