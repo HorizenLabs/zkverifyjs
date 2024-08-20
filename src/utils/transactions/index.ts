@@ -4,10 +4,10 @@ import { SubmittableExtrinsic } from '@polkadot/api/types';
 import { EventEmitter } from 'events';
 import { AttestationEvent, TransactionInfo, VerifyTransactionInfo, VKRegistrationTransactionInfo } from "../../types";
 import { waitForNewAttestationEvent } from "../helpers";
-import { decodeDispatchError } from "./errors";
 import { handleTransactionEvents } from "./events";
 import { VerifyOptions } from "../../session/types";
 import { TransactionStatus, TransactionType, ZkVerifyEvents } from "../../enums";
+import { handleError } from "./errors";
 
 const handleInBlock = async (
     api: ApiPromise,
@@ -33,7 +33,7 @@ const handleInBlock = async (
     transactionInfo = handleTransactionEvents(api, events, transactionInfo, emitter, setAttestationId, transactionType);
     emitter.emit(ZkVerifyEvents.IncludedInBlock, transactionInfo);
 
-    return transactionInfo;
+    return transactionInfo as VerifyTransactionInfo | VKRegistrationTransactionInfo;
 };
 
 const handleFinalized = async (
@@ -44,22 +44,23 @@ const handleFinalized = async (
     transactionType: TransactionType
 ): Promise<VerifyTransactionInfo | VKRegistrationTransactionInfo> => {
     if (dispatchError) {
-        const decodedError = decodeDispatchError(api, dispatchError);
-        emitter.emit(ZkVerifyEvents.ErrorEvent, { proofType: transactionInfo.proofType, error: decodedError });
+        handleError(emitter, api, transactionInfo, dispatchError);
         return transactionInfo;
     }
 
-    transactionInfo.status = TransactionStatus.Finalized;
+    const finalizedTransactionInfo = Object.assign({}, transactionInfo, {
+        status: TransactionStatus.Finalized
+    });
 
     if (transactionType === TransactionType.Verify) {
-        const verifyTransactionInfo = transactionInfo as VerifyTransactionInfo;
+        const verifyTransactionInfo = finalizedTransactionInfo as VerifyTransactionInfo;
         if (verifyTransactionInfo.attestationId) {
             emitter.emit(ZkVerifyEvents.Finalized, verifyTransactionInfo);
         } else {
             emitter.emit(ZkVerifyEvents.ErrorEvent, { ...verifyTransactionInfo, error: 'Finalized but no attestation ID found.' });
         }
     } else if (transactionType === TransactionType.VKRegistration) {
-        const vkRegistrationInfo = transactionInfo as VKRegistrationTransactionInfo;
+        const vkRegistrationInfo = finalizedTransactionInfo as VKRegistrationTransactionInfo;
         if (vkRegistrationInfo.statementHash) {
             emitter.emit(ZkVerifyEvents.Finalized, vkRegistrationInfo);
         } else {
@@ -67,9 +68,8 @@ const handleFinalized = async (
         }
     }
 
-    return transactionInfo;
+    return finalizedTransactionInfo;
 };
-
 
 export const handleTransaction = async (
     api: ApiPromise,
@@ -97,7 +97,6 @@ export const handleTransaction = async (
     };
 
     let attestationPromise: Promise<AttestationEvent | undefined> | null = null;
-    let statementHash: string | undefined;
 
     return new Promise<VerifyTransactionInfo | VKRegistrationTransactionInfo>((resolve, reject) => {
         submitExtrinsic
@@ -108,10 +107,8 @@ export const handleTransaction = async (
                         transactionInfo.blockHash = result.status.asInBlock.toString();
                         transactionInfo = await handleInBlock(api, result.events, proofType, transactionInfo.blockHash, transactionInfo.txHash, setAttestationId, emitter, transactionType);
 
-                        if (transactionType === TransactionType.Verify) {
-                            if (shouldWaitForAttestation && (transactionInfo as VerifyTransactionInfo).attestationId) {
-                                attestationPromise = waitForNewAttestationEvent(api, (transactionInfo as VerifyTransactionInfo).attestationId!, emitter);
-                            }
+                        if (transactionType === TransactionType.Verify && shouldWaitForAttestation && (transactionInfo as VerifyTransactionInfo).attestationId) {
+                            attestationPromise = waitForNewAttestationEvent(api, (transactionInfo as VerifyTransactionInfo).attestationId!, emitter);
                         }
                     }
 
@@ -126,28 +123,15 @@ export const handleTransaction = async (
                                 return reject(error);
                             }
                         }
-
                         resolveTransaction(resolve, transactionInfo);
-                    } else if (result.status.isDropped) {
-                        emitter.emit(ZkVerifyEvents.ErrorEvent, new Error('Transaction was dropped or marked as invalid.'));
-                        transactionInfo.status = TransactionStatus.Dropped;
-                        resolveTransaction(resolve, transactionInfo);
-                    } else if (result.status.isInvalid) {
-                        emitter.emit(ZkVerifyEvents.ErrorEvent, new Error('Transaction was dropped or marked as invalid.'));
-                        transactionInfo.status = TransactionStatus.Invalid;
-                        resolveTransaction(resolve, transactionInfo);
-                    } else if (result.status.isRetracted) {
-                        emitter.emit(ZkVerifyEvents.ErrorEvent, new Error('Transaction was retracted.'));
-                        transactionInfo.status = TransactionStatus.Retracted;
-                        resolveTransaction(resolve, transactionInfo);
-                    } else if (result.status.isUsurped) {
-                        emitter.emit(ZkVerifyEvents.ErrorEvent, new Error('Transaction was replaced by another transaction with the same nonce.'));
-                        transactionInfo.status = TransactionStatus.Usurped;
+                    } else if (result.status.isDropped || result.status.isInvalid || result.status.isRetracted || result.status.isUsurped) {
+                        handleError(emitter, api, transactionInfo as VerifyTransactionInfo | VKRegistrationTransactionInfo, new Error('Transaction encountered an issue.'), result.status);
                         resolveTransaction(resolve, transactionInfo);
                     } else if (result.status.isBroadcast) {
                         emitter.emit(ZkVerifyEvents.Broadcast, { proofType, status: 'Transaction broadcasted.' });
                     }
                 } catch (error) {
+                    handleError(emitter, api, transactionInfo as VerifyTransactionInfo | VKRegistrationTransactionInfo, error);
                     reject(error);
                 }
             });
@@ -156,7 +140,7 @@ export const handleTransaction = async (
 
 const resolveTransaction = (
     resolve: (value: VerifyTransactionInfo | VKRegistrationTransactionInfo) => void,
-    transactionInfo: TransactionInfo
+    transactionInfo: VerifyTransactionInfo | VKRegistrationTransactionInfo
 ) => {
-    resolve(transactionInfo as VerifyTransactionInfo | VKRegistrationTransactionInfo);
+    resolve(transactionInfo);
 };
