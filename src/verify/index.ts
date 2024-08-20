@@ -23,10 +23,24 @@ export async function verify(
         throw new Error(`Unsupported proof type: ${options.proofType}`);
     }
 
-    const { formattedProof, formattedVk, formattedPubs } = processor.processProofData(...proofData);
+    const [proof, publicSignals, vk] = proofData;
+
+    if (!proof || !publicSignals || !vk) {
+        throw new Error('Proof, publicSignals, and vk are required and cannot be null or undefined.');
+    }
+
+    const formattedProof = processor.formatProof(proof);
+    const formattedPubs = processor.formatPubs(publicSignals);
+
+    let formattedVk;
+    if (typeof vk === 'string' && vk.startsWith('0x')) {
+        formattedVk = { 'Hash': vk };
+    } else {
+        formattedVk = { 'Vk': processor.formatVk(vk) };
+    }
 
     const proofParams = [
-        { 'Vk': formattedVk },
+        formattedVk,
         formattedProof,
         formattedPubs
     ];
@@ -41,7 +55,7 @@ export async function verify(
 
         const transaction = submitProofExtrinsic(api, pallet, proofParams);
 
-        return await handleTransaction(api, transaction, account, emitter, options, TransactionType.Verify) as VerifyTransactionInfo
+        return await handleTransaction(api, transaction, account, emitter, options, TransactionType.Verify) as VerifyTransactionInfo;
     } catch (error) {
         throw new Error(`Failed to send proof: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }

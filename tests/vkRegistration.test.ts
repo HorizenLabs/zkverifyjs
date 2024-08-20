@@ -2,8 +2,8 @@ import fs from 'fs';
 import path from 'path';
 import 'dotenv/config';
 import { zkVerifySession } from '../src';
-import { VKRegistrationTransactionInfo } from "../src/types";
-import { ZkVerifyEvents } from "../src/enums";
+import { VerifyTransactionInfo, VKRegistrationTransactionInfo } from "../src/types";
+import { TransactionStatus, ZkVerifyEvents } from "../src/enums";
 
 jest.setTimeout(180000);
 
@@ -36,6 +36,7 @@ describe('registerVerificationKey - Fflonk', () => {
             expect(eventData.feeInfo).toBeDefined();
             expect(eventData.weightInfo).toBeDefined();
             expect(eventData.txClass).toBeDefined();
+            expect(eventData.statementHash).toBeDefined();
         });
 
         events.on(ZkVerifyEvents.Finalized, (eventData) => {
@@ -50,6 +51,7 @@ describe('registerVerificationKey - Fflonk', () => {
             expect(eventData.feeInfo).toBeDefined();
             expect(eventData.weightInfo).toBeDefined();
             expect(eventData.txClass).toBeDefined();
+            expect(eventData.statementHash).toBeDefined();
         });
 
         events.on(ZkVerifyEvents.ErrorEvent, (error) => {
@@ -74,6 +76,59 @@ describe('registerVerificationKey - Fflonk', () => {
         expect(includedInBlockEmitted).toBe(true);
         expect(finalizedEmitted).toBe(true);
         expect(errorEventEmitted).toBe(false);
+        console.log("StatementHash:" + transactionInfo.statementHash);
+        const { events: verifyEvents, transactionResult: verifyTransactionResult } = await session.verify(
+            { proofType: 'fflonk' },
+            proof,
+            publicSignals,
+            transactionInfo.statementHash!
+        );
+
+        verifyEvents.on(ZkVerifyEvents.IncludedInBlock, (eventData) => {
+            console.log("verify includedInBlock Event Received: ", eventData);
+            expect(eventData).toBeDefined();
+            expect(eventData.blockHash).not.toBeNull();
+            expect(eventData.proofType).toBe('fflonk');
+            expect(eventData.attestationId).not.toBeNull();
+            expect(eventData.leafDigest).not.toBeNull();
+            expect(eventData.status).toBe(TransactionStatus.InBlock);
+            expect(eventData.txHash).toBeDefined();
+            expect(eventData.extrinsicIndex).toBeDefined();
+            expect(eventData.feeInfo).toBeDefined();
+            expect(eventData.weightInfo).toBeDefined();
+            expect(eventData.txClass).toBeDefined();
+        });
+
+        verifyEvents.on(ZkVerifyEvents.Finalized, (eventData) => {
+            console.log("verify finalized Event Received: ", eventData);
+            expect(eventData).toBeDefined();
+            expect(eventData.blockHash).not.toBeNull();
+            expect(eventData.proofType).toBe('fflonk');
+            expect(eventData.attestationId).not.toBeNull();
+            expect(eventData.leafDigest).not.toBeNull();
+            expect(eventData.status).toBe(TransactionStatus.Finalized);
+            expect(eventData.txHash).toBeDefined();
+            expect(eventData.extrinsicIndex).toBeDefined();
+            expect(eventData.feeInfo).toBeDefined();
+            expect(eventData.weightInfo).toBeDefined();
+            expect(eventData.txClass).toBeDefined();
+        });
+
+        const verifyTransactionInfo: VerifyTransactionInfo = await verifyTransactionResult;
+
+        console.log('Final transaction result:', verifyTransactionInfo);
+        expect(verifyTransactionInfo).toBeDefined();
+        expect(verifyTransactionInfo.blockHash).not.toBeNull();
+        expect(verifyTransactionInfo.proofType).toBe('fflonk');
+        expect(verifyTransactionInfo.attestationId).not.toBeNull();
+        expect(verifyTransactionInfo.leafDigest).not.toBeNull();
+        expect(verifyTransactionInfo.status).toBe(TransactionStatus.Finalized);
+        expect(verifyTransactionInfo.txHash).toBeDefined();
+        expect(verifyTransactionInfo.extrinsicIndex).toBeDefined();
+        expect(verifyTransactionInfo.feeInfo).toBeDefined();
+        expect(verifyTransactionInfo.weightInfo).toBeDefined();
+        expect(verifyTransactionInfo.txClass).toBeDefined();
+        expect(verifyTransactionInfo.attestationConfirmed).toBe(false);
 
         await session.close();
     });

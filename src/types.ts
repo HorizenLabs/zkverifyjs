@@ -23,12 +23,6 @@ export interface ProofProcessor {
     formatProof(proof: any, publicSignals?: string[]): any;
     formatVk(vkJson: any): any;
     formatPubs(pubs: string[]): any;
-
-    processProofData(...rawData: any[]): {
-        formattedProof: any,
-        formattedVk: any,
-        formattedPubs: any
-    };
 }
 
 export interface ProofTransactionResult {

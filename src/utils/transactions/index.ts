@@ -9,7 +9,7 @@ import { handleTransactionEvents } from "./events";
 import { VerifyOptions } from "../../session/types";
 import { TransactionStatus, TransactionType, ZkVerifyEvents } from "../../enums";
 
-const handleInBlock = (
+const handleInBlock = async (
     api: ApiPromise,
     events: SubmittableResult['events'],
     proofType: string,
@@ -18,7 +18,7 @@ const handleInBlock = (
     setAttestationId: (id: number | undefined) => void,
     emitter: EventEmitter,
     transactionType: TransactionType
-): VerifyTransactionInfo | VKRegistrationTransactionInfo => {
+): Promise<VerifyTransactionInfo | VKRegistrationTransactionInfo> => {
     let transactionInfo: TransactionInfo = {
         blockHash,
         proofType,
@@ -106,7 +106,7 @@ export const handleTransaction = async (
                     if (result.status.isInBlock) {
                         transactionInfo.txHash = result.txHash.toString();
                         transactionInfo.blockHash = result.status.asInBlock.toString();
-                        transactionInfo = handleInBlock(api, result.events, proofType, transactionInfo.blockHash, transactionInfo.txHash, setAttestationId, emitter, transactionType);
+                        transactionInfo = await handleInBlock(api, result.events, proofType, transactionInfo.blockHash, transactionInfo.txHash, setAttestationId, emitter, transactionType);
 
                         if (transactionType === TransactionType.Verify) {
                             if (shouldWaitForAttestation && (transactionInfo as VerifyTransactionInfo).attestationId) {

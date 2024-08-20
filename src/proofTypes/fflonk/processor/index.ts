@@ -11,24 +11,12 @@ class FflonkProcessor implements ProofProcessor {
         return formatFflonkProof(proof);
     }
 
-    formatVk(vkJson: FflonkVerificationKey): FflonkVerificationKey {
-        return formatFflonkVk(vkJson);
+    formatVk(vk: FflonkVerificationKey): FflonkVerificationKey {
+        return formatFflonkVk(vk);
     }
 
     formatPubs(pubs: FflonkPublicSignals): string {
         return formatFflonkPubs(pubs);
-    }
-
-    processProofData(proof: FflonkProof, publicSignals: FflonkPublicSignals, vk: FflonkVerificationKey): {
-        formattedProof: string,
-        formattedVk: FflonkVerificationKey,
-        formattedPubs: string
-    } {
-        return {
-            formattedProof: this.formatProof(proof),
-            formattedVk: this.formatVk(vk),
-            formattedPubs: this.formatPubs(publicSignals),
-        };
     }
 }
 
