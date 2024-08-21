@@ -25,18 +25,38 @@ export async function verify(
 
     const [proof, publicSignals, vk] = proofData;
 
-    if (!proof || !publicSignals || !vk) {
-        throw new Error('Proof, publicSignals, and vk are required and cannot be null or undefined.');
+    if (!proof || !publicSignals) {
+        throw new Error('Proof and publicSignals are required and cannot be null or undefined.');
     }
 
-    const formattedProof = processor.formatProof(proof);
-    const formattedPubs = processor.formatPubs(publicSignals);
+    if (!options.registeredVk && !vk) {
+        throw new Error('Either vk or registeredVk must be provided.');
+    } else if (options.registeredVk && vk) {
+        throw new Error('Cannot provide both registeredVk option and Vk data.');
+    }
 
-    let formattedVk;
-    if (typeof vk === 'string' && vk.startsWith('0x')) {
-        formattedVk = { 'Hash': vk };
-    } else {
-        formattedVk = { 'Vk': processor.formatVk(vk) };
+    let formattedProof, formattedPubs, formattedVk;
+
+    try {
+        formattedProof = processor.formatProof(proof);
+    } catch (error) {
+        throw new Error(`Failed to format proof: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+
+    try {
+        formattedPubs = processor.formatPubs(publicSignals);
+    } catch (error) {
+        throw new Error(`Failed to format public signals: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+
+    try {
+        if (options.registeredVk) {
+            formattedVk = { 'Hash': options.registeredVk };
+        } else {
+            formattedVk = { 'Vk': processor.formatVk(vk) };
+        }
+    } catch (error) {
+        throw new Error(`Failed to format verification key: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
 
     const proofParams = [

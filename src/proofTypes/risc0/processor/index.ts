@@ -1,21 +1,19 @@
 import { ProofProcessor } from "../../../types";
+import { Risc0Proof, Risc0Vk, Risc0Pubs } from '../types'
+import * as formatter from '../formatter';
 
 class Risc0Processor implements ProofProcessor {
-    formatProof(proof: any): string {
-        return JSON.stringify(proof);
+    formatProof(proof: Risc0Proof['proof']): string {
+        return formatter.formatProof(proof);
     }
 
-    formatVk(vkJson: any): any {
-        return vkJson;
+    formatVk(vk: Risc0Vk['vk']): string {
+        console.log("processor vk")
+        return formatter.formatVk(vk);
     }
 
-    formatPubs(pubs: any[]): string {
-        return JSON.stringify(pubs);
-    }
-
-    processProofData(...rawData: any[]): { formattedProof: any; formattedVk: any; formattedPubs: any } {
-        // TODO
-        return {formattedProof: undefined, formattedPubs: undefined, formattedVk: undefined};
+    formatPubs(pubs: Risc0Pubs['pubs']): string {
+        return formatter.formatPubs(pubs);
     }
 }
 

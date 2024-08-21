@@ -1,22 +1,18 @@
 import { Proof, ProofInner } from "../../../types";
-import {
-    formatProof as formatGroth16Proof,
-    formatPubs as formatGroth16Pubs,
-    formatVk as formatGroth16Vk
-} from "../formatter";
+import * as formatter from '../formatter';
 import { ProofProcessor } from "../../../types";
 
 class Groth16Processor implements ProofProcessor {
     formatProof(proof: any, publicSignals: string[]): Proof<ProofInner> {
-        return formatGroth16Proof(proof);
+        return formatter.formatProof(proof);
     }
 
     formatVk(vkJson: any): any {
-        return formatGroth16Vk(vkJson);
+        return formatter.formatVk(vkJson);
     }
 
     formatPubs(pubs: string[]): string[] {
-        return formatGroth16Pubs(pubs);
+        return formatter.formatPubs(pubs);
     }
 }
 

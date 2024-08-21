@@ -22,7 +22,7 @@ export interface ProofData<T> {
 export interface ProofProcessor {
     formatProof(proof: any, publicSignals?: string[]): any;
     formatVk(vkJson: any): any;
-    formatPubs(pubs: string[]): any;
+    formatPubs(pubs: any): any;
 }
 
 export interface ProofTransactionResult {

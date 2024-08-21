@@ -78,10 +78,9 @@ describe('registerVerificationKey - Fflonk', () => {
         expect(errorEventEmitted).toBe(false);
         console.log("StatementHash:" + transactionInfo.statementHash);
         const { events: verifyEvents, transactionResult: verifyTransactionResult } = await session.verify(
-            { proofType: 'fflonk' },
+            { proofType: 'fflonk', registeredVk: transactionInfo.statementHash! },
             proof,
-            publicSignals,
-            transactionInfo.statementHash!
+            publicSignals
         );
 
         verifyEvents.on(ZkVerifyEvents.IncludedInBlock, (eventData) => {

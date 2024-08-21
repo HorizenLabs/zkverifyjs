@@ -1,22 +1,18 @@
 import { FflonkProof, FflonkPublicSignals, FflonkVerificationKey } from "../types";
-import {
-    formatProof as formatFflonkProof,
-    formatPubs as formatFflonkPubs,
-    formatVk as formatFflonkVk
-} from "../formatter";
+import * as formatter from '../formatter';
 import { ProofProcessor } from "../../../types";
 
 class FflonkProcessor implements ProofProcessor {
     formatProof(proof: FflonkProof): string {
-        return formatFflonkProof(proof);
+        return formatter.formatProof(proof);
     }
 
     formatVk(vk: FflonkVerificationKey): FflonkVerificationKey {
-        return formatFflonkVk(vk);
+        return formatter.formatVk(vk);
     }
 
     formatPubs(pubs: FflonkPublicSignals): string {
-        return formatFflonkPubs(pubs);
+        return formatter.formatPubs(pubs);
     }
 }
 
