@@ -11,7 +11,7 @@ import { VerifyOptions } from '../../session/types';
 export async function registerVk(
     connection: AccountConnection,
     options: VerifyOptions,
-    verificationKey: any
+    verificationKey: unknown
 ): Promise<{ events: EventEmitter; transactionResult: Promise<VKRegistrationTransactionInfo>; }> {
     const { proofType } = options;
     const emitter = new EventEmitter();

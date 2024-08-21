@@ -1,5 +1,7 @@
 import { FflonkVerificationKey, FflonkProof, FflonkPublicSignals } from "../types";
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 const { BigNumber } = require('bignumber.js');
+
 
 /**
  * Formats the FFLONK verification key.
@@ -60,7 +62,7 @@ export const formatProof = (proof: FflonkProof): string => {
         proof.evaluations.z, proof.evaluations.zw, proof.evaluations.t1w, proof.evaluations.t2w, proof.evaluations.inv
     ].map(to32ByteHex);
 
-    let combined = [...formattedPolynomials, ...formattedEvaluations];
+    const combined = [...formattedPolynomials, ...formattedEvaluations];
     if (combined.length !== 24) {
         throw new Error(`Formatted proof length mismatch. Expected 24 elements, got ${combined.length}`);
     }

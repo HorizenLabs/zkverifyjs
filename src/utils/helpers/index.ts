@@ -8,19 +8,6 @@ import { AttestationEvent } from "../../types";
 import { ZkVerifyEvents } from "../../enums";
 
 /**
- * Handles events emitted by the zkVerify blockchain.
- * @param events - The array of event records.
- * @param callback - The callback function to execute when the event matches criteria.
- */
-export function handleEvents(events: EventRecord[], callback: (data: any[]) => void): void {
-    events.forEach(({ event: { data, method, section } }) => {
-        if (section === 'poe' && method === 'NewElement') {
-            callback(data);
-        }
-    });
-}
-
-/**
  * Waits for a specific NewAttestation event and returns the associated data.
  *
  * @param api - The ApiPromise instance.
@@ -115,15 +102,21 @@ export async function waitForNodeToSync(api: ApiPromise): Promise<void> {
  * @returns {SubmittableExtrinsic<'promise'>} The created SubmittableExtrinsic.
  * @throws {Error} - Throws an error with detailed information if extrinsic creation fails.
  */
-export const submitProofExtrinsic = (api: ApiPromise, pallet: string, params: any[]): SubmittableExtrinsic<'promise'> => {
+export const submitProofExtrinsic = (api: ApiPromise, pallet: string, params: unknown[]): SubmittableExtrinsic<'promise'> => {
     try {
         return api.tx[pallet].submitProof(...params);
-    } catch (error: any) {
+    } catch (error: unknown) {
+        let errorMessage = 'An unknown error occurred';
+
+        if (error instanceof Error) {
+            errorMessage = error.message;
+        }
+
         const errorDetails = `
             Error creating submittable extrinsic:
             Pallet: ${pallet}
             Params: ${JSON.stringify(params, null, 2)}
-            Error: ${error.message}
+            Error: ${errorMessage}
         `;
         throw new Error(errorDetails);
     }
@@ -133,10 +126,10 @@ export const submitProofExtrinsic = (api: ApiPromise, pallet: string, params: an
  * Dynamically loads and returns the proof processor for the specified proof type.
  *
  * @param {string} proofType - The type of the proof for which to load the processor.
- * @returns {Promise<any>} - A promise that resolves to the proof processor.
+ * @returns {Promise<unknown>} - A promise that resolves to the proof processor.
  * @throws {Error} - Throws an error if the proof processor cannot be loaded.
  */
-export async function getProofProcessor(proofType: string): Promise<any> {
+export async function getProofProcessor(proofType: string): Promise<unknown> {
     try {
         const processorPath = path.join(__dirname, '..', '..', 'ProofTypes', proofType, 'processor');
         const processorModule = await import(processorPath);

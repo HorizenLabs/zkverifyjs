@@ -1,10 +1,10 @@
-import { Groth16VerificationKey } from "../types";
-import { Proof, ProofInner } from "../../../types";
+import { Groth16VerificationKey, Groth16VerificationKeyInput, ProofInput } from "../types";
+import { Proof, ProofInner } from "../types";
 
 /**
  * Formats the zk-SNARK proof data for Groth16.
  *
- * @param {any} proof - The raw proof data. The expected structure is:
+ * @param {ProofInput} proof - The raw proof data. The expected structure is:
  *   {
  *     pi_a: [string, string],
  *     pi_b: [[string, string], [string, string]],
@@ -20,8 +20,13 @@ import { Proof, ProofInner } from "../../../types";
  *       c: { x: string, y: string }
  *     }
  *   }
+ * @throws {Error} If the proof input is not valid.
  */
-export const formatProof = (proof: any): Proof<ProofInner> => {
+export const formatProof = (proof: ProofInput): Proof => {
+    if (!proof.pi_a || !proof.pi_b || !proof.pi_c) {
+        throw new Error("Invalid proof format: Missing required proof components (pi_a, pi_b, pi_c).");
+    }
+
     const formattedProof: ProofInner = {
         a: formatG1Point(proof.pi_a),
         b: formatG2Point(proof.pi_b),
@@ -37,17 +42,22 @@ export const formatProof = (proof: any): Proof<ProofInner> => {
 /**
  * Formats the verification key for use in the zk-SNARK proof for Groth16.
  *
- * @param {any} vkJson - The raw verification key data.
+ * @param {Groth16VerificationKeyInput} vk - The raw verification key data.
  * @returns {Groth16VerificationKey} - The formatted verification key.
+ * @throws {Error} If the verification key input is not valid.
  */
-export const formatVk = (vkJson: any): Groth16VerificationKey => {
+export const formatVk = (vk: Groth16VerificationKeyInput): Groth16VerificationKey => {
+    if (!vk.vk_alpha_1 || !vk.vk_beta_2 || !vk.vk_gamma_2 || !vk.vk_delta_2 || !vk.IC) {
+        throw new Error("Invalid verification key format: Missing required key components (vk_alpha_1, vk_beta_2, vk_gamma_2, vk_delta_2, IC).");
+    }
+
     return {
         curve: "Bn254",
-        alpha_g1: formatG1Point(vkJson.vk_alpha_1),
-        beta_g2: formatG2Point(vkJson.vk_beta_2),
-        gamma_g2: formatG2Point(vkJson.vk_gamma_2),
-        delta_g2: formatG2Point(vkJson.vk_delta_2),
-        gamma_abc_g1: vkJson.IC.map((x: any) => formatG1Point(x)),
+        alpha_g1: formatG1Point(vk.vk_alpha_1),
+        beta_g2: formatG2Point(vk.vk_beta_2),
+        gamma_g2: formatG2Point(vk.vk_gamma_2),
+        delta_g2: formatG2Point(vk.vk_delta_2),
+        gamma_abc_g1: vk.IC.map((x: string[]) => formatG1Point(x)),
     };
 };
 
@@ -56,10 +66,14 @@ export const formatVk = (vkJson: any): Groth16VerificationKey => {
  *
  * @param {string[]} pubs - The array of public signals to format.
  * @returns {string[]} - The formatted array of public signals.
+ * @throws {Error} If the public signals input is not valid.
  */
 export const formatPubs = (pubs: string[]): string[] => {
+    if (!Array.isArray(pubs) || pubs.some(() => false)) {
+        throw new Error("Invalid public signals format: Expected an array of strings.");
+    }
     return pubs.map(formatScalar);
-}
+};
 
 /**
  * Converts a bigint value to a little-endian hexadecimal string.
@@ -67,6 +81,7 @@ export const formatPubs = (pubs: string[]): string[] => {
  * @param {bigint} value - The bigint value to convert.
  * @param {number} length - The length of the resulting hexadecimal string in bytes.
  * @returns {string} - The little-endian hexadecimal representation of the value.
+ * @throws {Error} If the input value is not a bigint.
  */
 export const toLittleEndianHex = (value: bigint, length: number): string => {
     const hex = value.toString(16).padStart(length * 2, '0');
@@ -79,11 +94,16 @@ export const toLittleEndianHex = (value: bigint, length: number): string => {
  *
  * @param {string[]} point - An array containing the x and y coordinates of the G1 point.
  * @returns {string} - The formatted G1 point as a hexadecimal string.
+ * @throws {Error} If the point input is not valid.
  */
 export const formatG1Point = (point: string[]): string => {
-    const x = toLittleEndianHex(BigInt(point[0]), 32);
-    const y = toLittleEndianHex(BigInt(point[1]), 32);
-    return x + y.slice(2);
+    try {
+        const x = toLittleEndianHex(BigInt(point[0]), 32);
+        const y = toLittleEndianHex(BigInt(point[1]), 32);
+        return x + y.slice(2);
+    } catch (error) {
+        throw new Error(`Failed to format G1 point: ${error instanceof Error ? error.message : String(error)}`);
+    }
 };
 
 /**
@@ -91,13 +111,18 @@ export const formatG1Point = (point: string[]): string => {
  *
  * @param {string[][]} point - A 2D array containing the x and y coordinates of the G2 point.
  * @returns {string} - The formatted G2 point as a hexadecimal string.
+ * @throws {Error} If the point input is not valid.
  */
 export const formatG2Point = (point: string[][]): string => {
-    const x1 = toLittleEndianHex(BigInt(point[0][0]), 32);
-    const x2 = toLittleEndianHex(BigInt(point[0][1]), 32);
-    const y1 = toLittleEndianHex(BigInt(point[1][0]), 32);
-    const y2 = toLittleEndianHex(BigInt(point[1][1]), 32);
-    return x1 + x2.slice(2) + y1.slice(2) + y2.slice(2);
+    try {
+        const x1 = toLittleEndianHex(BigInt(point[0][0]), 32);
+        const x2 = toLittleEndianHex(BigInt(point[0][1]), 32);
+        const y1 = toLittleEndianHex(BigInt(point[1][0]), 32);
+        const y2 = toLittleEndianHex(BigInt(point[1][1]), 32);
+        return x1 + x2.slice(2) + y1.slice(2) + y2.slice(2);
+    } catch (error) {
+        throw new Error(`Failed to format G2 point: ${error instanceof Error ? error.message : String(error)}`);
+    }
 };
 
 /**
@@ -105,8 +130,8 @@ export const formatG2Point = (point: string[][]): string => {
  *
  * @param {string} scalar - The scalar value to format.
  * @returns {string} - The formatted scalar as a little-endian hexadecimal string.
+ * @throws {Error} If the scalar input is not valid.
  */
 export const formatScalar = (scalar: string): string => {
     return toLittleEndianHex(BigInt(scalar), 32);
 };
-

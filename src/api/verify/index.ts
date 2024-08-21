@@ -11,7 +11,7 @@ export async function verify(
     connection: AccountConnection,
     options: VerifyOptions,
     emitter: EventEmitter,
-    ...proofData: any[]
+    ...proofData: unknown[]
 ): Promise<VerifyTransactionInfo> {
     if (!options.proofType) {
         throw new Error('Proof type is required.');

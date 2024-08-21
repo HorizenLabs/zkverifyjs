@@ -34,7 +34,7 @@ export const handleTransactionEvents = (
         }
 
         if (event.section === 'system' && event.method === 'ExtrinsicSuccess') {
-            const dispatchInfo = event.data[0] as any;
+            const dispatchInfo = event.data[0] as unknown;
             transactionInfo.weightInfo = {
                 refTime: dispatchInfo.weight.refTime?.toString(),
                 proofSize: dispatchInfo.weight.proofSize?.toString(),

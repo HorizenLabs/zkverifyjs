@@ -3,7 +3,7 @@ import { EventEmitter } from "events";
 import { VerifyTransactionInfo, VKRegistrationTransactionInfo } from "../../../types";
 import { ZkVerifyEvents, TransactionStatus } from "../../../enums";
 
-export const decodeDispatchError = (api: ApiPromise, dispatchError: any): string => {
+export const decodeDispatchError = (api: ApiPromise, dispatchError: unknown): string => {
     if (dispatchError.isModule) {
         const decoded = api.registry.findMetaError(dispatchError.asModule);
         const { docs, name, section } = decoded;
@@ -17,7 +17,7 @@ export const handleError = (
     emitter: EventEmitter,
     api: ApiPromise,
     transactionInfo: VerifyTransactionInfo | VKRegistrationTransactionInfo,
-    error: any,
+    error: unknown,
     status?: SubmittableResult['status']
 ): void => {
     let decodedError = error instanceof Error ? error.message : decodeDispatchError(api, error);

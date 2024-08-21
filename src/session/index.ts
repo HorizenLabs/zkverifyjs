@@ -76,7 +76,7 @@ export class zkVerifySession {
      * @param {...any[]} proofData - The data required for the proof verification.
      * @returns {Promise<{ events: EventEmitter; transactionResult: Promise<ProofTransactionResult>; }>}
      */
-    async verify(options: VerifyOptions, ...proofData: any[]): Promise<{
+    async verify(options: VerifyOptions, ...proofData: unknown[]): Promise<{
         events: EventEmitter;
         transactionResult: Promise<VerifyTransactionInfo>;
     }> {
@@ -96,7 +96,7 @@ export class zkVerifySession {
         return { events, transactionResult };
     }
 
-    async registerVerificationKey(options: VerifyOptions, verificationKey: any): Promise<{ events: EventEmitter; transactionResult: Promise<VKRegistrationTransactionInfo>; }> {
+    async registerVerificationKey(options: VerifyOptions, verificationKey: unknown): Promise<{ events: EventEmitter; transactionResult: Promise<VKRegistrationTransactionInfo>; }> {
         checkReadOnly(this.readOnly);
         return registerVk(this.connection as AccountConnection, options, verificationKey);
     }

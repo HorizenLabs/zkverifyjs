@@ -1,5 +1,7 @@
 import { ApiPromise } from '@polkadot/api';
 import { MerkleProof } from "../../types";
+import { Vec, u32 } from '@polkadot/types';
+import { H256 } from '@polkadot/types/interfaces';
 
 /**
  * Retrieves proof details for the given attestationId and leafDigest.
@@ -17,21 +19,21 @@ export async function getProofDetails(
     blockHash?: string
 ): Promise<MerkleProof> {
     try {
-        let proofPath;
+        let proofPath: { root: H256, proof: Vec<H256>, number_of_leaves: u32, leaf_index: u32, leaf: H256 };
 
         if (blockHash) {
-            // @ts-ignore
+            // @ts-expect-error: Custom RPC method 'poe.proofPath' is not recognized by TypeScript's type system
             proofPath = await api.rpc.poe.proofPath(attestationId, leafDigest, blockHash);
         } else {
-            // @ts-ignore
+            // @ts-expect-error: Custom RPC method 'poe.proofPath' is not recognized by TypeScript's type system
             proofPath = await api.rpc.poe.proofPath(attestationId, leafDigest);
         }
 
         return {
             root: proofPath.root.toString(),
-            proof: proofPath.proof.map((h: any) => h.toString()),
-            numberOfLeaves: parseInt(proofPath.number_of_leaves, 10),
-            leafIndex: parseInt(proofPath.leaf_index, 10),
+            proof: proofPath.proof.map((h: H256) => h.toString()),
+            numberOfLeaves: Number(proofPath.number_of_leaves),
+            leafIndex: Number(proofPath.leaf_index),
             leaf: proofPath.leaf.toString()
         };
     } catch (error) {

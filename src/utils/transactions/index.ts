@@ -9,7 +9,7 @@ import { VerifyOptions } from "../../session/types";
 import { TransactionStatus, TransactionType, ZkVerifyEvents } from "../../enums";
 import { handleError } from "./errors";
 
-const safeEmit = (emitter: EventEmitter, event: string, data: any) => {
+const safeEmit = (emitter: EventEmitter, event: string, data: unknown) => {
     try {
         emitter.emit(event, data);
     } catch (error) {
@@ -36,7 +36,7 @@ const handleInBlock = async (
 const handleFinalized = async (
     api: ApiPromise,
     transactionInfo: VerifyTransactionInfo | VKRegistrationTransactionInfo,
-    dispatchError: any,
+    dispatchError: unknown,
     emitter: EventEmitter,
     transactionType: TransactionType
 ): Promise<void> => {
@@ -74,7 +74,7 @@ export const handleTransaction = async (
 ): Promise<VerifyTransactionInfo | VKRegistrationTransactionInfo> => {
     const { proofType, waitForNewAttestationEvent: shouldWaitForAttestation = false, nonce } = options;
 
-    let transactionInfo: VerifyTransactionInfo | VKRegistrationTransactionInfo = {
+    const transactionInfo: VerifyTransactionInfo | VKRegistrationTransactionInfo = {
         blockHash: '',
         proofType,
         status: TransactionStatus.Pending,

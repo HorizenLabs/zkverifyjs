@@ -8,7 +8,6 @@ class Risc0Processor implements ProofProcessor {
     }
 
     formatVk(vk: Risc0Vk['vk']): string {
-        console.log("processor vk")
         return formatter.formatVk(vk);
     }
 

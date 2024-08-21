@@ -6,7 +6,7 @@ import { VerifyTransactionInfo } from "../src/types";
 
 jest.setTimeout(300000);
 
-describe('verify and getProofDetails - Fflonk', () => {
+describe('verify and get proof of existence (poe) - Fflonk', () => {
     it('should send the fflonk proof for verification, receive the NewAttestation event, and retrieve proof details', async () => {
         const dataPath = path.join(__dirname, 'data', 'fflonk.json');
         const fflonkData = JSON.parse(fs.readFileSync(dataPath, 'utf8'));

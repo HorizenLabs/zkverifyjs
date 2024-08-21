@@ -1,28 +1,9 @@
-import {TransactionStatus} from "./enums";
-
-export interface ProofInner {
-    a: string;
-    b: string;
-    c: string;
-}
-
-export type ProofType<T> = ProofInner | T | string;
-
-export interface Proof<T> {
-    curve?: string;
-    proof: ProofType<T>;
-}
-
-export interface ProofData<T> {
-    proof: T;
-    publicSignals: string | string[];
-    vk?: any;
-}
+import { TransactionStatus } from "./enums";
 
 export interface ProofProcessor {
-    formatProof(proof: any, publicSignals?: string[]): any;
-    formatVk(vkJson: any): any;
-    formatPubs(pubs: any): any;
+    formatProof(proof: unknown, publicSignals?: string[]): unknown;
+    formatVk(vkJson: unknown): unknown;
+    formatPubs(pubs: unknown): unknown;
 }
 
 export interface ProofTransactionResult {

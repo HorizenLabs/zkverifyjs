@@ -2,7 +2,7 @@
 
 The `zkverifyjs` package is a TypeScript library designed to facilitate sending proofs to zkVerify for verification, listening for transaction events, and waiting for transaction finalization. The package is built with an intuitive API that allows developers to handle real-time transaction events and await final results.
 
-## Table of Contents
+# Table of Contents
 
 - [Installation](#installation)
 - [Usage](#usage)
@@ -26,7 +26,7 @@ The `zkverifyjs` package is a TypeScript library designed to facilitate sending 
     - [zkVerifySession.account](#zkverifysessionaccount)
 - [Testing](#testing)
 
-## Installation
+# Installation
 
 To install the package, use npm or yarn:
 
@@ -34,9 +34,9 @@ To install the package, use npm or yarn:
 npm install zkverifyjs
 ```
 
-## Usage
+# Usage
 
-### Creating a Session
+## Creating a Session
 
 Before sending a proof, you need to start a session. A session establishes a connection to the zkVerify network and optionally sets up an account using a seed phrase (required for sending transactions).
 
@@ -69,7 +69,7 @@ import { zkVerifySession } from 'zkverifyjs';
 const readOnlySession = await zkVerifySession.start('testnet');
 ```
 
-### Verifying a Proof
+## Verifying a Proof
 
 To verify a proof, use the `verify` method. This method returns an object containing an EventEmitter for handling real-time events and a Promise for awaiting the transaction's final result.
 
@@ -77,7 +77,7 @@ To verify a proof, use the `verify` method. This method returns an object contai
 const { events, transactionResult } = await session.verify({ proofType: 'fflonk' }, proof, publicSignals, vk);
 ```
 
-### Listening to Events
+## Listening to Events
 
 You can listen for transaction events using the events emitter. Common events include:
 
@@ -106,7 +106,7 @@ events.on('error', (error) => {
 });
 ```
 
-### Awaiting the Final Transaction Result
+## Awaiting the Final Transaction Result
 
 To await the final result of the transaction, use the transactionResult promise. This resolves with the final transaction details after the transaction is finalized in a block.
 
@@ -116,7 +116,7 @@ const result = await transactionResult;
 console.log('Final transaction result:', result);
 ```
 
-### Example Usage
+## Example Usage
 
 ```typescript
 import { zkVerifySession } from 'zkverify-session';
@@ -151,9 +151,9 @@ async function executeTransaction() {
 executeTransaction();
 ```
 
-### API Reference
+# API Reference
 
-### `zkVerifySession.start`
+## `zkVerifySession.start`
 
 ```typescript
 const session = await zkVerifySession.start({ host, seedPhrase, customWsUrl });
@@ -163,14 +163,14 @@ const session = await zkVerifySession.start({ host, seedPhrase, customWsUrl });
 - `seedPhrase`: (Optional) The seed phrase for the account.
 - `customWsUrl`: (Optional) A custom WebSocket URL for connecting to the blockchain.
 
-### `zkVerifySession.close`
+## `zkVerifySession.close`
 
 ```typescript
 await session.close();
 ```
 - Closes the zkVerifySession.
 
-### `zkVerifySession.verify`
+## `zkVerifySession.verify`
 
 ```typescript
 const { events, transactionResult } = await session.verify({ proofType: 'fflonk', waitForNewAttestationEvent: false, nonce: 1 }, proof, publicSignals, vk);
@@ -180,7 +180,7 @@ const { events, transactionResult } = await session.verify({ proofType: 'fflonk'
 - `proofData`: The data required for the proof - this is different for every proof type, accepted as `...proofData`.
 - Returns: An object containing an EventEmitter for real-time events and a Promise that resolves with the final transaction result, including waiting for the `poe.NewElement` attestation confirmation if waitForNewAttestationEvent is true.
 
-### `zkVerifySession.poe` (Proof of Existence)
+## `zkVerifySession.poe` (Proof of Existence)
 
 ```typescript
 const proofDetails = await session.poe(attestationId, leafDigest, blockHash);
@@ -191,7 +191,7 @@ const proofDetails = await session.poe(attestationId, leafDigest, blockHash);
 - `blockHash`: (Optional) A string representing the block hash at which the proof should be retrieved.
 - Returns: A Promise that resolves to a MerkleProof object containing the proof path details.
 
-### `zkVerifySession.accountInfo`
+## `zkVerifySession.accountInfo`
 
 ```typescript
 const accountInfo: AccountInfo = await session.accountInfo();
@@ -202,7 +202,7 @@ console.log(accountInfo.reservedBalance);
 ```
 - Returns account information: address, nonce, freeBalance and reservedBalance. Full session only, will not work in readOnly mode.
 
-### `zkVerifySession.addAccount`
+## `zkVerifySession.addAccount`
 
 ```typescript
 session.addAccount(seedPhrase);
@@ -211,14 +211,14 @@ session.addAccount(seedPhrase);
 - `seedPhrase`: Your seed phrase as a string "my seed phrase"
 - Adds the account to the current session
 
-### `zkVerifySession.removeAccount`
+## `zkVerifySession.removeAccount`
 
 ```typescript
 session.removeAccount();
 ```
 - Removes the active account from the current session, does nothing if no account is currently active.
 
-### `zkVerifySession.subscribeToNewAttestations`
+## `zkVerifySession.subscribeToNewAttestations`
 
 ```typescript
 session.subscribeToNewAttestations(callback, attestationId);
@@ -226,22 +226,23 @@ session.subscribeToNewAttestations(callback, attestationId);
 - `callback`: A Function to be called whenever a NewAttestation event occurs. The function receives an AttestationEvent object as its argument.
 - `attestationId`:  (Optional) A string representing the attestation ID to filter events by. If provided, the subscription will automatically unsubscribe after receiving the specified attestation event.
 
-### `zkVerifySession.unsubscribe`
+## `zkVerifySession.unsubscribe`
 
 ```typescript
 session.unsubscribe();
 ```
 - This method unsubscribes from any active NewAttestation event subscriptions. It is used to stop listening for NewAttestation events when they are no longer needed.
 
-### `zkVerifySession.api`
+## `zkVerifySession.api`
 
 ```typescript
 const api = session.api;
 ```
+- Uses PolkadotJS 12.4.2
 - Returns: The ApiPromise instance connected to the Polkadot.js API.
 - This is the main API object used to interact with the blockchain. It provides methods for querying the chain state, submitting extrinsics, subscribing to events, and more.
 
-### `zkVerifySession.provider`
+## `zkVerifySession.provider`
 
 ```typescript
 const provider = session.provider;
@@ -249,7 +250,7 @@ const provider = session.provider;
 - Returns: The WsProvider instance connected to the WebSocket endpoint.
 - The provider manages the connection to the blockchain node. It handles WebSocket communication and can be used to interact with the node directly, such as for subscribing to updates or making RPC calls.
 
-### `zkVerifySession.account`
+## `zkVerifySession.account`
 
 ```typescript
 const account = session.account;
@@ -257,7 +258,7 @@ const account = session.account;
 - Returns: The KeyringPair object representing the active account in the session, or undefined if the session is in read-only mode.
 - The account is used for signing transactions and interacting with the blockchain on behalf of the user. If no account is associated with the session (i.e., the session is in read-only mode), this will return undefined.
 
-### Testing
+## Testing
 
 To run the tests, use the following command:
 
