@@ -12,36 +12,51 @@ import { zkvTypes, zkvRpc } from '../config';
  * @returns {Promise<EstablishedConnection>} The initialized API and provider.
  * @throws Will throw an error if the connection fails or if the provided configuration is invalid.
  */
-export const establishConnection = async (host: SupportedNetwork, customWsUrl?: string): Promise<EstablishedConnection> => {
-    let websocketUrl: string;
+export const establishConnection = async (
+  host: SupportedNetwork,
+  customWsUrl?: string,
+): Promise<EstablishedConnection> => {
+  let websocketUrl: string;
 
-    if (host === 'custom') {
-        if (!customWsUrl) {
-            throw new Error('Custom WebSocket URL must be provided when host is set to "custom".');
-        }
-        websocketUrl = customWsUrl;
+  if (host === 'custom') {
+    if (!customWsUrl) {
+      throw new Error(
+        'Custom WebSocket URL must be provided when host is set to "custom".',
+      );
+    }
+    websocketUrl = customWsUrl;
+  } else {
+    if (customWsUrl) {
+      throw new Error(
+        'Custom WebSocket URL provided. Please select "custom" as the host if you want to use a custom WebSocket endpoint.',
+      );
+    }
+    if (!(host in defaultUrls)) {
+      throw new Error(`Unsupported network host: ${host}`);
+    }
+    websocketUrl = defaultUrls[host];
+  }
+
+  try {
+    const provider = new WsProvider(websocketUrl);
+    const api = await ApiPromise.create({
+      provider,
+      types: zkvTypes,
+      rpc: zkvRpc,
+    });
+
+    await waitForNodeToSync(api);
+
+    return { api, provider };
+  } catch (error) {
+    if (error instanceof Error) {
+      throw new Error(
+        `Failed to establish connection to ${host}: ${error.message}`,
+      );
     } else {
-        if (customWsUrl) {
-            throw new Error('Custom WebSocket URL provided. Please select "custom" as the host if you want to use a custom WebSocket endpoint.');
-        }
-        if (!(host in defaultUrls)) {
-            throw new Error(`Unsupported network host: ${host}`);
-        }
-        websocketUrl = defaultUrls[host];
+      throw new Error(
+        'Failed to establish connection due to an unknown error.',
+      );
     }
-
-    try {
-        const provider = new WsProvider(websocketUrl);
-        const api = await ApiPromise.create({ provider, types: zkvTypes, rpc: zkvRpc });
-
-        await waitForNodeToSync(api);
-
-        return { api, provider };
-    } catch (error) {
-        if (error instanceof Error) {
-            throw new Error(`Failed to establish connection to ${host}: ${error.message}`);
-        } else {
-            throw new Error('Failed to establish connection due to an unknown error.');
-        }
-    }
+  }
 };

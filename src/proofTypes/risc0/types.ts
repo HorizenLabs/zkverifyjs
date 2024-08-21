@@ -1,11 +1,11 @@
 export interface Risc0Proof {
-    proof: string;
+  proof: string;
 }
 
 export interface Risc0Vk {
-    vk: string;
+  vk: string;
 }
 
 export interface Risc0Pubs {
-    pubs: string;
+  pubs: string;
 }
