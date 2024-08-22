@@ -4,7 +4,7 @@ import { EventRecord } from '@polkadot/types/interfaces';
 import { SubmittableExtrinsic } from '@polkadot/api/types';
 import path from 'path';
 import { EventEmitter } from 'events';
-import {AttestationEvent, ProofProcessor} from '../../types';
+import { AttestationEvent, ProofProcessor } from '../../types';
 import { ZkVerifyEvents } from '../../enums';
 
 /**
@@ -32,61 +32,76 @@ export async function waitForNewAttestationEvent(
     throw error;
   }
 
-  return new Promise<AttestationEvent>(async (resolve, reject) => {
-    try {
-      const unsubscribe = (await api.query.system.events(
-        (events: EventRecord[]) => {
-          events.forEach((record) => {
-            const { event } = record;
+  return new Promise<AttestationEvent>((resolve, reject) => {
+    const handleEvents = (events: EventRecord[]) => {
+      try {
+        events.forEach((record) => {
+          const { event } = record;
 
-            if (event.section === 'poe' && event.method === 'NewAttestation') {
-              const currentAttestationId = Number(event.data[0]);
+          if (event.section === 'poe' && event.method === 'NewAttestation') {
+            const currentAttestationId = Number(event.data[0]);
 
-              if (currentAttestationId === attestationId) {
-                unsubscribe();
+            if (currentAttestationId === attestationId) {
+              unsubscribe();
 
-                const attestationEvent: AttestationEvent = {
-                  id: currentAttestationId,
-                  attestation: event.data[1].toString(),
-                };
+              const attestationEvent: AttestationEvent = {
+                id: currentAttestationId,
+                attestation: event.data[1].toString(),
+              };
 
-                emitter.emit(
-                  ZkVerifyEvents.AttestationConfirmed,
-                  attestationEvent,
-                );
-                resolve(attestationEvent);
-              } else if (currentAttestationId < attestationId) {
-                emitter.emit(ZkVerifyEvents.AttestationBeforeExpected, {
-                  expectedId: attestationId,
-                  receivedId: currentAttestationId,
-                  event: record.event,
-                });
-              } else if (currentAttestationId > attestationId) {
-                emitter.emit(ZkVerifyEvents.AttestationMissed, {
-                  expectedId: attestationId,
-                  receivedId: currentAttestationId,
-                  event: record.event,
-                });
-                unsubscribe();
-                reject(
-                  new Error(
-                    `Missed the attestation ID ${attestationId}. Received a later attestation ID ${currentAttestationId}.`,
-                  ),
-                );
-              }
+              emitter.emit(
+                ZkVerifyEvents.AttestationConfirmed,
+                attestationEvent,
+              );
+              resolve(attestationEvent);
+            } else if (currentAttestationId < attestationId) {
+              emitter.emit(ZkVerifyEvents.AttestationBeforeExpected, {
+                expectedId: attestationId,
+                receivedId: currentAttestationId,
+                event: record.event,
+              });
+            } else if (currentAttestationId > attestationId) {
+              emitter.emit(ZkVerifyEvents.AttestationMissed, {
+                expectedId: attestationId,
+                receivedId: currentAttestationId,
+                event: record.event,
+              });
+              unsubscribe();
+              reject(
+                new Error(
+                  `Missed the attestation ID ${attestationId}. Received a later attestation ID ${currentAttestationId}.`,
+                ),
+              );
             }
-          });
-        },
-      )) as unknown as () => void;
-    } catch (error) {
-      emitter.emit(
-        ZkVerifyEvents.ErrorEvent,
-        error instanceof Error
-          ? error
-          : new Error('Attestation waiting failed with an unknown error.'),
-      );
-      reject(error);
-    }
+          }
+        });
+      } catch (error) {
+        emitter.emit(
+          ZkVerifyEvents.ErrorEvent,
+          error instanceof Error
+            ? error
+            : new Error('Attestation waiting failed with an unknown error.'),
+        );
+        reject(error);
+      }
+    };
+
+    let unsubscribe: () => void;
+
+    api.query.system
+      .events((events) => handleEvents(events))
+      .then((unsub) => {
+        unsubscribe = unsub as unknown as () => void;
+      })
+      .catch((error) => {
+        emitter.emit(
+          ZkVerifyEvents.ErrorEvent,
+          error instanceof Error
+            ? error
+            : new Error('Attestation waiting failed with an unknown error.'),
+        );
+        reject(error);
+      });
   });
 }
 
@@ -147,7 +162,9 @@ export const submitProofExtrinsic = (
  * @returns {Promise<unknown>} - A promise that resolves to the proof processor.
  * @throws {Error} - Throws an error if the proof processor cannot be loaded.
  */
-export async function getProofProcessor(proofType: string): Promise<ProofProcessor> {
+export async function getProofProcessor(
+  proofType: string,
+): Promise<ProofProcessor> {
   try {
     const processorPath = path.join(
       __dirname,
