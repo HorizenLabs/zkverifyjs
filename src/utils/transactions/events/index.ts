@@ -8,6 +8,7 @@ import {
 } from '../../../types';
 import { TransactionType } from '../../../enums';
 import { proofTypeToPallet } from '../../../config';
+import { DispatchInfo } from '@polkadot/types/interfaces';
 
 export const handleTransactionEvents = (
   api: ApiPromise,
@@ -39,7 +40,7 @@ export const handleTransactionEvents = (
     }
 
     if (event.section === 'system' && event.method === 'ExtrinsicSuccess') {
-      const dispatchInfo = event.data[0] as any;
+      const dispatchInfo = event.data[0] as DispatchInfo;
       transactionInfo.weightInfo = {
         refTime: dispatchInfo.weight.refTime?.toString(),
         proofSize: dispatchInfo.weight.proofSize?.toString(),

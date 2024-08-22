@@ -5,10 +5,11 @@ import {
   VKRegistrationTransactionInfo,
 } from '../../../types';
 import { TransactionStatus, ZkVerifyEvents } from '../../../enums';
+import { DispatchError } from '@polkadot/types/interfaces';
 
 export const decodeDispatchError = (
   api: ApiPromise,
-  dispatchError: any,
+  dispatchError: DispatchError,
 ): string => {
   if (dispatchError.isModule) {
     const decoded = api.registry.findMetaError(dispatchError.asModule);
@@ -28,7 +29,9 @@ export const handleError = (
   status?: SubmittableResult['status'],
 ): void | never => {
   let decodedError =
-    error instanceof Error ? error.message : decodeDispatchError(api, error);
+    error instanceof Error
+      ? error.message
+      : decodeDispatchError(api, error as DispatchError);
 
   if (
     status &&

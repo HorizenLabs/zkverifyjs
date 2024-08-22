@@ -126,12 +126,22 @@ export const handleTransaction = async (
 
   return new Promise<VerifyTransactionInfo | VKRegistrationTransactionInfo>(
     (resolve, reject) => {
-      const cancelTransaction = (error: any) => {
+      const cancelTransaction = (error: unknown) => {
         if (transactionInfo.status !== TransactionStatus.Error) {
           transactionInfo.status = TransactionStatus.Error;
 
           try {
-            handleError(emitter, api, transactionInfo, error, true);
+            if (error instanceof Error) {
+              handleError(emitter, api, transactionInfo, error, true);
+            } else {
+              handleError(
+                emitter,
+                api,
+                transactionInfo,
+                new Error(String(error)),
+                true,
+              );
+            }
           } catch (err) {
             reject(err);
             return;

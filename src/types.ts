@@ -25,8 +25,8 @@ export interface TransactionInfo {
     paysFee: string;
   };
   weightInfo?: {
-    refTime: string;
-    proofSize: string;
+    refTime?: string;
+    proofSize?: string;
   };
   txClass?: string;
 }
