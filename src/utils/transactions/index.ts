@@ -32,6 +32,10 @@ const handleInBlock = async (
   emitter: EventEmitter,
   transactionType: TransactionType,
 ): Promise<void> => {
+  if (transactionInfo.status === TransactionStatus.Error) {
+    return;
+  }
+
   transactionInfo.status = TransactionStatus.InBlock;
 
   const updatedTransactionInfo = handleTransactionEvents(
@@ -54,6 +58,10 @@ const handleFinalized = async (
   emitter: EventEmitter,
   transactionType: TransactionType,
 ): Promise<void> => {
+  if (transactionInfo.status === TransactionStatus.Error) {
+    return;
+  }
+
   if (dispatchError) {
     handleError(emitter, api, transactionInfo, dispatchError);
     return;
@@ -66,9 +74,10 @@ const handleFinalized = async (
     if (verifyTransactionInfo.attestationId) {
       safeEmit(emitter, ZkVerifyEvents.Finalized, verifyTransactionInfo);
     } else {
+      const errorMsg = 'Finalized but no attestation ID found.';
       safeEmit(emitter, ZkVerifyEvents.ErrorEvent, {
         ...verifyTransactionInfo,
-        error: 'Finalized but no attestation ID found.',
+        error: errorMsg,
       });
     }
   } else if (transactionType === TransactionType.VKRegistration) {
@@ -76,9 +85,10 @@ const handleFinalized = async (
     if (vkRegistrationInfo.statementHash) {
       safeEmit(emitter, ZkVerifyEvents.Finalized, vkRegistrationInfo);
     } else {
+      const errorMsg = 'Finalized but no statement hash found.';
       safeEmit(emitter, ZkVerifyEvents.ErrorEvent, {
         ...vkRegistrationInfo,
-        error: 'Finalized but no statement hash found.',
+        error: errorMsg,
       });
     }
   }
@@ -116,8 +126,65 @@ export const handleTransaction = async (
 
   return new Promise<VerifyTransactionInfo | VKRegistrationTransactionInfo>(
     (resolve, reject) => {
+      const cancelTransaction = (error: any) => {
+        if (transactionInfo.status !== TransactionStatus.Error) {
+          transactionInfo.status = TransactionStatus.Error;
+
+          try {
+            handleError(emitter, api, transactionInfo, error, true);
+          } catch (err) {
+            reject(err);
+            return;
+          }
+        }
+      };
+
+      const finalizeTransaction = async (result: SubmittableResult) => {
+        if (transactionInfo.status === TransactionStatus.Error) {
+          return;
+        }
+
+        try {
+          await handleFinalized(
+            api,
+            transactionInfo,
+            result.dispatchError,
+            emitter,
+            transactionType,
+          );
+
+          if (
+            transactionType === TransactionType.Verify &&
+            shouldWaitForAttestation &&
+            (transactionInfo as VerifyTransactionInfo).attestationId
+          ) {
+            try {
+              (transactionInfo as VerifyTransactionInfo).attestationEvent =
+                await waitForNewAttestationEvent(
+                  api,
+                  (transactionInfo as VerifyTransactionInfo).attestationId!,
+                  emitter,
+                );
+              (transactionInfo as VerifyTransactionInfo).attestationConfirmed =
+                true;
+            } catch (error) {
+              cancelTransaction(error);
+              return;
+            }
+          }
+
+          resolve(transactionInfo);
+        } catch (error) {
+          cancelTransaction(error);
+        }
+      };
+
       submitExtrinsic
         .signAndSend(account, { nonce }, async (result: SubmittableResult) => {
+          if (transactionInfo.status === TransactionStatus.Error) {
+            return;
+          }
+
           try {
             if (result.status.isInBlock) {
               transactionInfo.txHash = result.txHash.toString();
@@ -131,87 +198,20 @@ export const handleTransaction = async (
                 emitter,
                 transactionType,
               );
+            }
 
-              if (result.status.isFinalized) {
-                await handleFinalized(
-                  api,
-                  transactionInfo,
-                  result.dispatchError,
-                  emitter,
-                  transactionType,
-                );
-
-                if (
-                  transactionType === TransactionType.Verify &&
-                  shouldWaitForAttestation &&
-                  (transactionInfo as VerifyTransactionInfo).attestationId
-                ) {
-                  try {
-                    (
-                      transactionInfo as VerifyTransactionInfo
-                    ).attestationEvent = await waitForNewAttestationEvent(
-                      api,
-                      (transactionInfo as VerifyTransactionInfo).attestationId!,
-                      emitter,
-                    );
-                    (
-                      transactionInfo as VerifyTransactionInfo
-                    ).attestationConfirmed = true;
-                  } catch (error) {
-                    return reject(error);
-                  }
-                }
-
-                return resolveTransaction(resolve, transactionInfo);
-              }
-            } else if (result.status.isFinalized) {
-              await handleFinalized(
-                api,
-                transactionInfo,
-                result.dispatchError,
-                emitter,
-                transactionType,
-              );
-
-              if (
-                transactionType === TransactionType.Verify &&
-                shouldWaitForAttestation &&
-                (transactionInfo as VerifyTransactionInfo).attestationId
-              ) {
-                try {
-                  (transactionInfo as VerifyTransactionInfo).attestationEvent =
-                    await waitForNewAttestationEvent(
-                      api,
-                      (transactionInfo as VerifyTransactionInfo).attestationId!,
-                      emitter,
-                    );
-                  (
-                    transactionInfo as VerifyTransactionInfo
-                  ).attestationConfirmed = true;
-                } catch (error) {
-                  return reject(error);
-                }
-              }
-
-              return resolveTransaction(resolve, transactionInfo);
+            if (result.status.isFinalized) {
+              await finalizeTransaction(result);
             } else if (result.status.isInvalid) {
-              return reject(new Error('Transaction is invalid.'));
+              throw new Error('Transaction is invalid.');
             }
           } catch (error) {
-            handleError(emitter, api, transactionInfo, error);
-            reject(error);
+            cancelTransaction(error);
           }
         })
-        .catch(reject);
+        .catch((error) => {
+          cancelTransaction(error);
+        });
     },
   );
-};
-
-const resolveTransaction = (
-  resolve: (
-    value: VerifyTransactionInfo | VKRegistrationTransactionInfo,
-  ) => void,
-  transactionInfo: VerifyTransactionInfo | VKRegistrationTransactionInfo,
-) => {
-  resolve(transactionInfo);
 };

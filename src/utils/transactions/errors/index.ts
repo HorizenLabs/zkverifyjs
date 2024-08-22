@@ -4,7 +4,7 @@ import {
   VerifyTransactionInfo,
   VKRegistrationTransactionInfo,
 } from '../../../types';
-import { ZkVerifyEvents, TransactionStatus } from '../../../enums';
+import { TransactionStatus, ZkVerifyEvents } from '../../../enums';
 
 export const decodeDispatchError = (
   api: ApiPromise,
@@ -24,8 +24,9 @@ export const handleError = (
   api: ApiPromise,
   transactionInfo: VerifyTransactionInfo | VKRegistrationTransactionInfo,
   error: unknown,
+  shouldThrow = true,
   status?: SubmittableResult['status'],
-): void => {
+): void | never => {
   let decodedError =
     error instanceof Error ? error.message : decodeDispatchError(api, error);
 
@@ -36,6 +37,8 @@ export const handleError = (
   ) {
     transactionInfo.status = TransactionStatus.Invalid;
     decodedError = 'Transaction was marked as invalid.';
+  } else {
+    transactionInfo.status = TransactionStatus.Error;
   }
 
   if (emitter.listenerCount(ZkVerifyEvents.ErrorEvent) > 0) {
@@ -43,7 +46,9 @@ export const handleError = (
       proofType: transactionInfo.proofType,
       error: decodedError,
     });
-  } else {
-    throw new Error(`Unhandled error: ${decodedError}`);
+  }
+
+  if (shouldThrow) {
+    throw new Error(decodedError);
   }
 };

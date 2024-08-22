@@ -6,8 +6,7 @@ import {
   VerifyTransactionInfo,
   VKRegistrationTransactionInfo,
 } from '../../../types';
-import { decodeDispatchError } from '../errors';
-import { TransactionType, ZkVerifyEvents } from '../../../enums';
+import { TransactionType } from '../../../enums';
 import { proofTypeToPallet } from '../../../config';
 
 export const handleTransactionEvents = (
@@ -54,11 +53,7 @@ export const handleTransactionEvents = (
 
     if (event.section === 'system' && event.method === 'ExtrinsicFailed') {
       const [dispatchError] = event.data;
-      const decodedError = decodeDispatchError(api, dispatchError);
-      emitter.emit(
-        ZkVerifyEvents.ErrorEvent,
-        new Error(`Transaction failed with error: ${decodedError}`),
-      );
+      throw dispatchError;
     }
 
     if (

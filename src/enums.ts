@@ -6,6 +6,7 @@ export enum TransactionType {
 export enum TransactionStatus {
   Broadcast = 'broadcast',
   Dropped = 'dropped',
+  Error = 'error',
   Finalized = 'finalized',
   InBlock = 'inBlock',
   Invalid = 'invalid',

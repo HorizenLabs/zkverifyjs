@@ -23,7 +23,6 @@ import { AccountConnection, EstablishedConnection } from '../connection/types';
 import { ApiPromise, WsProvider } from '@polkadot/api';
 import { KeyringPair } from '@polkadot/keyring/types';
 import { registerVk } from '../api/register';
-import { ZkVerifyEvents } from '../enums';
 
 /**
  * zkVerifySession class provides an interface to zkVerify, direct access to the Polkadot.js API.
@@ -101,8 +100,7 @@ export class zkVerifySession {
           ...proofData,
         );
       } catch (error) {
-        events.emit(ZkVerifyEvents.ErrorEvent, error);
-        throw error;
+        return Promise.reject(error);
       }
     })();
 

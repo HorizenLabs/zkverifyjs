@@ -27,10 +27,16 @@ import { Proof, ProofInner } from '../types';
  * @throws {Error} If the proof input is not valid.
  */
 export const formatProof = (proof: ProofInput): Proof => {
-  if (!proof.pi_a || !proof.pi_b || !proof.pi_c) {
-    throw new Error(
-      'Invalid proof format: Missing required proof components (pi_a, pi_b, pi_c).',
-    );
+  if (!Array.isArray(proof.pi_a)) {
+    throw new Error('Invalid proof format: pi_a must be an array.');
+  }
+
+  if (!Array.isArray(proof.pi_b)) {
+    throw new Error('Invalid proof format: pi_b must be an array.');
+  }
+
+  if (!Array.isArray(proof.pi_c)) {
+    throw new Error('Invalid proof format: pi_c must be an array.');
   }
 
   const formattedProof: ProofInner = {
