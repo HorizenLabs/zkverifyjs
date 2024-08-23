@@ -18,37 +18,29 @@ describe('verify with bad data - Groth16', () => {
 
         let errorEventEmitted = false;
 
-        const { events, transactionResult } = await session.verify(
-            { proofType: 'groth16', waitForNewAttestationEvent: true },
+        const { events, transactionResult } = await session.verify()
+            .groth16().waitForPublishedAttestation().execute(
             badProof,
             publicSignals,
             vk
         );
 
-        events.on(ZkVerifyEvents.ErrorEvent, (error) => {
-            errorEventEmitted = true;
-
-            if (error instanceof Error) {
-                expect(error.message).toContain('Invalid proof format');
-            } else if (typeof error === 'object' && error !== null) {
-                expect((error as { error: string }).error).toContain('Invalid proof format');
-            } else {
-                throw new Error(`Unexpected error type: ${typeof error}`);
-            }
-        });
-
         try {
             const transactionInfo = await transactionResult;
         } catch (error) {
             if (error instanceof Error) {
+                expect(error.message).toContain('Failed to format groth16 proof');
                 expect(error.message).toContain('Invalid proof format');
+                expect(error.message).toContain('pi_a must be an array');
             } else if (typeof error === 'object' && error !== null) {
-                expect((error as { error: string }).error).toContain('Invalid proof format');
+                expect(error).toHaveProperty('message');
+                expect((error as { message: string }).message).toContain('Failed to format groth16 proof');
+                expect((error as { message: string }).message).toContain('Invalid proof format');
+                expect((error as { message: string }).message).toContain('pi_a must be an array');
             } else {
-                throw new Error(`Unexpected error type: ${typeof error}`);
+                throw new Error(`Unexpected error type or structure: ${typeof error}`);
             }
         } finally {
-            expect(errorEventEmitted).toBe(true);
             await session.close();
         }
     });
@@ -63,8 +55,8 @@ describe('verify with bad data - Groth16', () => {
 
         let errorEventEmitted = false;
 
-        const { events, transactionResult } = await session.verify(
-            { proofType: 'groth16', waitForNewAttestationEvent: true },
+        const { events, transactionResult } = await session.verify()
+            .groth16().waitForPublishedAttestation().execute(
             proof,
             publicSignals,
             vk

@@ -30,14 +30,14 @@ export async function verify(
 
     if (!proof || !publicSignals) {
       throw new Error(
-        'Proof and publicSignals are required and cannot be null or undefined.',
+        `${options.proofType}: Proof and publicSignals are required and cannot be null or undefined.`,
       );
     }
 
-    if (!options.registeredVk && !vk) {
-      throw new Error('Either vk or registeredVk must be provided.');
-    } else if (options.registeredVk && vk) {
-      throw new Error('Cannot provide both registeredVk option and Vk data.');
+    if (!vk) {
+      throw new Error(
+        `${options.proofType}: Either Verification Key must be provided.`,
+      );
     }
 
     let formattedProof, formattedPubs, formattedVk;
@@ -45,38 +45,41 @@ export async function verify(
     try {
       formattedProof = processor.formatProof(proof);
     } catch (error) {
-      const proofSnippet = typeof proof === 'string' ? proof.slice(0, 50) : JSON.stringify(proof).slice(0, 50);
+      const proofSnippet =
+        typeof proof === 'string'
+          ? proof.slice(0, 50)
+          : JSON.stringify(proof).slice(0, 50);
       throw new Error(
-          `Failed to format proof: ${error instanceof Error ? error.message : 'Unknown error'}. Proof snippet: "${proofSnippet}..."`,
+        `Failed to format ${options.proofType} proof: ${error instanceof Error ? error.message : 'Unknown error'}. Proof snippet: "${proofSnippet}..."`,
       );
     }
-
 
     try {
       formattedPubs = processor.formatPubs(publicSignals);
     } catch (error) {
       const pubsSnippet = Array.isArray(publicSignals)
-          ? JSON.stringify(publicSignals).slice(0, 50)
-          : publicSignals?.toString().slice(0, 50);
+        ? JSON.stringify(publicSignals).slice(0, 50)
+        : publicSignals?.toString().slice(0, 50);
 
       throw new Error(
-          `Failed to format public signals: ${error instanceof Error ? error.message : 'Unknown error'}. Public signals snippet: "${pubsSnippet}..."`,
+        `Failed to format ${options.proofType} public signals: ${error instanceof Error ? error.message : 'Unknown error'}. Public signals snippet: "${pubsSnippet}..."`,
       );
     }
 
     try {
       if (options.registeredVk) {
-        formattedVk = { Hash: options.registeredVk };
+        formattedVk = { Hash: vk };
       } else {
         formattedVk = { Vk: processor.formatVk(vk) };
       }
     } catch (error) {
-      const vkSnippet = typeof vk === 'string'
+      const vkSnippet =
+        typeof vk === 'string'
           ? vk.slice(0, 50)
           : JSON.stringify(vk).slice(0, 50);
 
       throw new Error(
-          `Failed to format verification key: ${error instanceof Error ? error.message : 'Unknown error'}. Verification key snippet: "${vkSnippet}..."`,
+        `Failed to format ${options.proofType} verification key: ${error instanceof Error ? error.message : 'Unknown error'}. Verification key snippet: "${vkSnippet}..."`,
       );
     }
 
@@ -104,7 +107,7 @@ export async function verify(
     } catch (error) {
       emitter.emit(ZkVerifyEvents.ErrorEvent, error);
       throw new Error(
-        `Failed to send proof: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        `Failed to send ${options.proofType} proof: ${error instanceof Error ? error.message : `${options.proofType}: Unknown error`}`,
       );
     }
   } catch (error) {

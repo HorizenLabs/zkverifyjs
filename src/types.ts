@@ -42,16 +42,6 @@ export interface VKRegistrationTransactionInfo extends TransactionInfo {
   statementHash?: string;
 }
 
-export interface VerifyTransactionInfo extends TransactionInfo {
-  leafDigest: string | null;
-  attestationConfirmed: boolean;
-  attestationEvent?: AttestationEvent;
-}
-
-export interface VKRegistrationTransactionInfo extends TransactionInfo {
-  statementHash?: string;
-}
-
 export interface AccountInfo {
   address: string;
   nonce: number;

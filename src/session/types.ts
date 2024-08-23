@@ -8,7 +8,7 @@ export interface zkVerifySessionOptions {
 
 export interface VerifyOptions {
   proofType: string;
-  registeredVk?: string;
+  registeredVk?: boolean;
   nonce?: number;
   waitForNewAttestationEvent?: boolean;
 }

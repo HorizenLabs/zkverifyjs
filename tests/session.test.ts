@@ -1,15 +1,16 @@
 import { zkVerifySession } from '../src';
 import { EventEmitter } from 'events';
-import {defaultUrls} from "../src/config";
+import { defaultUrls } from "../src/config";
+import { ProofMethodMap } from "../src/session/builders/verify";
 
 describe('zkVerifySession class', () => {
     let session: zkVerifySession;
 
-    const mockVerify = async () => {
+    const mockVerifyExecution = jest.fn(async () => {
         const events = new EventEmitter();
         const transactionResult = Promise.resolve({} as any);
         return { events, transactionResult };
-    };
+    });
 
     afterEach(async () => {
         if (session) {
@@ -17,6 +18,7 @@ describe('zkVerifySession class', () => {
             expect(session.api.isConnected).toBe(false);
             expect(session['provider'].isConnected).toBe(false);
         }
+        jest.clearAllMocks();
     });
 
     it('should establish a connection and close it successfully', async () => {
@@ -43,7 +45,7 @@ describe('zkVerifySession class', () => {
         expect(session).toBeDefined();
         expect(session.readOnly).toBe(true);
         expect(session.api).toBeDefined();
-        expect(session['provider']).toBeDefined();
+        expect(session['provider'].isConnected).toBe(true);
     });
 
     it('should start a session with a custom WebSocket URL and an account when seed phrase is provided', async () => {
@@ -51,7 +53,7 @@ describe('zkVerifySession class', () => {
         expect(session).toBeDefined();
         expect(session.readOnly).toBe(false);
         expect(session.api).toBeDefined();
-        expect(session['provider']).toBeDefined();
+        expect(session['provider'].isConnected).toBe(true);
     });
 
     it('should correctly handle adding, removing, and re-adding an account', async () => {
@@ -88,7 +90,7 @@ describe('zkVerifySession class', () => {
         session = await zkVerifySession.start({ host: 'testnet' });
         expect(session.readOnly).toBe(true);
         await expect(
-            session.verify({ proofType: 'proofType'}, 'proofData')
+            session.verify().groth16().execute('proofData')
         ).rejects.toThrow('This action requires an active account. The session is currently in read-only mode because no account is associated with it. Please provide an account at session start, or add one to the current session using `addAccount`.');
     });
 
@@ -96,8 +98,15 @@ describe('zkVerifySession class', () => {
         session = await zkVerifySession.start({ host: 'testnet', seedPhrase: process.env.SEED_PHRASE });
         expect(session.readOnly).toBe(false);
 
-        session.verify = jest.fn(mockVerify);
-        const { events, transactionResult } = await session.verify({ proofType: 'proofType'}, 'proofData');
+        const mockBuilder = {
+            fflonk: jest.fn(() => ({
+                execute: mockVerifyExecution
+            })),
+        } as unknown as ProofMethodMap;
+
+        session.verify = jest.fn(() => mockBuilder);
+
+        const { events, transactionResult } = await session.verify().fflonk().execute('proofData');
 
         expect(events).toBeDefined();
         expect(transactionResult).toBeDefined();
@@ -133,11 +142,16 @@ describe('zkVerifySession class', () => {
         session = await zkVerifySession.start({ host: 'testnet', seedPhrase: process.env.SEED_PHRASE });
         expect(session.readOnly).toBe(false);
 
-        session.verify = jest.fn(mockVerify);
+        const mockBuilder = {
+            fflonk: jest.fn(() => ({ execute: mockVerifyExecution })),
+            groth16: jest.fn(() => ({ execute: mockVerifyExecution })),
+        } as unknown as ProofMethodMap;
+
+        session.verify = jest.fn(() => mockBuilder);
 
         const [result1, result2] = await Promise.all([
-            session.verify({ proofType: 'proofType1' }, 'proofData1'),
-            session.verify({ proofType: 'proofType2' }, 'proofData2')
+            session.verify().fflonk().execute('proofData'),
+            session.verify().groth16().execute('proofData')
         ]);
 
         expect(result1.events).toBeDefined();

@@ -1,7 +1,7 @@
 export enum ProofType {
   fflonk = 'fflonk',
   groth16 = 'groth16',
-  risc0 = 'risc0'
+  risc0 = 'risc0',
 }
 export enum TransactionType {
   Verify = 1,

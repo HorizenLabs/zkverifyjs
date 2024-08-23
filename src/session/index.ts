@@ -23,6 +23,9 @@ import { AccountConnection, EstablishedConnection } from '../connection/types';
 import { ApiPromise, WsProvider } from '@polkadot/api';
 import { KeyringPair } from '@polkadot/keyring/types';
 import { registerVk } from '../api/register';
+import { ProofType } from '../enums';
+import { ProofMethodMap, VerificationBuilder } from './builders/verify';
+import { RegisterKeyBuilder, RegisterKeyMethodMap } from './builders/register';
 
 /**
  * zkVerifySession class provides an interface to zkVerify, direct access to the Polkadot.js API.
@@ -74,15 +77,81 @@ export class zkVerifySession {
   }
 
   /**
-   * Verifies a proof with the specified proof data.
-   * The proof type, nonce are specified in the options object.
-   * @param {VerifyOptions} options - An object containing the proof type, optional nonce, and optional waitForNewAttestationEvent boolean.
-   * @param {...any[]} proofData - The data required for the proof verification.
-   * @returns {Promise<{ events: EventEmitter; transactionResult: Promise<ProofTransactionResult>; }>}
+   * Creates a builder map for different proof types that can be used for verification.
+   * Each proof type returns a `VerificationBuilder` that allows you to chain methods for setting options
+   * and finally executing the verification process.
+   *
+   * @returns {ProofMethodMap} A map of proof types to their corresponding builder methods.
    */
-  async verify(
-    options: VerifyOptions,
-    ...proofData: unknown[]
+  verify(): ProofMethodMap {
+    const builderMethods: any = {};
+
+    for (const proofType of Object.keys(ProofType)) {
+      builderMethods[proofType] = () =>
+          this.createVerifyBuilder(proofType as ProofType);
+    }
+
+    return builderMethods as ProofMethodMap;
+  }
+
+  /**
+   * Creates a builder map for different proof types that can be used for registering verification keys.
+   * Each proof type returns a `RegisterKeyBuilder` that allows you to chain methods for setting options
+   * and finally executing the registration process.
+   *
+   * @returns {RegisterKeyMethodMap} A map of proof types to their corresponding builder methods.
+   */
+  registerVerificationKey(): RegisterKeyMethodMap {
+    const builderMethods: any = {};
+
+    for (const proofType of Object.keys(ProofType)) {
+      builderMethods[proofType] = () =>
+          this.createRegisterKeyBuilder(proofType as ProofType);
+    }
+
+    return builderMethods as RegisterKeyMethodMap;
+  }
+
+  /**
+   * Factory method to create a `VerificationBuilder` for the given proof type.
+   * The builder allows for chaining options and finally executing the verification process.
+   *
+   * @param {ProofType} proofType - The type of proof to be used.
+   * @returns {VerificationBuilder} A new instance of `VerificationBuilder`.
+   * @private
+   */
+  private createVerifyBuilder(proofType: ProofType): VerificationBuilder {
+    return new VerificationBuilder(this.executeVerify.bind(this), proofType);
+  }
+
+  /**
+   * Factory method to create a `RegisterKeyBuilder` for the given proof type.
+   * The builder allows for chaining options and finally executing the key registration process.
+   *
+   * @param {ProofType} proofType - The type of proof to be used.
+   * @returns {RegisterKeyBuilder} A new instance of `RegisterKeyBuilder`.
+   * @private
+   */
+  private createRegisterKeyBuilder(proofType: ProofType): RegisterKeyBuilder {
+    return new RegisterKeyBuilder(
+        this.executeRegisterVerificationKey.bind(this),
+        proofType,
+    );
+  }
+
+  /**
+   * Executes the verification process with the provided options and proof data.
+   * This method is intended to be called by the `VerificationBuilder`.
+   *
+   * @param {VerifyOptions} options - The options for the verification process, including proof type and other optional settings.
+   * @param {...unknown[]} proofData - The proof data required for the verification process.
+   * @returns {Promise<{events: EventEmitter, transactionResult: Promise<VerifyTransactionInfo>}>}
+   * A promise that resolves with an object containing an `EventEmitter` for real-time events and the final transaction result.
+   * @private
+   */
+  private async executeVerify(
+      options: VerifyOptions,
+      ...proofData: unknown[]
   ): Promise<{
     events: EventEmitter;
     transactionResult: Promise<VerifyTransactionInfo>;
@@ -91,34 +160,38 @@ export class zkVerifySession {
 
     const events = new EventEmitter();
 
-    const transactionResult = (async () => {
-      try {
-        return await verify(
-          this.connection as AccountConnection,
-          options,
-          events,
-          ...proofData,
-        );
-      } catch (error) {
-        return Promise.reject(error);
-      }
-    })();
+    const transactionResult = verify(
+        this.connection as AccountConnection,
+        options,
+        events,
+        ...proofData,
+    );
 
     return { events, transactionResult };
   }
 
-  async registerVerificationKey(
-    options: VerifyOptions,
-    verificationKey: unknown,
+  /**
+   * Executes the verification key registration process with the provided options and verification key.
+   * This method is intended to be called by the `RegisterKeyBuilder`.
+   *
+   * @param {VerifyOptions} options - The options for the key registration process, including proof type and other optional settings.
+   * @param {unknown} verificationKey - The verification key to be registered.
+   * @returns {Promise<{events: EventEmitter, transactionResult: Promise<VKRegistrationTransactionInfo>}>}
+   * A promise that resolves with an object containing an `EventEmitter` for real-time events and the final transaction result.
+   * @private
+   */
+  private async executeRegisterVerificationKey(
+      options: VerifyOptions,
+      verificationKey: unknown,
   ): Promise<{
     events: EventEmitter;
     transactionResult: Promise<VKRegistrationTransactionInfo>;
   }> {
     checkReadOnly(this.readOnly);
     return registerVk(
-      this.connection as AccountConnection,
-      options,
-      verificationKey,
+        this.connection as AccountConnection,
+        options,
+        verificationKey,
     );
   }
 
@@ -249,3 +322,5 @@ export class zkVerifySession {
     return 'account' in this.connection ? this.connection.account : undefined;
   }
 }
+
+export interface zkVerifySession extends ProofMethodMap {}

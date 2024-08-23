@@ -19,8 +19,9 @@ describe('verify and subscribe - Risc0', () => {
         let finalizedEmitted = false;
         let errorEventEmitted = false;
 
-        const {events, transactionResult} = await session.verify(
-            { proofType: 'risc0' },
+        const {events, transactionResult} = await session.verify().risc0()
+            .waitForPublishedAttestation()
+            .execute(
             proof,
             publicSignals,
             vk

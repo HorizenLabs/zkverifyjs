@@ -20,12 +20,10 @@ describe('verify and subscribe - Groth16', () => {
         let attestationConfirmedEmitted = false;
         let errorEventEmitted = false;
 
-        const {events, transactionResult} = await session.verify(
-            {proofType: 'groth16', waitForNewAttestationEvent: true},
-            proof,
-            publicSignals,
-            vk
-        );
+        const {events, transactionResult} = await session.verify()
+            .groth16()
+            .waitForPublishedAttestation()
+            .execute(proof, publicSignals, vk)
 
         events.on(ZkVerifyEvents.IncludedInBlock, (eventData) => {
             console.log("includedInBlock Event Received: ", eventData);

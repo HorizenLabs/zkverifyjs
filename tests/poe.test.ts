@@ -16,8 +16,8 @@ describe('verify and get proof of existence (poe) - Fflonk', () => {
         const session = await zkVerifySession.start({ host: 'testnet', seedPhrase: process.env.SEED_PHRASE });
 
         console.log('Session started. Sending proof for verification...');
-        const { events, transactionResult } = await session.verify(
-            { proofType: 'fflonk', waitForNewAttestationEvent: true },
+        const { events, transactionResult } = await session.verify()
+            .fflonk().waitForPublishedAttestation().execute(
             proof,
             publicSignals,
             vk);
@@ -90,8 +90,8 @@ describe('verify and get proof of existence (poe) - Fflonk', () => {
         const currentNonce = (await session.accountInfo()).nonce
 
         const [tx1, tx2] = await Promise.all([
-            session.verify({ proofType: 'fflonk', waitForNewAttestationEvent: true, nonce: currentNonce }, proof, publicSignals, vk),
-            session.verify({ proofType: 'fflonk', waitForNewAttestationEvent: true, nonce: currentNonce + 1 }, proof, publicSignals, vk)
+            session.verify().fflonk().waitForPublishedAttestation().nonce(currentNonce).execute(proof, publicSignals, vk),
+            session.verify().fflonk().waitForPublishedAttestation().nonce(currentNonce + 1).execute(proof, publicSignals, vk),
         ]);
 
         const result1: VerifyTransactionInfo = await tx1.transactionResult;

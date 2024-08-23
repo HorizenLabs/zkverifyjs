@@ -19,10 +19,7 @@ describe('registerVerificationKey - Fflonk', () => {
         let finalizedEmitted = false;
         let errorEventEmitted = false;
 
-        const { events, transactionResult } = await session.registerVerificationKey(
-            { proofType: 'fflonk' },
-            vk
-        );
+        const { events, transactionResult } = await session.registerVerificationKey().fflonk().execute(vk);
 
         events.on(ZkVerifyEvents.IncludedInBlock, (eventData) => {
             console.log("includedInBlock Event Received: ", eventData);
@@ -77,11 +74,11 @@ describe('registerVerificationKey - Fflonk', () => {
         expect(finalizedEmitted).toBe(true);
         expect(errorEventEmitted).toBe(false);
         console.log("StatementHash:" + transactionInfo.statementHash);
-        const { events: verifyEvents, transactionResult: verifyTransactionResult } = await session.verify(
-            { proofType: 'fflonk', registeredVk: transactionInfo.statementHash! },
-            proof,
-            publicSignals
-        );
+
+        const {events: verifyEvents, transactionResult: verifyTransactionResult} = await session.verify()
+            .fflonk()
+            .withRegisteredVk()
+            .execute(proof, publicSignals, transactionInfo.statementHash);
 
         verifyEvents.on(ZkVerifyEvents.IncludedInBlock, (eventData) => {
             console.log("verify includedInBlock Event Received: ", eventData);
