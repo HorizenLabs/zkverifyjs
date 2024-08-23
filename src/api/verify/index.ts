@@ -45,16 +45,22 @@ export async function verify(
     try {
       formattedProof = processor.formatProof(proof);
     } catch (error) {
+      const proofSnippet = typeof proof === 'string' ? proof.slice(0, 50) : JSON.stringify(proof).slice(0, 50);
       throw new Error(
-        `Failed to format proof: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          `Failed to format proof: ${error instanceof Error ? error.message : 'Unknown error'}. Proof snippet: "${proofSnippet}..."`,
       );
     }
+
 
     try {
       formattedPubs = processor.formatPubs(publicSignals);
     } catch (error) {
+      const pubsSnippet = Array.isArray(publicSignals)
+          ? JSON.stringify(publicSignals).slice(0, 50)
+          : publicSignals?.toString().slice(0, 50);
+
       throw new Error(
-        `Failed to format public signals: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          `Failed to format public signals: ${error instanceof Error ? error.message : 'Unknown error'}. Public signals snippet: "${pubsSnippet}..."`,
       );
     }
 
@@ -65,8 +71,12 @@ export async function verify(
         formattedVk = { Vk: processor.formatVk(vk) };
       }
     } catch (error) {
+      const vkSnippet = typeof vk === 'string'
+          ? vk.slice(0, 50)
+          : JSON.stringify(vk).slice(0, 50);
+
       throw new Error(
-        `Failed to format verification key: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          `Failed to format verification key: ${error instanceof Error ? error.message : 'Unknown error'}. Verification key snippet: "${vkSnippet}..."`,
       );
     }
 
