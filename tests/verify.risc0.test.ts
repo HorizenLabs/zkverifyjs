@@ -7,13 +7,13 @@ import { TransactionStatus, ZkVerifyEvents } from "../src/enums";
 
 jest.setTimeout(300000);
 
-describe('verify and subscribe - Risc0', () => {
+describe('verify and subscribe using a custom network url - Risc0', () => {
     it('should send the risc0 proof for verification and respond on finalization without waiting for the NewAttestation event', async () => {
         const dataPath = path.join(__dirname, 'data', 'risc0.json');
         const risc0Data = JSON.parse(fs.readFileSync(dataPath, 'utf8'));
         const { proof, publicSignals, vk } = risc0Data;
 
-        const session = await zkVerifySession.start({host: 'testnet', seedPhrase: process.env.SEED_PHRASE });
+        const session = await zkVerifySession.start().Custom("wss://testnet-rpc.zkverify.io").withAccount(process.env.SEED_PHRASE!);
 
         let includedInBlockEmitted = false;
         let finalizedEmitted = false;

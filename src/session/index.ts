@@ -23,9 +23,10 @@ import { AccountConnection, EstablishedConnection } from '../connection/types';
 import { ApiPromise, WsProvider } from '@polkadot/api';
 import { KeyringPair } from '@polkadot/keyring/types';
 import { registerVk } from '../api/register';
-import { ProofType } from '../enums';
+import { ProofType, SupportedNetwork } from '../enums';
 import { ProofMethodMap, VerificationBuilder } from './builders/verify';
 import { RegisterKeyBuilder, RegisterKeyMethodMap } from './builders/register';
+import { NetworkBuilder, SupportedNetworkMap } from './builders/network';
 
 /**
  * zkVerifySession class provides an interface to zkVerify, direct access to the Polkadot.js API.
@@ -64,16 +65,33 @@ export class zkVerifySession {
   }
 
   /**
-   * Starts a new zkVerifySession with the provided options.
-   * Optionally allows starting with an account already initialized.
-   * @param {zkVerifySessionOptions} options - The options for starting the session.
-   * @returns {Promise<zkVerifySession>} A promise that resolves to a zkVerifySession instance.
+   * Starts a new zkVerifySession with network selection.
+   * Returns a map of network methods for each supported network.
+   * @returns {Record<keyof typeof SupportedNetwork, (customWsUrl?: string) => Promise<zkVerifySession>>}
    */
-  static async start(
-    options: zkVerifySessionOptions,
-  ): Promise<zkVerifySession> {
-    const connection = await startSession(options);
-    return new zkVerifySession(connection);
+  static start(): SupportedNetworkMap {
+    const builderMethods: Partial<
+      Record<
+        keyof typeof SupportedNetwork,
+        (customWsUrl?: string) => NetworkBuilder
+      >
+    > = {};
+
+    for (const network in SupportedNetwork) {
+      if (Object.prototype.hasOwnProperty.call(SupportedNetwork, network)) {
+        builderMethods[network as keyof typeof SupportedNetwork] = (
+          customWsUrl?: string,
+        ) => {
+          return new NetworkBuilder(
+            zkVerifySession._startSession.bind(zkVerifySession),
+            SupportedNetwork[network as keyof typeof SupportedNetwork],
+            customWsUrl,
+          );
+        };
+      }
+    }
+
+    return builderMethods as SupportedNetworkMap;
   }
 
   /**
@@ -84,12 +102,14 @@ export class zkVerifySession {
    * @returns {ProofMethodMap} A map of proof types to their corresponding builder methods.
    */
   verify(): ProofMethodMap {
-    const builderMethods: Partial<Record<keyof typeof ProofType, () => VerificationBuilder>> = {};
+    const builderMethods: Partial<
+      Record<keyof typeof ProofType, () => VerificationBuilder>
+    > = {};
 
     for (const proofType in ProofType) {
       if (Object.prototype.hasOwnProperty.call(ProofType, proofType)) {
         builderMethods[proofType as keyof typeof ProofType] = () =>
-            this.createVerifyBuilder(proofType as ProofType);
+          this.createVerifyBuilder(proofType as ProofType);
       }
     }
 
@@ -104,12 +124,14 @@ export class zkVerifySession {
    * @returns {RegisterKeyMethodMap} A map of proof types to their corresponding builder methods.
    */
   registerVerificationKey(): RegisterKeyMethodMap {
-    const builderMethods: Partial<Record<keyof typeof ProofType, () => RegisterKeyBuilder>> = {};
+    const builderMethods: Partial<
+      Record<keyof typeof ProofType, () => RegisterKeyBuilder>
+    > = {};
 
     for (const proofType in ProofType) {
       if (Object.prototype.hasOwnProperty.call(ProofType, proofType)) {
         builderMethods[proofType as keyof typeof ProofType] = () =>
-            this.createRegisterKeyBuilder(proofType as ProofType);
+          this.createRegisterKeyBuilder(proofType as ProofType);
       }
     }
 
@@ -138,9 +160,22 @@ export class zkVerifySession {
    */
   private createRegisterKeyBuilder(proofType: ProofType): RegisterKeyBuilder {
     return new RegisterKeyBuilder(
-        this.executeRegisterVerificationKey.bind(this),
-        proofType,
+      this.executeRegisterVerificationKey.bind(this),
+      proofType,
     );
+  }
+
+  /**
+   * Private method to start a zkVerifySession with the provided options.
+   * @param {zkVerifySessionOptions} options - The options for starting the session.
+   * @returns {Promise<zkVerifySession>} A promise that resolves to a zkVerifySession instance.
+   * @private
+   */
+  private static async _startSession(
+    options: zkVerifySessionOptions,
+  ): Promise<zkVerifySession> {
+    const connection = await startSession(options);
+    return new zkVerifySession(connection);
   }
 
   /**
@@ -154,8 +189,8 @@ export class zkVerifySession {
    * @private
    */
   private async executeVerify(
-      options: VerifyOptions,
-      ...proofData: unknown[]
+    options: VerifyOptions,
+    ...proofData: unknown[]
   ): Promise<{
     events: EventEmitter;
     transactionResult: Promise<VerifyTransactionInfo>;
@@ -165,10 +200,10 @@ export class zkVerifySession {
     const events = new EventEmitter();
 
     const transactionResult = verify(
-        this.connection as AccountConnection,
-        options,
-        events,
-        ...proofData,
+      this.connection as AccountConnection,
+      options,
+      events,
+      ...proofData,
     );
 
     return { events, transactionResult };
@@ -185,17 +220,17 @@ export class zkVerifySession {
    * @private
    */
   private async executeRegisterVerificationKey(
-      options: VerifyOptions,
-      verificationKey: unknown,
+    options: VerifyOptions,
+    verificationKey: unknown,
   ): Promise<{
     events: EventEmitter;
     transactionResult: Promise<VKRegistrationTransactionInfo>;
   }> {
     checkReadOnly(this.readOnly);
     return registerVk(
-        this.connection as AccountConnection,
-        options,
-        verificationKey,
+      this.connection as AccountConnection,
+      options,
+      verificationKey,
     );
   }
 

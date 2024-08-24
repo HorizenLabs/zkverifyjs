@@ -13,7 +13,7 @@ describe('verify and get proof of existence (poe) - Fflonk', () => {
         const { proof, publicSignals, vk } = fflonkData;
 
         console.log('Starting session...');
-        const session = await zkVerifySession.start({ host: 'testnet', seedPhrase: process.env.SEED_PHRASE });
+        const session = await zkVerifySession.start().Testnet().withAccount(process.env.SEED_PHRASE!);
 
         console.log('Session started. Sending proof for verification...');
         const { events, transactionResult } = await session.verify()
@@ -83,7 +83,7 @@ describe('verify and get proof of existence (poe) - Fflonk', () => {
         const { proof, publicSignals, vk } = fflonkData;
 
         console.log('Starting session for two transactions...');
-        const session = await zkVerifySession.start({ host: 'testnet', seedPhrase: process.env.SEED_PHRASE });
+        const session = await zkVerifySession.start().Testnet().withAccount(process.env.SEED_PHRASE!);
 
         console.log('Session started. Sending two proofs for verification...');
 

@@ -13,7 +13,7 @@ describe('verify and subscribe - Groth16', () => {
         const groth16Data = JSON.parse(fs.readFileSync(dataPath, 'utf8'));
         const {proof, publicSignals, vk} = groth16Data;
 
-        const session = await zkVerifySession.start({host: 'testnet', seedPhrase: process.env.SEED_PHRASE });
+        const session = await zkVerifySession.start().Testnet().withAccount(process.env.SEED_PHRASE!);
 
         let includedInBlockEmitted = false;
         let finalizedEmitted = false;

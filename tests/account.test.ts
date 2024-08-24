@@ -6,7 +6,7 @@ jest.setTimeout(120000);
 
 describe('zkVerifySession - accountInfo', () => {
     it('should retrieve the account info including address, nonce, free balance and reserved balance', async () => {
-        const session = await zkVerifySession.start({ host: 'testnet', seedPhrase: process.env.SEED_PHRASE });
+        const session = await zkVerifySession.start().Testnet().withAccount(process.env.SEED_PHRASE!);
 
         try {
             const accountInfo: AccountInfo = await session.accountInfo();
@@ -35,7 +35,7 @@ describe('zkVerifySession - accountInfo', () => {
     });
 
     it('should throw an error if trying to get account info in a read-only session', async () => {
-        const session = await zkVerifySession.start({ host: 'testnet' });
+        const session = await zkVerifySession.start().Testnet().readOnly();
 
         try {
             await expect(session.accountInfo()).rejects.toThrow('This action requires an active account. The session is currently in read-only mode because no account is associated with it. Please provide an account at session start, or add one to the current session using `addAccount`.');

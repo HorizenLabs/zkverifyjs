@@ -14,7 +14,7 @@ describe('verify with bad data - Groth16', () => {
         const badProof = { ...groth16Data.proof, pi_a: 'bad_data' };
         const { publicSignals, vk } = groth16Data;
 
-        const session = await zkVerifySession.start({ host: 'testnet', seedPhrase: process.env.SEED_PHRASE });
+        const session = await zkVerifySession.start().Testnet().withAccount(process.env.SEED_PHRASE!);
 
         let errorEventEmitted = false;
 
@@ -51,7 +51,7 @@ describe('verify with bad data - Groth16', () => {
 
         const { proof, publicSignals, vk } = groth16Data;
 
-        const session = await zkVerifySession.start({ host: 'testnet', seedPhrase: process.env.SEED_PHRASE });
+        const session = await zkVerifySession.start().Testnet().withAccount(process.env.SEED_PHRASE!);
 
         let errorEventEmitted = false;
 

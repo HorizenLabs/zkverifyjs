@@ -13,7 +13,7 @@ describe('registerVerificationKey - Fflonk', () => {
         const fflonkData = JSON.parse(fs.readFileSync(dataPath, 'utf8'));
         const { proof, publicSignals, vk } = fflonkData;
 
-        const session = await zkVerifySession.start({ host: 'testnet', seedPhrase: process.env.SEED_PHRASE });
+        const session = await zkVerifySession.start().Testnet().withAccount(process.env.SEED_PHRASE!);
 
         let includedInBlockEmitted = false;
         let finalizedEmitted = false;

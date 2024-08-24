@@ -45,31 +45,35 @@ Before sending a proof, you need to start a session. A session establishes a con
 
 1. Read-Only Session with Supported Network:
 ```typescript
-const session = await zkVerifySession.start({ host: 'testnet' });
+await zkVerifySession.start()
+        .Testnet(); // Preconfigured network selection
+// No full account session as .withAccount() has not been used.
 ```
 2. Read-Only Session with Custom WebSocket:
 ```typescript
-const session = await zkVerifySession.start({ host: 'custom', customWsUrl: 'wss://custom-url' });
+await zkVerifySession.start()
+        .Custom("wss://testnet-rpc.zkverify.io"); // Custom network
+// No full account session as .withAccount() has not been used.
 ```
 3. Full Session (send transactions) with Supported Network:
 ```typescript
-const session = await zkVerifySession.start({ host: 'testnet', seedPhrase: 'your-seed-phrase' });
+await zkVerifySession.start()
+        .Testnet() // Preconfigured network selection
+        .withAccount(process.env.SEED_PHRASE!); // Full session with active account
 ```
 4. Full Session (send transactions)  with Custom WebSocket:
 ```typescript
-const session = await zkVerifySession.start({ host: 'custom', seedPhrase: 'your-seed-phrase', customWsUrl: 'wss://custom-url' });
+await zkVerifySession.start()
+        .Custom("wss://testnet-rpc.zkverify.io") // Custom network
+        .withAccount(process.env.SEED_PHRASE!); // Full session with active account
 ```
 
-- `host`: The pre-configured network to connect to (e.g., testnet). Use `custom` to use your own websocket url alongside the `customWsUrl` option.
-- `seedPhrase`: (Optional) The seed phrase for the account that will send the transaction.
-- `customWsUrl`: (Optional) Must be provided if `host='custom'`.
-
-Not providing a seed phrase will start a read-only session, transaction methods cannot be used, and only calls to read data are allowed:
+Not specifying `withAccount` will start a read-only session, transaction methods cannot be used, and only calls to read data are allowed:
 
 ```typescript
 import { zkVerifySession } from 'zkverifyjs';
 
-const readOnlySession = await zkVerifySession.start('testnet');
+const readOnlySession = await zkVerifySession.start().Testnet();
 ```
 
 ## Verifying a Proof
@@ -173,8 +177,10 @@ Wait for the NewElement event to be published before the transaction info is ret
 import { zkVerifySession, ZkVerifyEvents, TransactionStatus, VerifyTransactionInfo } from 'zkverifyjs';
 
 async function executeVerificationTransaction(proof: unknown, publicSignals: unknown, vk: unknown) {
-  // Start a new zkVerifySession (replace 'your-seed-phrase' with actual value)
-  const session = await zkVerifySession.start({ network: 'testnet', seed: 'your-seed-phrase' });
+  // Start a new zkVerifySession on our testnet (replace 'your-seed-phrase' with actual value)
+  await zkVerifySession.start()
+          .Testnet()
+          .withAccount('your-seed-phrase');
 
   // Execute the verification transaction
   const { events, transactionResult } = await session.verify().risc0()
@@ -227,13 +233,17 @@ executeVerificationTransaction(proof, publicSignals, vk);
 ## `zkVerifySession.start`
 
 ```typescript
-const session = await zkVerifySession.start({ host, seedPhrase, customWsUrl });
+await zkVerifySession.start()
+        .Testnet() // 1. Either preconfigured network selection
+        .Custom('wss://custom') // 2. Or specify a custom network selection
+        .withAccount(process.env.SEED_PHRASE!); // Optional
+        .readOnly() // Optional
 ```
 
-- `host`: The network to connect to (e.g., testnet).
-- `seedPhrase`: (Optional) The seed phrase for the account.
-- `customWsUrl`: (Optional) A custom WebSocket URL for connecting to the blockchain.
-
+- Network Selection: Preconfigured options such as `.Testnet()` or provide your own websocket url using `.Custom('wss://custom'')`.
+- withAccount : Create a full session with ability send transactions get account info by using .withAccount('seed-phrase') and specifying your own seed phrase.
+- readOnly: Start the session in read-only mode, unable to send transactions or retrieve account info.
+- 
 ## `zkVerifySession.close`
 
 ```typescript

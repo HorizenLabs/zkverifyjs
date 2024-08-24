@@ -1,3 +1,8 @@
+export enum SupportedNetwork {
+  Testnet = 'wss://testnet-rpc.zkverify.io',
+  Custom = 'custom',
+}
+
 export enum ProofType {
   fflonk = 'fflonk',
   groth16 = 'groth16',

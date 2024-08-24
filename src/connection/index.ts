@@ -1,5 +1,5 @@
 import { ApiPromise, WsProvider } from '@polkadot/api';
-import { SupportedNetwork, defaultUrls } from '../config';
+import { SupportedNetwork } from '../enums';
 import { EstablishedConnection } from './types';
 import { waitForNodeToSync } from '../utils/helpers';
 import { zkvTypes, zkvRpc } from '../config';
@@ -18,7 +18,7 @@ export const establishConnection = async (
 ): Promise<EstablishedConnection> => {
   let websocketUrl: string;
 
-  if (host === 'custom') {
+  if (host === SupportedNetwork.Custom) {
     if (!customWsUrl) {
       throw new Error(
         'Custom WebSocket URL must be provided when host is set to "custom".',
@@ -31,10 +31,8 @@ export const establishConnection = async (
         'Custom WebSocket URL provided. Please select "custom" as the host if you want to use a custom WebSocket endpoint.',
       );
     }
-    if (!(host in defaultUrls)) {
-      throw new Error(`Unsupported network host: ${host}`);
-    }
-    websocketUrl = defaultUrls[host];
+
+    websocketUrl = host;
   }
 
   try {
