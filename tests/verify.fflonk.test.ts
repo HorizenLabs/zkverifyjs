@@ -95,8 +95,7 @@ describe('verify and subscribe - Fflonk', () => {
         let attestationMissedEmitted = false;
         let errorEventEmitted = false;
 
-        const { events, transactionResult } = await session.verify(
-            { proofType: 'fflonk' },
+        const { events, transactionResult } = await session.verify().fflonk().execute(
             proof,
             publicSignals,
             vk

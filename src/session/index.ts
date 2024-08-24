@@ -84,11 +84,13 @@ export class zkVerifySession {
    * @returns {ProofMethodMap} A map of proof types to their corresponding builder methods.
    */
   verify(): ProofMethodMap {
-    const builderMethods: any = {};
+    const builderMethods: Partial<Record<keyof typeof ProofType, () => VerificationBuilder>> = {};
 
-    for (const proofType of Object.keys(ProofType)) {
-      builderMethods[proofType] = () =>
-          this.createVerifyBuilder(proofType as ProofType);
+    for (const proofType in ProofType) {
+      if (Object.prototype.hasOwnProperty.call(ProofType, proofType)) {
+        builderMethods[proofType as keyof typeof ProofType] = () =>
+            this.createVerifyBuilder(proofType as ProofType);
+      }
     }
 
     return builderMethods as ProofMethodMap;
@@ -102,11 +104,13 @@ export class zkVerifySession {
    * @returns {RegisterKeyMethodMap} A map of proof types to their corresponding builder methods.
    */
   registerVerificationKey(): RegisterKeyMethodMap {
-    const builderMethods: any = {};
+    const builderMethods: Partial<Record<keyof typeof ProofType, () => RegisterKeyBuilder>> = {};
 
-    for (const proofType of Object.keys(ProofType)) {
-      builderMethods[proofType] = () =>
-          this.createRegisterKeyBuilder(proofType as ProofType);
+    for (const proofType in ProofType) {
+      if (Object.prototype.hasOwnProperty.call(ProofType, proofType)) {
+        builderMethods[proofType as keyof typeof ProofType] = () =>
+            this.createRegisterKeyBuilder(proofType as ProofType);
+      }
     }
 
     return builderMethods as RegisterKeyMethodMap;
@@ -322,5 +326,3 @@ export class zkVerifySession {
     return 'account' in this.connection ? this.connection.account : undefined;
   }
 }
-
-export interface zkVerifySession extends ProofMethodMap {}
