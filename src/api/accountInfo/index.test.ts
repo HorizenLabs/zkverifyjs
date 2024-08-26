@@ -1,4 +1,4 @@
-import { expect, jest, test } from '@jest/globals';
+import { expect, jest } from '@jest/globals';
 import { ApiPromise } from '@polkadot/api';
 import { KeyringPair } from '@polkadot/keyring/types';
 import { accountInfo } from './index';

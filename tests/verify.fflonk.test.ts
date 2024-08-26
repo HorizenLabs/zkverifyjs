@@ -26,6 +26,10 @@ describe('verify and subscribe - Fflonk', () => {
             vk
         );
 
+        events.on(ZkVerifyEvents.ErrorEvent, (eventData) => {
+            errorEventEmitted = true;
+        });
+
         events.on(ZkVerifyEvents.IncludedInBlock, (eventData) => {
             console.log("includedInBlock Event Received: ", eventData);
             includedInBlockEmitted = true;

@@ -25,6 +25,10 @@ describe('verify and subscribe - Groth16', () => {
             .waitForPublishedAttestation()
             .execute(proof, publicSignals, vk)
 
+        events.on(ZkVerifyEvents.ErrorEvent, (eventData) => {
+            errorEventEmitted = true;
+        });
+
         events.on(ZkVerifyEvents.IncludedInBlock, (eventData) => {
             console.log("includedInBlock Event Received: ", eventData);
             includedInBlockEmitted = true;
@@ -57,7 +61,7 @@ describe('verify and subscribe - Groth16', () => {
             expect(eventData.txClass).toBeDefined();
         });
 
-        events.on('attestationConfirmed', (eventData) => {
+        events.on(ZkVerifyEvents.AttestationConfirmed, (eventData) => {
             attestationConfirmedEmitted = true;
             console.log('NewAttestation Event raised:', eventData);
             expect(eventData).toBeDefined();

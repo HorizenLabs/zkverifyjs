@@ -1,24 +1,43 @@
 import { ApiPromise, WsProvider } from '@polkadot/api';
 
 export async function closeSession(
-  api: ApiPromise,
-  provider: WsProvider,
+    api: ApiPromise,
+    provider: WsProvider,
 ): Promise<void> {
-  try {
-    await api.disconnect();
-
+  const disconnectWithRetries = async (name: string, disconnectFn: () => Promise<void>, isConnectedFn: () => boolean) => {
     let retries = 5;
-    while (provider.isConnected && retries > 0) {
-      await new Promise((resolve) => setTimeout(resolve, 100));
+    while (retries > 0) {
+      await disconnectFn();
+      if (!isConnectedFn()) {
+        return;
+      }
       retries--;
+      if (retries === 0) {
+        throw new Error(`Failed to disconnect ${name} after 5 attempts.`);
+      }
+      await new Promise((resolve) => setTimeout(resolve, 100));
     }
+  };
 
-    if (provider.isConnected) {
-      await provider.disconnect();
+  let errors: string[] = [];
+
+  if (api.isConnected) {
+    try {
+      await disconnectWithRetries('API', () => api.disconnect(), () => api.isConnected);
+    } catch (error) {
+      errors.push((error as Error).message);
     }
-  } catch (error) {
-    throw new Error(
-      `Failed to close the session: ${error instanceof Error ? error.message : 'Unknown error'}`,
-    );
+  }
+
+  if (provider.isConnected) {
+    try {
+      await disconnectWithRetries('Provider', () => provider.disconnect(), () => provider.isConnected);
+    } catch (error) {
+      errors.push((error as Error).message);
+    }
+  }
+
+  if (errors.length > 0) {
+    throw new Error(errors.join(' and '));
   }
 }

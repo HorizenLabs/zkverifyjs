@@ -21,6 +21,10 @@ describe('registerVerificationKey - Fflonk', () => {
 
         const { events, transactionResult } = await session.registerVerificationKey().fflonk().execute(vk);
 
+        events.on(ZkVerifyEvents.ErrorEvent, (eventData) => {
+            errorEventEmitted = true;
+        });
+
         events.on(ZkVerifyEvents.IncludedInBlock, (eventData) => {
             console.log("includedInBlock Event Received: ", eventData);
             includedInBlockEmitted = true;

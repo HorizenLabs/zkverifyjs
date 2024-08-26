@@ -27,6 +27,10 @@ describe('verify and subscribe using a custom network url - Risc0', () => {
             vk
         );
 
+        events.on(ZkVerifyEvents.ErrorEvent, (eventData) => {
+            errorEventEmitted = true;
+        });
+
         events.on(ZkVerifyEvents.IncludedInBlock, (eventData) => {
             console.log("includedInBlock Event Received: ", eventData);
             includedInBlockEmitted = true;

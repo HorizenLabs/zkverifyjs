@@ -25,6 +25,10 @@ describe('verify with bad data - Groth16', () => {
             vk
         );
 
+        events.on(ZkVerifyEvents.ErrorEvent, (eventData) => {
+            errorEventEmitted = true;
+        });
+
         try {
             const transactionInfo = await transactionResult;
         } catch (error) {
@@ -41,6 +45,7 @@ describe('verify with bad data - Groth16', () => {
                 throw new Error(`Unexpected error type or structure: ${typeof error}`);
             }
         } finally {
+            expect(errorEventEmitted).toBe(false);
             await session.close();
         }
     });
