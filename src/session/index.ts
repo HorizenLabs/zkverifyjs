@@ -1,7 +1,7 @@
 import '@polkadot/api-augment'; // Required for api.query.system.account responses
 import { zkVerifySessionOptions, VerifyOptions } from './types';
 import { verify } from '../api/verify';
-import { accountInfo } from '../api/account';
+import { accountInfo } from '../api/accountInfo';
 import { startSession } from '../api/start';
 import { closeSession } from '../api/close';
 import {
@@ -18,8 +18,11 @@ import {
 } from '../types';
 import { EventEmitter } from 'events';
 import { checkReadOnly } from '../utils/helpers';
-import { setupAccount } from '../account';
-import { AccountConnection, EstablishedConnection } from '../connection/types';
+import { setupAccount } from '../api/account';
+import {
+  AccountConnection,
+  EstablishedConnection,
+} from '../api/connection/types';
 import { ApiPromise, WsProvider } from '@polkadot/api';
 import { KeyringPair } from '@polkadot/keyring/types';
 import { registerVk } from '../api/register';

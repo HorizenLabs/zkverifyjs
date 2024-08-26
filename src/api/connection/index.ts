@@ -1,8 +1,8 @@
 import { ApiPromise, WsProvider } from '@polkadot/api';
-import { SupportedNetwork } from '../enums';
+import { SupportedNetwork } from '../../enums';
 import { EstablishedConnection } from './types';
-import { waitForNodeToSync } from '../utils/helpers';
-import { zkvTypes, zkvRpc } from '../config';
+import { waitForNodeToSync } from '../../utils/helpers';
+import { zkvTypes, zkvRpc } from '../../config';
 
 /**
  * Establishes a connection to the zkVerify blockchain by initializing the API and provider.

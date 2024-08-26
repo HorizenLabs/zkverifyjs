@@ -1,10 +1,7 @@
-import { establishConnection } from '../../connection';
-import { setupAccount } from '../../account';
+import { establishConnection } from '../connection';
+import { setupAccount } from '../account';
 import { zkVerifySessionOptions } from '../../session/types';
-import {
-  AccountConnection,
-  EstablishedConnection,
-} from '../../connection/types';
+import { AccountConnection, EstablishedConnection } from '../connection/types';
 
 export async function startSession(
   options: zkVerifySessionOptions,

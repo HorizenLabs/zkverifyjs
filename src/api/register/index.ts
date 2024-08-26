@@ -5,7 +5,7 @@ import { getProofProcessor } from '../../utils/helpers';
 import { VKRegistrationTransactionInfo } from '../../types';
 import { proofTypeToPallet } from '../../config';
 import { TransactionType, ZkVerifyEvents } from '../../enums';
-import { AccountConnection } from '../../connection/types';
+import { AccountConnection } from '../connection/types';
 import { VerifyOptions } from '../../session/types';
 
 export async function registerVk(

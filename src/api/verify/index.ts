@@ -1,7 +1,7 @@
 import { getProofProcessor, submitProofExtrinsic } from '../../utils/helpers';
 import { handleTransaction } from '../../utils/transactions';
 import { proofTypeToPallet } from '../../config';
-import { AccountConnection } from '../../connection/types';
+import { AccountConnection } from '../connection/types';
 import { EventEmitter } from 'events';
 import { ProofProcessor, VerifyTransactionInfo } from '../../types';
 import { VerifyOptions } from '../../session/types';

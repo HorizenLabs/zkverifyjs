@@ -1,6 +1,6 @@
 import 'dotenv/config';
 import { zkVerifySession } from '../src';
-import { AccountInfo } from "../src/types";
+import { AccountInfo } from "../src";
 
 jest.setTimeout(120000);
 
