@@ -4,8 +4,17 @@
   "description": "Submit proofs to zkVerify and query proof state with ease using our npm package.",
   "author": "Horizen Labs <research@horizenlabs.io>",
   "license": "ISC",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
     "build": "tsc",
+    "pack-and-install": "npm run build && npm pack && rm -rf node_modules/zkverifyjs && npm install ./$(npm pack | tail -n 1) --no-save",
+    "bump-version": "npm version $npm_config_level && git add . && git commit -m 'chore: bump version to $npm_package_version' && git tag v$npm_package_version && git push origin --tags && npm run build",
     "test": "jest",
     "test:coverage": "npx jest --coverage --collectCoverageFrom='src/**/*.{js,ts,tsx}' --testPathIgnorePatterns='tests/'",
     "test:file:coverage": "node -e 'const path = process.argv[1]; require(\"child_process\").execSync(`npx jest --coverage --collectCoverageFrom=\"${path}/index.ts\" ${path}/index.test.ts`, { stdio: \"inherit\" });' --",
@@ -35,10 +44,14 @@
     "eslint-plugin-prettier": "^5.2.1",
     "globals": "^15.9.0",
     "jest": "^29.7.0",
+    "ls-engines": "^0.9.3",
     "prettier": "^3.3.3",
     "ts-jest": "^29.2.4",
     "ts-node": "^10.9.2",
-    "typescript": "^5.0.4",
+    "typescript": "^5.5.4",
     "typescript-eslint": "^8.2.0"
+  },
+  "engines": {
+    "node": ">= 18"
   }
 }

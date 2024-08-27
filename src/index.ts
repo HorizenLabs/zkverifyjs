@@ -1,8 +1,11 @@
 export { zkVerifySession } from './session';
 export { VerifyOptions } from './session/types';
+export { ProofType, ZkVerifyEvents, TransactionStatus, TransactionType, SupportedNetwork } from './enums'
 export {
-  ProofTransactionResult,
+  VerifyTransactionInfo,
+  VKRegistrationTransactionInfo,
   MerkleProof,
   AccountInfo,
-  AttestationEvent,
+  AttestationEvent
+
 } from './types';

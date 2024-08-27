@@ -6,12 +6,6 @@ export interface ProofProcessor {
   formatPubs(pubs: unknown): unknown;
 }
 
-export interface ProofTransactionResult {
-  transactionInfo: TransactionInfo;
-  finalized: boolean;
-  attestationConfirmed: boolean;
-}
-
 export interface TransactionInfo {
   blockHash: string;
   proofType: string;
