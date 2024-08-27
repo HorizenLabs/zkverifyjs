@@ -2,10 +2,9 @@ import 'dotenv/config';
 import { ApiPromise } from '@polkadot/api';
 import { EventRecord } from '@polkadot/types/interfaces';
 import { SubmittableExtrinsic } from '@polkadot/api/types';
-import path from 'path';
 import { EventEmitter } from 'events';
 import { AttestationEvent, ProofProcessor } from '../../types';
-import { ZkVerifyEvents } from '../../enums';
+import { ProofType, ZkVerifyEvents } from '../../enums';
 
 /**
  * Waits for a specific NewAttestation event and returns the associated data.
@@ -163,19 +162,12 @@ export const submitProofExtrinsic = (
  * @throws {Error} - Throws an error if the proof processor cannot be loaded.
  */
 export async function getProofProcessor(
-  proofType: string,
+  proofType: keyof typeof ProofType,
 ): Promise<ProofProcessor> {
   try {
-    const processorPath = path.join(
-      __dirname,
-      '..',
-      '..',
-      'ProofTypes',
-      proofType,
-      'processor',
+    const processorModule = await import(
+      `../../ProofTypes/${proofType}/processor`
     );
-    const processorModule = await import(processorPath);
-
     return processorModule.default;
   } catch (error) {
     throw new Error(

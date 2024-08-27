@@ -12,9 +12,18 @@ export const decodeDispatchError = (
   dispatchError: DispatchError,
 ): string => {
   if (dispatchError.isModule) {
-    const decoded = api.registry.findMetaError(dispatchError.asModule);
-    const { docs, name, section } = decoded;
-    return `${section}.${name}: ${docs.join(' ')}`;
+    try {
+      const decoded = api.registry.findMetaError(dispatchError.asModule);
+      const { docs, name, section } = decoded;
+
+      return `${section}.${name}: ${docs.join(' ')}`;
+    } catch {
+      return `Unknown module error: ${dispatchError.toString()}`;
+    }
+  } else if (dispatchError.isToken) {
+    return `Token error: ${dispatchError.asToken.type}`;
+  } else if (dispatchError.isArithmetic) {
+    return `Arithmetic error: ${dispatchError.asArithmetic.type}`;
   } else {
     return dispatchError.toString();
   }
@@ -28,10 +37,27 @@ export const handleError = (
   shouldThrow = true,
   status?: SubmittableResult['status'],
 ): void | never => {
-  let decodedError =
-    error instanceof Error
-      ? error.message
-      : decodeDispatchError(api, error as DispatchError);
+  let decodedError;
+
+  if (error instanceof Error) {
+    try {
+      const parsedError = JSON.parse(error.message);
+
+      if (parsedError.module && parsedError.module.index !== undefined) {
+        const dispatchError = api.registry.createType(
+          'DispatchError',
+          parsedError,
+        );
+        decodedError = decodeDispatchError(api, dispatchError);
+      } else {
+        decodedError = error.message;
+      }
+    } catch {
+      decodedError = error.message;
+    }
+  } else {
+    decodedError = decodeDispatchError(api, error as DispatchError);
+  }
 
   if (
     status &&

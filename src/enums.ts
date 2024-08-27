@@ -8,6 +8,7 @@ export enum ProofType {
   groth16 = 'groth16',
   risc0 = 'risc0',
 }
+
 export enum TransactionType {
   Verify = 1,
   VKRegistration = 2,

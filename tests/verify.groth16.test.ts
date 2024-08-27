@@ -1,6 +1,5 @@
 import fs from 'fs';
 import path from 'path';
-import 'dotenv/config';
 import { zkVerifySession } from '../src';
 import { VerifyTransactionInfo } from "../src/types";
 import { TransactionStatus, ZkVerifyEvents } from "../src/enums";
