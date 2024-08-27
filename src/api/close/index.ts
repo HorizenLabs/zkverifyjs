@@ -1,10 +1,11 @@
-import { ApiPromise, WsProvider } from '@polkadot/api';
+import { WsProvider } from '@polkadot/api';
 
-export async function closeSession(
-    api: ApiPromise,
-    provider: WsProvider,
-): Promise<void> {
-  const disconnectWithRetries = async (name: string, disconnectFn: () => Promise<void>, isConnectedFn: () => boolean) => {
+export async function closeSession(provider: WsProvider): Promise<void> {
+  const disconnectWithRetries = async (
+    name: string,
+    disconnectFn: () => Promise<void>,
+    isConnectedFn: () => boolean,
+  ) => {
     let retries = 5;
     while (retries > 0) {
       await disconnectFn();
@@ -19,19 +20,15 @@ export async function closeSession(
     }
   };
 
-  let errors: string[] = [];
-
-  if (api.isConnected) {
-    try {
-      await disconnectWithRetries('API', () => api.disconnect(), () => api.isConnected);
-    } catch (error) {
-      errors.push((error as Error).message);
-    }
-  }
+  const errors: string[] = [];
 
   if (provider.isConnected) {
     try {
-      await disconnectWithRetries('Provider', () => provider.disconnect(), () => provider.isConnected);
+      await disconnectWithRetries(
+        'Provider',
+        () => provider.disconnect(),
+        () => provider.isConnected,
+      );
     } catch (error) {
       errors.push((error as Error).message);
     }

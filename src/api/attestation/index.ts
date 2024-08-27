@@ -35,8 +35,9 @@ export function subscribeToNewAttestations(
                 receivedId: currentAttestationId,
                 event: record.event,
               });
-              emitter.emit(ZkVerifyEvents.Unsubscribe);
-              emitter.removeAllListeners();
+
+              unsubscribeFromNewAttestations(emitter);
+
               return;
             }
 
@@ -59,8 +60,8 @@ export function subscribeToNewAttestations(
                 ZkVerifyEvents.AttestationConfirmed,
                 attestationEvent,
               );
-              emitter.emit(ZkVerifyEvents.Unsubscribe);
-              emitter.removeAllListeners();
+
+              unsubscribeFromNewAttestations(emitter);
             }
           } else {
             const attestationEvent: AttestationEvent = {
@@ -76,10 +77,6 @@ export function subscribeToNewAttestations(
       emitter.emit(ZkVerifyEvents.ErrorEvent, error);
     });
 
-  emitter.on(ZkVerifyEvents.Unsubscribe, () => {
-    emitter.removeAllListeners();
-  });
-
   return emitter;
 }
 
@@ -91,4 +88,5 @@ export function subscribeToNewAttestations(
  */
 export function unsubscribeFromNewAttestations(emitter: EventEmitter): void {
   emitter.emit(ZkVerifyEvents.Unsubscribe);
+  emitter.removeAllListeners();
 }

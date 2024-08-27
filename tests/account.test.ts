@@ -1,4 +1,3 @@
-import 'dotenv/config';
 import { zkVerifySession } from '../src';
 import { AccountInfo } from "../src";
 

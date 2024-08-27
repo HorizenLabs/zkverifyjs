@@ -1,4 +1,3 @@
-import 'dotenv/config';
 import { cryptoWaitReady } from '@polkadot/util-crypto';
 import { setupAccount } from './index';
 

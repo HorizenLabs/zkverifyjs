@@ -337,7 +337,7 @@ export class zkVerifySession {
    * @returns {Promise<void>} A promise that resolves when the session is closed.
    */
   async close(): Promise<void> {
-    return closeSession(this.connection.api, this.connection.provider);
+    return closeSession(this.connection.provider);
   }
 
   /**
