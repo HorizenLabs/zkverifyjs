@@ -55,11 +55,13 @@ export function subscribeToNewAttestations(
                 id: currentAttestationId,
                 attestation: event.data[1].toString(),
               };
-              callback(attestationEvent);
+
               emitter.emit(
                 ZkVerifyEvents.AttestationConfirmed,
                 attestationEvent,
               );
+
+              callback(attestationEvent);
 
               unsubscribeFromNewAttestations(emitter);
             }

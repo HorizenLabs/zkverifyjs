@@ -1,25 +1,27 @@
 import 'dotenv/config';
 import { ApiPromise } from '@polkadot/api';
-import { EventRecord } from '@polkadot/types/interfaces';
 import { SubmittableExtrinsic } from '@polkadot/api/types';
 import { EventEmitter } from 'events';
 import { AttestationEvent, ProofProcessor } from '../../types';
 import { ZkVerifyEvents } from '../../enums';
 import { proofConfigurations, ProofType } from '../../config';
+import { subscribeToNewAttestations } from '../../api/attestation';
 
 /**
- * Waits for a specific NewAttestation event and returns the associated data.
+ * Waits for a specific `NewAttestation` event and returns the associated data.
  *
- * @param api - The ApiPromise instance.
- * @param attestationId - The attestation ID to wait for.
- * @param emitter - The EventEmitter instance to emit events.
+ * @param {ApiPromise} api - The Polkadot.js API instance.
+ * @param {number | undefined} attestationId - The attestation ID to wait for.
+ * @param {EventEmitter} emitter - The EventEmitter instance for emitting events.
  *
- * @returns A promise that resolves to an AttestationEvent object if the attestation is confirmed, or rejects with an error.
+ * @returns {Promise<AttestationEvent>} Resolves with the attestation event data if confirmed, or rejects with an error.
  *
- * @throws An error if the attestation ID is null or if there is an issue subscribing to events.
+ * @throws {Error} If the attestation ID is undefined or an error occurs during event subscription.
  *
- * @emits attestationConfirmed - When the specified attestation is confirmed.
- * @emits error - If there is an error waiting for the attestation or if the attestation ID is null.
+ * @emits ZkVerifyEvents.AttestationConfirmed - When the specified attestation is confirmed.
+ * @emits ZkVerifyEvents.AttestationMissed - If a later attestation ID is received.
+ * @emits ZkVerifyEvents.BeforeExpected - If the attestation ID from the event is less than expected.
+ * @emits ZkVerifyEvents.ErrorEvent - If an error occurs.
  */
 export async function waitForNewAttestationEvent(
   api: ApiPromise,
@@ -33,75 +35,30 @@ export async function waitForNewAttestationEvent(
   }
 
   return new Promise<AttestationEvent>((resolve, reject) => {
-    const handleEvents = (events: EventRecord[]) => {
-      try {
-        events.forEach((record) => {
-          const { event } = record;
+    const internalEmitter = subscribeToNewAttestations(
+      api,
+      () => {},
+      attestationId,
+    );
 
-          if (event.section === 'poe' && event.method === 'NewAttestation') {
-            const currentAttestationId = Number(event.data[0]);
+    internalEmitter.on(ZkVerifyEvents.AttestationConfirmed, (event) => {
+      emitter.emit(ZkVerifyEvents.AttestationConfirmed, event);
+      resolve(event);
+    });
 
-            if (currentAttestationId === attestationId) {
-              unsubscribe();
+    internalEmitter.on(ZkVerifyEvents.AttestationMissed, (event) => {
+      emitter.emit(ZkVerifyEvents.AttestationMissed, event);
+      reject(new Error(`Missed the attestation ID ${attestationId}.`));
+    });
 
-              const attestationEvent: AttestationEvent = {
-                id: currentAttestationId,
-                attestation: event.data[1].toString(),
-              };
+    internalEmitter.on(ZkVerifyEvents.AttestationBeforeExpected, (event) => {
+      emitter.emit(ZkVerifyEvents.AttestationBeforeExpected, event);
+    });
 
-              emitter.emit(
-                ZkVerifyEvents.AttestationConfirmed,
-                attestationEvent,
-              );
-              resolve(attestationEvent);
-            } else if (currentAttestationId < attestationId) {
-              emitter.emit(ZkVerifyEvents.AttestationBeforeExpected, {
-                expectedId: attestationId,
-                receivedId: currentAttestationId,
-                event: record.event,
-              });
-            } else if (currentAttestationId > attestationId) {
-              emitter.emit(ZkVerifyEvents.AttestationMissed, {
-                expectedId: attestationId,
-                receivedId: currentAttestationId,
-                event: record.event,
-              });
-              unsubscribe();
-              reject(
-                new Error(
-                  `Missed the attestation ID ${attestationId}. Received a later attestation ID ${currentAttestationId}.`,
-                ),
-              );
-            }
-          }
-        });
-      } catch (error) {
-        emitter.emit(
-          ZkVerifyEvents.ErrorEvent,
-          error instanceof Error
-            ? error
-            : new Error('Attestation waiting failed with an unknown error.'),
-        );
-        reject(error);
-      }
-    };
-
-    let unsubscribe: () => void;
-
-    api.query.system
-      .events((events) => handleEvents(events))
-      .then((unsub) => {
-        unsubscribe = unsub as unknown as () => void;
-      })
-      .catch((error) => {
-        emitter.emit(
-          ZkVerifyEvents.ErrorEvent,
-          error instanceof Error
-            ? error
-            : new Error('Attestation waiting failed with an unknown error.'),
-        );
-        reject(error);
-      });
+    internalEmitter.on(ZkVerifyEvents.ErrorEvent, (error) => {
+      emitter.emit(ZkVerifyEvents.ErrorEvent, error);
+      reject(error);
+    });
   });
 }
 
