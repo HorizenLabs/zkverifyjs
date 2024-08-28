@@ -25,7 +25,8 @@
   "scripts": {
     "build": "tsc",
     "pack-and-install": "npm run build && npm pack && rm -rf node_modules/zkverifyjs && npm install ./$(npm pack | tail -n 1) --no-save",
-    "bump-version": "npm version $npm_config_level && git add . && git commit -m 'chore: bump version to $npm_package_version' && git tag v$npm_package_version && git push origin --tags && npm run build",
+    "bump-version": "npm version $npm_config_level && git add . && git commit -S -m \"chore: bump version to $npm_package_version\" && git push && npm run build",
+    "push-tag": "git checkout main && git pull && git tag -s -m $npm_package_version $npm_package_version && git push origin $npm_package_version",
     "test": "jest",
     "test:coverage": "jest --coverage",
     "test:file:coverage": "node -e 'const path = process.argv[1]; require(\"child_process\").execSync(`jest --coverage --collectCoverageFrom=\"${path}/index.ts\" ${path}/index.test.ts`, { stdio: \"inherit\" });' --",
@@ -56,7 +57,7 @@
   ],
   "dependencies": {
     "@polkadot/api": "12.4.2",
-    "bn.js": "5.2.1",
+    "bignumber.js": "^9.1.2",
     "dotenv": "16.4.5",
     "js-sha3": "0.9.3",
     "snarkjs": "0.7.4",

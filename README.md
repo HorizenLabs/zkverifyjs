@@ -45,25 +45,25 @@ Before sending a proof, you need to start a session. A session establishes a con
 
 1. Read-Only Session with Supported Network:
 ```typescript
-await zkVerifySession.start()
+const session = await zkVerifySession.start()
         .Testnet(); // Preconfigured network selection
 // No full account session as .withAccount() has not been used.
 ```
 2. Read-Only Session with Custom WebSocket:
 ```typescript
-await zkVerifySession.start()
+const session = await zkVerifySession.start()
         .Custom("wss://testnet-rpc.zkverify.io"); // Custom network
 // No full account session as .withAccount() has not been used.
 ```
 3. Full Session (send transactions) with Supported Network:
 ```typescript
-await zkVerifySession.start()
+const session = await zkVerifySession.start()
         .Testnet() // Preconfigured network selection
         .withAccount(process.env.SEED_PHRASE!); // Full session with active account
 ```
 4. Full Session (send transactions)  with Custom WebSocket:
 ```typescript
-await zkVerifySession.start()
+const session = await zkVerifySession.start()
         .Custom("wss://testnet-rpc.zkverify.io") // Custom network
         .withAccount(process.env.SEED_PHRASE!); // Full session with active account
 ```
