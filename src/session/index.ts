@@ -26,7 +26,7 @@ import {
 import { ApiPromise, WsProvider } from '@polkadot/api';
 import { KeyringPair } from '@polkadot/keyring/types';
 import { registerVk } from '../api/register';
-import { ProofType, SupportedNetwork } from '../enums';
+import { ProofType, SupportedNetwork } from '../config';
 import { ProofMethodMap, VerificationBuilder } from './builders/verify';
 import { RegisterKeyBuilder, RegisterKeyMethodMap } from './builders/register';
 import { NetworkBuilder, SupportedNetworkMap } from './builders/network';

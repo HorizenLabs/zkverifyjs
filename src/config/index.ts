@@ -1,8 +1,42 @@
-export const proofTypeToPallet: Record<string, string> = {
-  groth16: 'settlementGroth16Pallet',
-  fflonk: 'settlementFFlonkPallet',
-  zksync: 'settlementZksyncPallet',
-  risc0: 'settlementRisc0Pallet',
+import { ProofProcessor } from '../types';
+import {
+  FflonkProcessor,
+  Groth16Processor,
+  Risc0Processor,
+} from '../proofTypes';
+
+export enum SupportedNetwork {
+  Testnet = 'wss://testnet-rpc.zkverify.io',
+  Custom = 'custom',
+  // ADD_NEW_SUPPORTED_NETWORK
+}
+
+export enum ProofType {
+  fflonk = 'fflonk',
+  groth16 = 'groth16',
+  risc0 = 'risc0',
+  // ADD_NEW_PROOF_TYPE
+}
+
+interface ProofConfig {
+  pallet: string;
+  processor: ProofProcessor;
+}
+
+export const proofConfigurations: Record<ProofType, ProofConfig> = {
+  [ProofType.fflonk]: {
+    pallet: 'settlementFFlonkPallet',
+    processor: FflonkProcessor,
+  },
+  [ProofType.groth16]: {
+    pallet: 'settlementGroth16Pallet',
+    processor: Groth16Processor,
+  },
+  [ProofType.risc0]: {
+    pallet: 'settlementRisc0Pallet',
+    processor: Risc0Processor,
+  },
+  // ADD_NEW_PROOF_TYPE
 };
 
 export const zkvTypes = {

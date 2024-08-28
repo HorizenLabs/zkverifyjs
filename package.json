@@ -3,7 +3,15 @@
   "version": "1.0.0",
   "description": "Submit proofs to zkVerify and query proof state with ease using our npm package.",
   "author": "Horizen Labs <research@horizenlabs.io>",
-  "license": "ISC",
+  "license": "GPL-3.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/HorizenLabs/zkverifyjs.git"
+  },
+  "bugs": {
+    "url": "https://github.com/HorizenLabs/zkverifyjs/issues",
+    "email": "support@horizenlabs.io"
+  },
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "files": [
@@ -11,6 +19,9 @@
     "README.md",
     "LICENSE"
   ],
+  "engines": {
+    "node": ">= 18"
+  },
   "scripts": {
     "build": "tsc",
     "pack-and-install": "npm run build && npm pack && rm -rf node_modules/zkverifyjs && npm install ./$(npm pack | tail -n 1) --no-save",
@@ -21,6 +32,28 @@
     "lint": "eslint 'src/**/*.ts' --fix --ignore-pattern '**/*.test.ts'",
     "format": "prettier --write 'src/**/*.ts'"
   },
+  "keywords": [
+    "blockchain",
+    "crypto",
+    "cryptography",
+    "fflonk",
+    "groth16",
+    "javascript",
+    "noir",
+    "proof-verification",
+    "proofs",
+    "risc0",
+    "substrate",
+    "typescript",
+    "verify",
+    "zk",
+    "zk-snarks",
+    "zkverify",
+    "zksync",
+    "zero-knowledge",
+    "zero-knowledge-proof",
+    "zkp"
+  ],
   "dependencies": {
     "@polkadot/api": "12.4.2",
     "bn.js": "5.2.1",
@@ -50,8 +83,5 @@
     "ts-node": "^10.9.2",
     "typescript": "^5.5.4",
     "typescript-eslint": "^8.2.0"
-  },
-  "engines": {
-    "node": ">= 18"
   }
 }

@@ -1,4 +1,4 @@
-import { ProofType, SupportedNetwork } from '../enums';
+import { ProofType, SupportedNetwork } from '../config';
 
 export interface zkVerifySessionOptions {
   host: SupportedNetwork;

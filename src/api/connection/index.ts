@@ -1,5 +1,5 @@
 import { ApiPromise, WsProvider } from '@polkadot/api';
-import { SupportedNetwork } from '../../enums';
+import { SupportedNetwork } from '../../config';
 import { EstablishedConnection } from './types';
 import { waitForNodeToSync } from '../../utils/helpers';
 import { zkvTypes, zkvRpc } from '../../config';

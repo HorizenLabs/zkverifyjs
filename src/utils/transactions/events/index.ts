@@ -7,8 +7,8 @@ import {
   VKRegistrationTransactionInfo,
 } from '../../../types';
 import { TransactionType } from '../../../enums';
-import { proofTypeToPallet } from '../../../config';
 import { DispatchInfo } from '@polkadot/types/interfaces';
+import { getProofPallet } from '../../helpers/index';
 
 export const handleTransactionEvents = (
   api: ApiPromise,
@@ -69,7 +69,7 @@ export const handleTransactionEvents = (
 
     if (
       transactionType === TransactionType.VKRegistration &&
-      event.section == proofTypeToPallet[transactionInfo.proofType] &&
+      event.section == getProofPallet(transactionInfo.proofType) &&
       event.method == 'VkRegistered'
     ) {
       statementHash = event.data[0].toString();

@@ -1,9 +1,8 @@
 import { SubmittableExtrinsic } from '@polkadot/api/types';
 import { EventEmitter } from 'events';
 import { handleTransaction } from '../../utils/transactions';
-import { getProofProcessor } from '../../utils/helpers';
+import { getProofPallet, getProofProcessor } from '../../utils/helpers';
 import { VKRegistrationTransactionInfo } from '../../types';
-import { proofTypeToPallet } from '../../config';
 import { TransactionType, ZkVerifyEvents } from '../../enums';
 import { AccountConnection } from '../connection/types';
 import { VerifyOptions } from '../../session/types';
@@ -31,7 +30,7 @@ export async function registerVk(
   }
 
   const formattedVk = processor.formatVk(verificationKey);
-  const pallet = proofTypeToPallet[proofType.trim()];
+  const pallet = getProofPallet(proofType);
   if (!pallet) {
     throw new Error(`Unsupported proof type: ${proofType}`);
   }

@@ -4,7 +4,8 @@ import { EventRecord } from '@polkadot/types/interfaces';
 import { SubmittableExtrinsic } from '@polkadot/api/types';
 import { EventEmitter } from 'events';
 import { AttestationEvent, ProofProcessor } from '../../types';
-import { ProofType, ZkVerifyEvents } from '../../enums';
+import { ZkVerifyEvents } from '../../enums';
+import { proofConfigurations, ProofType } from '../../config';
 
 /**
  * Waits for a specific NewAttestation event and returns the associated data.
@@ -154,26 +155,22 @@ export const submitProofExtrinsic = (
   }
 };
 
-/**
- * Dynamically loads and returns the proof processor for the specified proof type.
- *
- * @param {string} proofType - The type of the proof for which to load the processor.
- * @returns {Promise<unknown>} - A promise that resolves to the proof processor.
- * @throws {Error} - Throws an error if the proof processor cannot be loaded.
- */
 export async function getProofProcessor(
-  proofType: keyof typeof ProofType,
+  proofType: ProofType,
 ): Promise<ProofProcessor> {
-  try {
-    const processorModule = await import(
-      `../../ProofTypes/${proofType}/processor`
-    );
-    return processorModule.default;
-  } catch (error) {
-    throw new Error(
-      `Failed to load proof processor for type: ${proofType}. Error: ${error}`,
-    );
+  const config = proofConfigurations[proofType as ProofType];
+  if (!config) {
+    throw new Error(`No config found for Proof Processor: ${proofType}`);
   }
+  return config.processor;
+}
+
+export function getProofPallet(proofType: ProofType): string {
+  const config = proofConfigurations[proofType as ProofType];
+  if (!config) {
+    throw new Error(`No config found for Proof Pallet: ${proofType}`);
+  }
+  return config.pallet;
 }
 
 export function checkReadOnly(readOnly: boolean): void {

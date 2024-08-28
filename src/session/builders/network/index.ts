@@ -1,6 +1,6 @@
 import { zkVerifySessionOptions } from '../../types';
 import { zkVerifySession } from '../../index';
-import { SupportedNetwork } from '../../../enums';
+import { SupportedNetwork } from '../../../config';
 
 export type SupportedNetworkMap = {
   [K in keyof typeof SupportedNetwork]: (

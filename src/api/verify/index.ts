@@ -1,6 +1,9 @@
-import { getProofProcessor, submitProofExtrinsic } from '../../utils/helpers';
+import {
+  getProofPallet,
+  getProofProcessor,
+  submitProofExtrinsic,
+} from '../../utils/helpers';
 import { handleTransaction } from '../../utils/transactions';
-import { proofTypeToPallet } from '../../config';
 import { AccountConnection } from '../connection/types';
 import { EventEmitter } from 'events';
 import { ProofProcessor, VerifyTransactionInfo } from '../../types';
@@ -87,7 +90,7 @@ export async function verify(
     const { api, account } = connection;
 
     try {
-      const pallet = proofTypeToPallet[options.proofType.trim()];
+      const pallet = getProofPallet(options.proofType);
       if (!pallet) {
         throw new Error(`Unsupported proof type: ${options.proofType}`);
       }

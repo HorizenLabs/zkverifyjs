@@ -1,5 +1,5 @@
 import { VerifyOptions } from '../../types';
-import { ProofType } from '../../../enums';
+import { ProofType } from '../../../config';
 import { EventEmitter } from 'events';
 import { VerifyTransactionInfo } from '../../../types';
 

@@ -1,4 +1,5 @@
 import { TransactionStatus } from './enums';
+import { ProofType } from './config';
 
 export interface ProofProcessor {
   formatProof(proof: unknown, publicSignals?: string[]): unknown;
@@ -8,7 +9,7 @@ export interface ProofProcessor {
 
 export interface TransactionInfo {
   blockHash: string;
-  proofType: string;
+  proofType: ProofType;
   status: TransactionStatus;
   txHash?: string;
   extrinsicIndex?: number;

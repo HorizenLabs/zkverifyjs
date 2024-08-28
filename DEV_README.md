@@ -34,6 +34,21 @@ npm install && npm run pack-and-install
 npm run pack-and-install
 ```
 
+## Add New Proof Types
+
+1. Update `src/config/index.ts`
+2. Add a new proof to src/proofTypes including processor and formatter, and add export to `src/proofTypes/index.ts`
+
+- Search for `ADD_NEW_PROOF_TYPE` in the codebase.
+
+## Add New Supported Network
+
+If we want to add a new configured network (e.g. mainnet)
+
+1. Update `src/config/index.ts`
+
+- Search for `ADD_NEW_SUPPORTED_NETWORK` in the codebase.
+
 ## Run Tests
 
 - Run a specific test
