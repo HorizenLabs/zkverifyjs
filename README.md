@@ -55,20 +55,32 @@ const session = await zkVerifySession.start()
         .Custom("wss://testnet-rpc.zkverify.io"); // Custom network
 // No full account session as .withAccount() has not been used.
 ```
-3. Full Session (send transactions) with Supported Network:
+3. Full Backend Session (send transactions) with Supported Network:
 ```typescript
 const session = await zkVerifySession.start()
         .Testnet() // Preconfigured network selection
         .withAccount(process.env.SEED_PHRASE!); // Full session with active account
 ```
-4. Full Session (send transactions)  with Custom WebSocket:
+4. Full Backend Session (send transactions)  with Custom WebSocket:
+```typescript
+const session = await zkVerifySession.start()
+        .Testnet() // Custom network
+        .withAccount(); // Full session with active account
+```
+5. Full Frontend Browser Session (send transactions)  with Supported Network:
+```typescript
+const session = await zkVerifySession.start()
+        .Testnet()
+        .withWallet(); // Uses browser session context "window"
+```
+6. Full Frontend Browser Session (send transactions)  with Custom WebSocket:
 ```typescript
 const session = await zkVerifySession.start()
         .Custom("wss://testnet-rpc.zkverify.io") // Custom network
-        .withAccount(process.env.SEED_PHRASE!); // Full session with active account
+        .withWallet(); // Uses browser session context "window"
 ```
 
-Not specifying `withAccount` will start a read-only session, transaction methods cannot be used, and only calls to read data are allowed:
+Not specifying `withAccount` or `withWallet()` will start a read-only session, transaction methods cannot be used, and only calls to read data are allowed:
 
 ```typescript
 import { zkVerifySession } from 'zkverifyjs';
@@ -80,6 +92,7 @@ const readOnlySession = await zkVerifySession.start().Testnet();
 
 The zkVerifySession.verify method allows you to configure and execute a verification process using a fluent syntax. This approach offers a more readable and flexible way to set up your verification options before executing the proof verification.
 
+1. Backend / server side after establishing a session with `withAccount()`
 ```typescript
 const { events, transactionResult } = await session
         .fflonk()                                  // Select the proof type (e.g., fflonk)
@@ -88,6 +101,24 @@ const { events, transactionResult } = await session
         .withRegisteredVk()                        // Indicate that the verification key is already registered (optional)
         .execute(proof, publicSignals, vk);        // Execute the verification with the provided proof data
 
+```
+
+2. Frontend after establishing a session with `withWallet()`
+```typescript
+const { events, transactionResult } = await session.verify()
+        .groth16()
+        .execute(proofData, publicSignals, vkey);
+
+events.on('ErrorEvent', (eventData) => {
+  console.error(JSON.stringify(eventData));
+});
+
+let transactionInfo = null;
+try {
+  transactionInfo = await transactionResult;
+} catch (error) {
+  throw new Error(`Transaction failed: ${error.message}`);
+}
 ```
 
 ## Registering a Verification Key & Submitting a proof with the Statement Hash
@@ -178,7 +209,7 @@ import { zkVerifySession, ZkVerifyEvents, TransactionStatus, VerifyTransactionIn
 
 async function executeVerificationTransaction(proof: unknown, publicSignals: unknown, vk: unknown) {
   // Start a new zkVerifySession on our testnet (replace 'your-seed-phrase' with actual value)
-  await zkVerifySession.start()
+  const session = await zkVerifySession.start()
           .Testnet()
           .withAccount('your-seed-phrase');
 
@@ -236,12 +267,14 @@ executeVerificationTransaction(proof, publicSignals, vk);
 await zkVerifySession.start()
         .Testnet() // 1. Either preconfigured network selection
         .Custom('wss://custom') // 2. Or specify a custom network selection
-        .withAccount(process.env.SEED_PHRASE!); // Optional
+        .withAccount(process.env.SEED_PHRASE!) // Optional
+        .withWallet() // Optional
         .readOnly() // Optional
 ```
 
 - Network Selection: Preconfigured options such as `.Testnet()` or provide your own websocket url using `.Custom('wss://custom'')`.
 - withAccount : Create a full session with ability send transactions get account info by using .withAccount('seed-phrase') and specifying your own seed phrase.
+- withWallet : Establish connection to a browser based substrate wallet, cannot be used with `withAccount`;
 - readOnly: Start the session in read-only mode, unable to send transactions or retrieve account info.
 - 
 ## `zkVerifySession.close`

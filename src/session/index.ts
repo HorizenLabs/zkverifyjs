@@ -2,7 +2,7 @@ import '@polkadot/api-augment'; // Required for api.query.system.account respons
 import { zkVerifySessionOptions, VerifyOptions } from './types';
 import { verify } from '../api/verify';
 import { accountInfo } from '../api/accountInfo';
-import { startSession } from '../api/start';
+import { startSession, startWalletSession } from '../api/start';
 import { closeSession } from '../api/close';
 import {
   subscribeToNewAttestations,
@@ -22,6 +22,7 @@ import { setupAccount } from '../api/account';
 import {
   AccountConnection,
   EstablishedConnection,
+  WalletConnection,
 } from '../api/connection/types';
 import { ApiPromise, WsProvider } from '@polkadot/api';
 import { KeyringPair } from '@polkadot/keyring/types';
@@ -37,9 +38,12 @@ import { NetworkBuilder, SupportedNetworkMap } from './builders/network';
 export class zkVerifySession {
   /**
    * The connection object that includes API, provider, and account.
-   * @type {AccountConnection | EstablishedConnection}
+   * @type {AccountConnection | WalletConnection | EstablishedConnection}
    */
-  private connection: AccountConnection | EstablishedConnection;
+  private connection:
+    | AccountConnection
+    | WalletConnection
+    | EstablishedConnection;
 
   /**
    * Indicates whether the session is in read-only mode (no account available).
@@ -60,11 +64,13 @@ export class zkVerifySession {
 
   /**
    * Creates an instance of zkVerifySession.
-   * @param {AccountConnection | EstablishedConnection} connection - The connection object that includes API, provider, and optionally an account.
+   * @param {AccountConnection | WalletConnection | EstablishedConnection} connection - The connection object that includes API, provider, and optionally an account or injected wallet.
    */
-  constructor(connection: AccountConnection | EstablishedConnection) {
+  constructor(
+    connection: AccountConnection | WalletConnection | EstablishedConnection,
+  ) {
     this.connection = connection;
-    this.readOnly = !('account' in connection);
+    this.readOnly = !('account' in connection) && !('injector' in connection);
   }
 
   /**
@@ -177,8 +183,19 @@ export class zkVerifySession {
   private static async _startSession(
     options: zkVerifySessionOptions,
   ): Promise<zkVerifySession> {
-    const connection = await startSession(options);
-    return new zkVerifySession(connection);
+    if (options.wallet) {
+      if (typeof window === 'undefined') {
+        throw new Error(
+          'zkVerifySession with wallet can only be used in a browser environment.',
+        );
+      }
+
+      const connection = await startWalletSession(options);
+      return new zkVerifySession(connection);
+    } else {
+      const connection = await startSession(options);
+      return new zkVerifySession(connection);
+    }
   }
 
   /**

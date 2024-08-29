@@ -44,6 +44,7 @@ export async function registerVk(
         connection.api,
         registerExtrinsic,
         connection.account,
+        undefined,
         emitter,
         options,
         TransactionType.VKRegistration,

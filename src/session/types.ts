@@ -4,6 +4,7 @@ export interface zkVerifySessionOptions {
   host: SupportedNetwork;
   seedPhrase?: string;
   customWsUrl?: string;
+  wallet?: boolean;
 }
 
 export interface VerifyOptions {

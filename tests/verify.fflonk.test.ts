@@ -2,8 +2,8 @@ import fs from 'fs';
 import path from 'path';
 import { zkVerifySession } from '../src';
 import { AttestationEvent } from "../src";
-import { VerifyTransactionInfo } from "../src/types";
-import {TransactionStatus, ZkVerifyEvents} from "../src/enums";
+import { VerifyTransactionInfo } from "../src";
+import { TransactionStatus, ZkVerifyEvents } from "../src";
 
 jest.setTimeout(180000);
 

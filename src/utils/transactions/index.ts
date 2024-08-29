@@ -1,6 +1,10 @@
 import { ApiPromise, SubmittableResult } from '@polkadot/api';
 import { KeyringPair } from '@polkadot/keyring/types';
-import { SubmittableExtrinsic } from '@polkadot/api/types';
+import {
+  SignerOptions,
+  SubmittableExtrinsic,
+  Signer,
+} from '@polkadot/api/types';
 import { EventEmitter } from 'events';
 import {
   VerifyTransactionInfo,
@@ -97,7 +101,8 @@ const handleFinalized = async (
 export const handleTransaction = async (
   api: ApiPromise,
   submitExtrinsic: SubmittableExtrinsic<'promise'>,
-  account: KeyringPair,
+  account: KeyringPair | string,
+  signer: Signer | undefined,
   emitter: EventEmitter,
   options: VerifyOptions,
   transactionType: TransactionType,
@@ -189,8 +194,11 @@ export const handleTransaction = async (
         }
       };
 
-      submitExtrinsic
-        .signAndSend(account, { nonce }, async (result: SubmittableResult) => {
+      performSignAndSend(
+        submitExtrinsic,
+        account,
+        signer ? { signer, nonce } : { nonce },
+        async (result: SubmittableResult) => {
           if (transactionInfo.status === TransactionStatus.Error) {
             return;
           }
@@ -218,10 +226,29 @@ export const handleTransaction = async (
           } catch (error) {
             cancelTransaction(error);
           }
-        })
-        .catch((error) => {
-          cancelTransaction(error);
-        });
+        },
+      ).catch((error) => {
+        cancelTransaction(error);
+      });
     },
   );
 };
+
+function performSignAndSend(
+  submitExtrinsic: SubmittableExtrinsic<'promise'>,
+  account: KeyringPair | string,
+  options: Partial<SignerOptions> | undefined,
+  callback: (result: SubmittableResult) => Promise<void>,
+) {
+  if (typeof account === 'string' && options?.signer) {
+    return submitExtrinsic.signAndSend(account, options, callback);
+  } else if (typeof account !== 'string') {
+    if (options) {
+      return submitExtrinsic.signAndSend(account, options, callback);
+    } else {
+      return submitExtrinsic.signAndSend(account, callback);
+    }
+  } else {
+    throw new Error('Unsupported account or signer type.');
+  }
+}

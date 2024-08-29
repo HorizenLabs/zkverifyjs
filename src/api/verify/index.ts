@@ -4,14 +4,14 @@ import {
   submitProofExtrinsic,
 } from '../../utils/helpers';
 import { handleTransaction } from '../../utils/transactions';
-import { AccountConnection } from '../connection/types';
+import { AccountConnection, WalletConnection } from '../connection/types';
 import { EventEmitter } from 'events';
 import { ProofProcessor, VerifyTransactionInfo } from '../../types';
 import { VerifyOptions } from '../../session/types';
 import { TransactionType, ZkVerifyEvents } from '../../enums';
 
 export async function verify(
-  connection: AccountConnection,
+  connection: AccountConnection | WalletConnection,
   options: VerifyOptions,
   emitter: EventEmitter,
   ...proofData: unknown[]
@@ -87,7 +87,7 @@ export async function verify(
     }
 
     const proofParams = [formattedVk, formattedProof, formattedPubs];
-    const { api, account } = connection;
+    const { api } = connection;
 
     try {
       const pallet = getProofPallet(options.proofType);
@@ -97,14 +97,34 @@ export async function verify(
 
       const transaction = submitProofExtrinsic(api, pallet, proofParams);
 
-      const result = await handleTransaction(
-        api,
-        transaction,
-        account,
-        emitter,
-        options,
-        TransactionType.Verify,
-      );
+      const result = await (async () => {
+        if ('account' in connection) {
+          return await handleTransaction(
+            api,
+            transaction,
+            connection.account,
+            undefined,
+            emitter,
+            options,
+            TransactionType.Verify,
+          );
+        } else if ('injector' in connection) {
+          const { signer } = connection.injector;
+          const { accountAddress } = connection;
+
+          return await handleTransaction(
+            api,
+            transaction,
+            accountAddress,
+            signer,
+            emitter,
+            options,
+            TransactionType.Verify,
+          );
+        } else {
+          throw new Error('Unsupported connection type.');
+        }
+      })();
 
       return result as VerifyTransactionInfo;
     } catch (error) {

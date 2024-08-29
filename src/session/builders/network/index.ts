@@ -33,6 +33,11 @@ export class NetworkBuilder {
     return this.startSession(this.options as zkVerifySessionOptions);
   }
 
+  withWallet(): Promise<zkVerifySession> {
+    this.options.wallet = true;
+    return this.startSession(this.options as zkVerifySessionOptions);
+  }
+
   readOnly(): Promise<zkVerifySession> {
     return this.startSession(this.options as zkVerifySessionOptions);
   }

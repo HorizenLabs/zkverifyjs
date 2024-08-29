@@ -57,6 +57,7 @@
   ],
   "dependencies": {
     "@polkadot/api": "12.4.2",
+    "@polkadot/extension-dapp": "^0.52.3",
     "bignumber.js": "^9.1.2",
     "dotenv": "16.4.5",
     "js-sha3": "0.9.3",

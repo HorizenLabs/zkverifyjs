@@ -10,8 +10,9 @@
     "sourceMap": true,
     "forceConsistentCasingInFileNames": true,
     "outDir": "./dist",
-    "types": ["jest", "node"]
+    "types": ["node", "jest"],
+    "lib": ["DOM", "ES2020"]
   },
   "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist","**/*.spec.ts", "**/*.test.ts"]
+  "exclude": ["node_modules", "dist", "**/*.spec.ts", "**/*.test.ts"]
 }
