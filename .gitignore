@@ -1,0 +1,11 @@
+target/
+.idea
+*.iml
+.vscode
+node_modules
+dist/
+.env
+coverage/
+*.d.ts
+*.*.map
+*.tgz

@@ -1,0 +1,89 @@
+{
+  "name": "zkverifyjs",
+  "version": "1.0.0",
+  "description": "Submit proofs to zkVerify and query proof state with ease using our npm package.",
+  "author": "Horizen Labs <research@horizenlabs.io>",
+  "license": "GPL-3.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/HorizenLabs/zkverifyjs.git"
+  },
+  "bugs": {
+    "url": "https://github.com/HorizenLabs/zkverifyjs/issues",
+    "email": "support@horizenlabs.io"
+  },
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">= 18"
+  },
+  "scripts": {
+    "build": "tsc",
+    "pack-and-install": "npm run build && npm pack && rm -rf node_modules/zkverifyjs && npm install ./$(npm pack | tail -n 1) --no-save",
+    "bump-version": "npm version $npm_config_level && git add . && git commit -S -m \"chore: bump version to $npm_package_version\" && git push && npm run build",
+    "push-tag": "git checkout main && git pull && git tag -s -m $npm_package_version $npm_package_version && git push origin $npm_package_version",
+    "test": "jest",
+    "test:coverage": "jest --coverage",
+    "test:file:coverage": "node -e 'const path = process.argv[1]; require(\"child_process\").execSync(`jest --coverage --collectCoverageFrom=\"${path}/index.ts\" ${path}/index.test.ts`, { stdio: \"inherit\" });' --",
+    "lint": "eslint 'src/**/*.ts' --fix --ignore-pattern '**/*.test.ts'",
+    "format": "prettier --write 'src/**/*.ts'"
+  },
+  "keywords": [
+    "blockchain",
+    "crypto",
+    "cryptography",
+    "fflonk",
+    "groth16",
+    "javascript",
+    "noir",
+    "proof-verification",
+    "proofs",
+    "risc0",
+    "substrate",
+    "typescript",
+    "verify",
+    "zk",
+    "zk-snarks",
+    "zkverify",
+    "zksync",
+    "zero-knowledge",
+    "zero-knowledge-proof",
+    "zkp"
+  ],
+  "dependencies": {
+    "@polkadot/api": "12.4.2",
+    "@polkadot/extension-dapp": "^0.52.3",
+    "bignumber.js": "^9.1.2",
+    "dotenv": "16.4.5",
+    "js-sha3": "0.9.3",
+    "snarkjs": "0.7.4",
+    "web3": "4.11.1"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.9.0",
+    "@jest/globals": "29.5.0",
+    "@types/debug": "^4.1.12",
+    "@types/jest": "^29.5.12",
+    "@types/node": "20.1.1",
+    "@types/snarkjs": "^0.7.8",
+    "@types/web3": "^1.2.2",
+    "@typescript-eslint/eslint-plugin": "^8.2.0",
+    "@typescript-eslint/parser": "^8.2.0",
+    "eslint": "^9.9.0",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-prettier": "^5.2.1",
+    "globals": "^15.9.0",
+    "jest": "^29.7.0",
+    "ls-engines": "^0.9.3",
+    "prettier": "^3.3.3",
+    "ts-jest": "^29.2.4",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.5.4",
+    "typescript-eslint": "^8.2.0"
+  }
+}
