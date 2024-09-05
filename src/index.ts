@@ -5,6 +5,7 @@ export { ZkVerifyEvents, TransactionStatus, TransactionType } from './enums';
 export {
   VerifyTransactionInfo,
   VKRegistrationTransactionInfo,
+  TransactionInfo,
   MerkleProof,
   AccountInfo,
   AttestationEvent,

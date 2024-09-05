@@ -80,7 +80,7 @@ const session = await zkVerifySession.start()
         .withWallet(); // Uses browser session context "window"
 ```
 
-Not specifying `withAccount` or `withWallet()` will start a read-only session, transaction methods cannot be used, and only calls to read data are allowed:
+Not specifying `withAccount()` or `withWallet()` will start a read-only session, transaction methods cannot be used, and only calls to read data are allowed:
 
 ```typescript
 import { zkVerifySession } from 'zkverifyjs';
