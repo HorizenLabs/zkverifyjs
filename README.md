@@ -8,7 +8,7 @@ The `zkverifyjs` package is a TypeScript library designed to facilitate sending 
 - [Usage](#usage)
     - [Creating a Session](#creating-a-session)
     - [Verifying a Proof](#verifying-a-proof)
-    - [Registering a Verification Key & Submitting a proof with the Statement Hash](registering-a-verification-key-&-submitting-a-proof-with-the-statement-hash)
+    - [Registering a Verification Key & Submitting a proof with the Statement Hash](#registering-a-verification-key--submitting-a-proof-with-the-statement-hash)
     - [Listening to Events](#listening-to-events)
     - [Awaiting the Final Transaction Result](#awaiting-the-final-transaction-result)
     - [Wait for the Attestation to be published](#wait-for-the-attestation-to-be-published)
@@ -126,15 +126,15 @@ try {
 Register your Verification Key on chain and use it in future proof submissions by specifying the registeredVk() option.
 
 ```typescript
-    const { events, transactionResult } = await session.registerVerificationKey().fflonk().execute(vk);
-    const vkTransactionInfo: VKRegistrationTransactionInfo = await transactionResult;
+const { events, transactionResult } = await session.registerVerificationKey().fflonk().execute(vk);
+const vkTransactionInfo: VKRegistrationTransactionInfo = await transactionResult;
 
-    const {events: verifyEvents, transactionResult: verifyTransactionResult} = await session.verify()
-            .fflonk()
-            .withRegisteredVk() // Option needs to be specified as we're using the registered statement hash.
-            .execute(proof, publicSignals, vkTransactionInfo.statementHash);
+const {events: verifyEvents, transactionResult: verifyTransactionResult} = await session.verify()
+        .fflonk()
+        .withRegisteredVk() // Option needs to be specified as we're using the registered statement hash.
+        .execute(proof, publicSignals, vkTransactionInfo.statementHash);
 
-    const verifyTransactionInfo: VerifyTransactionInfo = await verifyTransactionResult;
+const verifyTransactionInfo: VerifyTransactionInfo = await verifyTransactionResult;
 ```
 
 ## Listening to Events
@@ -147,10 +147,10 @@ You can listen for transaction events using the events emitter. Common events in
 - `error`: Triggered if an error occurs during the transaction process.
 
 ```typescript
-        const { events, transactionResult } = await session.verify().risc0().execute(
-        proof,
-        publicSignals,
-        vk
+const { events, transactionResult } = await session.verify().risc0().execute(
+  proof,
+  publicSignals,
+  vk
 );
 
 events.on('includedInBlock', (eventData) => {
@@ -188,18 +188,18 @@ console.log('Final transaction result:', result);
 Wait for the NewElement event to be published before the transaction info is returned back by the promise.  Occurs around every ~60s.
 
 ```typescript
-    const {events, transactionResult} = await session.verify().risc0()
-        .waitForPublishedAttestation()
-        .execute(
-        proof,
-        publicSignals,
-        vk
-    );
+const {events, transactionResult} = await session.verify().risc0()
+    .waitForPublishedAttestation()
+    .execute(
+    proof,
+    publicSignals,
+    vk
+);
 
-    const transactionInfo: VerifyTransactionInfo = await transactionResult;
+const transactionInfo: VerifyTransactionInfo = await transactionResult;
 
-    console.log(transactionInfo.attestationConfirmed); // Expect 'true'
-    console.log(JSON.stringify(transactionInfo.attestationEvent)) // Attestation Event details.
+console.log(transactionInfo.attestationConfirmed); // Expect 'true'
+console.log(JSON.stringify(transactionInfo.attestationEvent)) // Attestation Event details.
 ```
 
 ## Example Usage
@@ -276,7 +276,7 @@ await zkVerifySession.start()
 - withAccount : Create a full session with ability send transactions get account info by using .withAccount('seed-phrase') and specifying your own seed phrase.
 - withWallet : Establish connection to a browser based substrate wallet, cannot be used with `withAccount`;
 - readOnly: Start the session in read-only mode, unable to send transactions or retrieve account info.
-- 
+
 ## `zkVerifySession.close`
 
 ```typescript
@@ -287,12 +287,12 @@ await session.close();
 ## `zkVerifySession.verify`
 
 ```typescript
-  const { events, transactionResult } = await session.verify()
-          .fflonk()
-          .nonce(1)
-          .waitForPublishedAttestation()
-          .withRegisteredVk()
-          .execute(proof, publicSignals, vk);
+const { events, transactionResult } = await session.verify()
+        .fflonk()
+        .nonce(1)
+        .waitForPublishedAttestation()
+        .withRegisteredVk()
+        .execute(proof, publicSignals, vk);
 
 ```
 
@@ -305,7 +305,7 @@ await session.close();
 ## `zkVerifySession.registerVerificationKey`
 
 ```typescript
-    const { events, transactionResult } = await session.registerVerificationKey().fflonk().execute(vk);
+const { events, transactionResult } = await session.registerVerificationKey().fflonk().execute(vk);
 ```
 
 - Proof Type: `.fflonk()` specifies the type of proof to be used. Options available for all supported proof types.
@@ -314,7 +314,7 @@ await session.close();
 ## `zkVerifySession.poe` (Proof of Existence)
 
 ```typescript
-    const proofDetails = await session.poe(attestationId, leafDigest, blockHash);
+const proofDetails = await session.poe(attestationId, leafDigest, blockHash);
 ```
 
 - `attestationId`: A number representing the published attestation ID from which the proof path is to be retrieved.
@@ -325,18 +325,18 @@ await session.close();
 ## `zkVerifySession.accountInfo`
 
 ```typescript
-  const accountInfo: AccountInfo = await session.accountInfo();
-  console.log(accountInfo.address);
-  console.log(accountInfo.nonce);
-  console.log(accountInfo.freeBalance);
-  console.log(accountInfo.reservedBalance);
+const accountInfo: AccountInfo = await session.accountInfo();
+console.log(accountInfo.address);
+console.log(accountInfo.nonce);
+console.log(accountInfo.freeBalance);
+console.log(accountInfo.reservedBalance);
 ```
 - Returns account information: address, nonce, freeBalance and reservedBalance. Full session only, will not work in readOnly mode.
 
 ## `zkVerifySession.addAccount`
 
 ```typescript
-  session.addAccount(seedPhrase);
+session.addAccount(seedPhrase);
 ```
 
 - `seedPhrase`: Your seed phrase as a string "my seed phrase"
@@ -345,14 +345,14 @@ await session.close();
 ## `zkVerifySession.removeAccount`
 
 ```typescript
-  session.removeAccount();
+session.removeAccount();
 ```
 - Removes the active account from the current session, does nothing if no account is currently active.
 
 ## `zkVerifySession.subscribeToNewAttestations`
 
 ```typescript
-  session.subscribeToNewAttestations(callback, attestationId);
+session.subscribeToNewAttestations(callback, attestationId);
 ```
 - `callback`: A Function to be called whenever a NewAttestation event occurs. The function receives an AttestationEvent object as its argument.
 - `attestationId`:  (Optional) A string representing the attestation ID to filter events by. If provided, the subscription will automatically unsubscribe after receiving the specified attestation event.
@@ -360,14 +360,14 @@ await session.close();
 ## `zkVerifySession.unsubscribe`
 
 ```typescript
-  session.unsubscribe();
+session.unsubscribe();
 ```
 - This method unsubscribes from any active NewAttestation event subscriptions. It is used to stop listening for NewAttestation events when they are no longer needed.
 
 ## `zkVerifySession.api`
 
 ```typescript
-  const api = session.api;
+const api = session.api;
 ```
 - Uses PolkadotJS 12.4.2
 - Returns: The ApiPromise instance connected to the Polkadot.js API.
@@ -376,7 +376,7 @@ await session.close();
 ## `zkVerifySession.provider`
 
 ```typescript
-  const provider = session.provider;
+const provider = session.provider;
 ```
 - Returns: The WsProvider instance connected to the WebSocket endpoint.
 - The provider manages the connection to the blockchain node. It handles WebSocket communication and can be used to interact with the node directly, such as for subscribing to updates or making RPC calls.
@@ -384,7 +384,7 @@ await session.close();
 ## `zkVerifySession.account`
 
 ```typescript
-  const account = session.account;
+const account = session.account;
 ```
 - Returns: The KeyringPair object representing the active account in the session, or undefined if the session is in read-only mode.
 - The account is used for signing transactions and interacting with the blockchain on behalf of the user. If no account is associated with the session (i.e., the session is in read-only mode), this will return undefined.
