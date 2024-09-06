@@ -50,7 +50,7 @@ describe('verify with bad data - Groth16', () => {
     });
 
     it('should fail when sending groth16 data that passes formatting but is not accepted by zkVerify', async () => {
-        const dataPath = path.join(__dirname, 'data', 'groth16_error.json');
+        const dataPath = path.join(__dirname, 'common/data', 'groth16_error.json');
         const groth16Data = JSON.parse(fs.readFileSync(dataPath, 'utf8'));
 
         const { proof, publicSignals, vk } = groth16Data;

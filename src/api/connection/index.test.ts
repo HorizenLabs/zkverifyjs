@@ -1,8 +1,7 @@
 import { ApiPromise, WsProvider } from '@polkadot/api';
-import { SupportedNetwork } from '../../enums';
 import { establishConnection } from './index';
 import { waitForNodeToSync } from '../../utils/helpers';
-import { zkvTypes, zkvRpc } from '../../config';
+import { zkvTypes, zkvRpc, SupportedNetwork } from '../../config';
 
 jest.mock('@polkadot/api');
 jest.mock('../../utils/helpers');

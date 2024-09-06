@@ -21,10 +21,10 @@ describe('verify and subscribe to zkVerify events, wait for Attestation event th
 
     test.each(proofTypes)('should verify %s proof and respond on finalization with attestation confirmation then check proof of existence', async (proofType: ProofType) => {
         console.log(`Running test for proof type: ${proofType}`);
-        const { proof, publicSignals } = loadProofData(ProofType.groth16);
-        const vk = loadVerificationKey(ProofType.groth16);
+        const { proof, publicSignals } = loadProofData(proofType);
+        const vk = loadVerificationKey(proofType);
 
-        await performVerifyTransaction(ProofType.groth16, proof, publicSignals, vk, true, true);
+        await performVerifyTransaction(proofType, proof, publicSignals, vk, true, true);
     });
 });
 
