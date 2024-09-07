@@ -3,6 +3,7 @@ import {
   FflonkProcessor,
   Groth16Processor,
   Risc0Processor,
+  UltraPlonkProcessor,
 } from '../proofTypes';
 
 export enum SupportedNetwork {
@@ -15,7 +16,14 @@ export enum ProofType {
   fflonk = 'fflonk',
   groth16 = 'groth16',
   risc0 = 'risc0',
+  ultraplonk = 'ultraplonk',
   // ADD_NEW_PROOF_TYPE
+}
+
+export enum Groth16CurveType {
+  bn128 = 'bn128',
+  bn254 = 'bn254',
+  bls12381 = 'bls12381',
 }
 
 interface ProofConfig {
@@ -35,6 +43,10 @@ export const proofConfigurations: Record<ProofType, ProofConfig> = {
   [ProofType.risc0]: {
     pallet: 'settlementRisc0Pallet',
     processor: Risc0Processor,
+  },
+  [ProofType.ultraplonk]: {
+    pallet: 'settlementUltraplonkPallet',
+    processor: UltraPlonkProcessor,
   },
   // ADD_NEW_PROOF_TYPE
 };

@@ -204,6 +204,12 @@ export const handleTransaction = async (
           }
 
           try {
+            if (result.status.isBroadcast) {
+              safeEmit(emitter, ZkVerifyEvents.Broadcast, {
+                txHash: result.txHash.toString(),
+              });
+            }
+
             if (result.status.isInBlock) {
               transactionInfo.txHash = result.txHash.toString();
               transactionInfo.blockHash = result.status.asInBlock.toString();

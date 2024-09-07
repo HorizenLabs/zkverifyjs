@@ -5,164 +5,159 @@ import {
 } from '../types';
 import { Proof, ProofInner } from '../types';
 
+const unstringifyBigInts = (o: any): any => {
+  if (typeof o === 'string' && /^[0-9]+$/.test(o)) return BigInt(o);
+  if (typeof o === 'string' && /^0x[0-9a-fA-F]+$/.test(o)) return BigInt(o);
+  if (Array.isArray(o)) return o.map(unstringifyBigInts);
+  if (typeof o === 'object' && o !== null) {
+    return Object.keys(o).reduce((res, k) => {
+      res[k] = unstringifyBigInts(o[k]);
+      return res;
+    }, {} as any);
+  }
+  return o;
+};
+
 /**
- * Formats the zk-SNARK proof data for Groth16.
+ * Formats zk-SNARK proof data for Groth16.
  *
- * @param {ProofInput} proof - The raw proof data. The expected structure is:
- *   {
- *     pi_a: [string, string],
- *     pi_b: [[string, string], [string, string]],
- *     pi_c: [string, string]
- *   }
- * @returns {Proof<ProofInner>} - The formatted proof data including the curve information.
- *   The returned object will be of the structure:
- *   {
- *     curve: "Bn254",
- *     proof: {
- *       a: { x: string, y: string },
- *       b: { x: [string, string], y: [string, string] },
- *       c: { x: string, y: string }
- *     }
- *   }
- * @throws {Error} If the proof input is not valid.
+ * @param {ProofInput} proof - Raw proof data.
+ * @returns {Proof<ProofInner>} - Formatted proof data.
  */
 export const formatProof = (proof: ProofInput): Proof => {
-  if (!Array.isArray(proof.pi_a)) {
-    throw new Error('Invalid proof format: pi_a must be an array.');
-  }
-
-  if (!Array.isArray(proof.pi_b)) {
-    throw new Error('Invalid proof format: pi_b must be an array.');
-  }
-
-  if (!Array.isArray(proof.pi_c)) {
-    throw new Error('Invalid proof format: pi_c must be an array.');
-  }
-
-  const formattedProof: ProofInner = {
-    a: formatG1Point(proof.pi_a),
-    b: formatG2Point(proof.pi_b),
-    c: formatG1Point(proof.pi_c),
-  };
+  const proofData = unstringifyBigInts(proof);
+  const curve = extractCurve(proofData);
+  const endianess = getEndianess(curve);
 
   return {
-    curve: 'Bn254',
-    proof: formattedProof,
+    curve,
+    proof: {
+      a: formatG1Point(proofData.pi_a, endianess),
+      b: formatG2Point(proofData.pi_b, endianess, curve),
+      c: formatG1Point(proofData.pi_c, endianess),
+    },
   };
 };
 
 /**
- * Formats the verification key for use in the zk-SNARK proof for Groth16.
+ * Formats verification key for Groth16 zk-SNARK proof.
  *
- * @param {Groth16VerificationKeyInput} vk - The raw verification key data.
- * @returns {Groth16VerificationKey} - The formatted verification key.
- * @throws {Error} If the verification key input is not valid.
+ * @param {Groth16VerificationKeyInput} vk - Raw verification key data.
+ * @returns {Groth16VerificationKey} - Formatted verification key.
  */
-export const formatVk = (
-  vk: Groth16VerificationKeyInput,
-): Groth16VerificationKey => {
-  if (
-    !vk.vk_alpha_1 ||
-    !vk.vk_beta_2 ||
-    !vk.vk_gamma_2 ||
-    !vk.vk_delta_2 ||
-    !vk.IC
-  ) {
-    throw new Error(
-      'Invalid verification key format: Missing required key components (vk_alpha_1, vk_beta_2, vk_gamma_2, vk_delta_2, IC).',
-    );
-  }
+export const formatVk = (vk: Groth16VerificationKeyInput): Groth16VerificationKey => {
+  const vkData = unstringifyBigInts(vk);
+  const curve = extractCurve(vkData);
+  const endianess = getEndianess(curve);
 
   return {
-    curve: 'Bn254',
-    alpha_g1: formatG1Point(vk.vk_alpha_1),
-    beta_g2: formatG2Point(vk.vk_beta_2),
-    gamma_g2: formatG2Point(vk.vk_gamma_2),
-    delta_g2: formatG2Point(vk.vk_delta_2),
-    gamma_abc_g1: vk.IC.map((x: string[]) => formatG1Point(x)),
+    curve,
+    alpha_g1: formatG1Point(vkData.vk_alpha_1, endianess),
+    beta_g2: formatG2Point(vkData.vk_beta_2, endianess, curve),
+    gamma_g2: formatG2Point(vkData.vk_gamma_2, endianess, curve),
+    delta_g2: formatG2Point(vkData.vk_delta_2, endianess, curve),
+    gamma_abc_g1: vkData.IC.map((x: string[]) => formatG1Point(x, endianess)),
   };
 };
 
 /**
- * Formats an array of public signals by applying the formatScalar function to each element.
+ * Formats an array of public signals.
  *
- * @param {string[]} pubs - The array of public signals to format.
- * @returns {string[]} - The formatted array of public signals.
- * @throws {Error} If the public signals input is not valid.
+ * @param {string[]} pubs - Array of public signals.
+ * @returns {string[]} - Formatted public signals.
  */
 export const formatPubs = (pubs: string[]): string[] => {
   if (!Array.isArray(pubs) || pubs.some(() => false)) {
-    throw new Error(
-      'Invalid public signals format: Expected an array of strings.',
-    );
+    throw new Error('Invalid public signals format: Expected an array of strings.');
   }
   return pubs.map(formatScalar);
 };
 
 /**
- * Converts a bigint value to a little-endian hexadecimal string.
+ * Extracts and normalizes curve type.
  *
- * @param {bigint} value - The bigint value to convert.
- * @param {number} length - The length of the resulting hexadecimal string in bytes.
- * @returns {string} - The little-endian hexadecimal representation of the value.
- * @throws {Error} If the input value is not a bigint.
+ * @param {ProofInput | Groth16VerificationKeyInput} input - Input containing curve field.
+ * @returns {string} - Normalized curve type ('Bn254' or 'bls12381').
+ */
+const extractCurve = (input: { curve: string }): string => {
+  const curve = input.curve.toLowerCase();
+  if (curve === 'bn128' || curve === 'bn254') return 'bn254';
+  if (curve === 'bls12381' || curve === 'bls12_381') return 'Bls12_381';
+  throw new Error(`Unsupported curve: ${curve}`);
+};
+
+/**
+ * Determines endianess based on the curve type.
+ *
+ * @param {string} curve - Curve type ('Bn254' or 'Bls12381').
+ * @returns {'LE' | 'BE'} - Endianess ('LE' or 'BE').
+ */
+const getEndianess = (curve: string): 'LE' | 'BE' => {
+  return curve.toLowerCase() === 'bn254' ? 'LE' : 'BE';
+};
+
+/**
+ * Converts bigint to a little-endian hexadecimal string.
+ *
+ * @param {bigint} value - Bigint value.
+ * @param {number} length - Length of resulting hex string in bytes.
+ * @returns {string} - Little-endian hexadecimal representation.
  */
 export const toLittleEndianHex = (value: bigint, length: number): string => {
-  const hex = value.toString(16).padStart(length * 2, '0');
-  const bytes = hex
-    .match(/.{1,2}/g)!
-    .reverse()
-    .join('');
-  return `0x${bytes}`;
+  return '0x' + value.toString(16).padStart(length * 2, '0').match(/.{1,2}/g)!.reverse().join('');
 };
 
 /**
- * Formats a G1 point for use in the zk-SNARK proof.
+ * Converts bigint to a big-endian hexadecimal string.
  *
- * @param {string[]} point - An array containing the x and y coordinates of the G1 point.
- * @returns {string} - The formatted G1 point as a hexadecimal string.
- * @throws {Error} If the point input is not valid.
+ * @param {bigint} value - Bigint value.
+ * @param {number} length - Length of resulting hex string in bytes.
+ * @returns {string} - Big-endian hexadecimal representation.
  */
-export const formatG1Point = (point: string[]): string => {
-  try {
-    const x = toLittleEndianHex(BigInt(point[0]), 32);
-    const y = toLittleEndianHex(BigInt(point[1]), 32);
-    return x + y.slice(2);
-  } catch (error) {
-    throw new Error(
-      `Failed to format G1 point: ${error instanceof Error ? error.message : String(error)}`,
-    );
-  }
+const toBigEndianHex = (value: bigint, length: number): string => {
+  return '0x' + value.toString(16).padStart(length * 2, '0');
 };
 
 /**
- * Formats a G2 point for use in the zk-SNARK proof.
+ * Formats G1 point based on endianess.
  *
- * @param {string[][]} point - A 2D array containing the x and y coordinates of the G2 point.
- * @returns {string} - The formatted G2 point as a hexadecimal string.
- * @throws {Error} If the point input is not valid.
+ * @param {string[]} point - Coordinates of the G1 point.
+ * @param {'LE' | 'BE'} endianess - Endianess of the curve.
+ * @returns {string} - Formatted G1 point as hex string.
  */
-export const formatG2Point = (point: string[][]): string => {
-  try {
-    const x1 = toLittleEndianHex(BigInt(point[0][0]), 32);
-    const x2 = toLittleEndianHex(BigInt(point[0][1]), 32);
-    const y1 = toLittleEndianHex(BigInt(point[1][0]), 32);
-    const y2 = toLittleEndianHex(BigInt(point[1][1]), 32);
-    return x1 + x2.slice(2) + y1.slice(2) + y2.slice(2);
-  } catch (error) {
-    throw new Error(
-      `Failed to format G2 point: ${error instanceof Error ? error.message : String(error)}`,
-    );
-  }
+const formatG1Point = (point: string[], endianess: 'LE' | 'BE'): string => {
+  const [x, y] = [BigInt(point[0]), BigInt(point[1])];
+  const length = endianess === 'BE' ? 48 : 32;
+  return endianess === 'LE'
+      ? toLittleEndianHex(x, length) + toLittleEndianHex(y, length).slice(2)
+      : toBigEndianHex(x, length) + toBigEndianHex(y, length).slice(2);
 };
 
 /**
- * Formats a scalar value for use in the zk-SNARK proof.
+ * Formats G2 point based on endianess and curve type.
  *
- * @param {string} scalar - The scalar value to format.
- * @returns {string} - The formatted scalar as a little-endian hexadecimal string.
- * @throws {Error} If the scalar input is not valid.
+ * @param {string[][]} point - Coordinates of the G2 point.
+ * @param {'LE' | 'BE'} endianess - Endianess of the curve.
+ * @param {string} curve - Curve type.
+ * @returns {string} - Formatted G2 point as hex string.
  */
-export const formatScalar = (scalar: string): string => {
-  return toLittleEndianHex(BigInt(scalar), 32);
+const formatG2Point = (point: string[][], endianess: 'LE' | 'BE', curve: string): string => {
+  const [x1, x2, y1, y2] = [BigInt(point[0][0]), BigInt(point[0][1]), BigInt(point[1][0]), BigInt(point[1][1])];
+  const length = endianess === 'BE' ? 48 : 32;
+  const formattedX = curve === 'Bls12_381'
+      ? (endianess === 'LE' ? toLittleEndianHex(x2, length) + toLittleEndianHex(x1, length).slice(2) : toBigEndianHex(x2, length) + toBigEndianHex(x1, length).slice(2))
+      : (endianess === 'LE' ? toLittleEndianHex(x1, length) + toLittleEndianHex(x2, length).slice(2) : toBigEndianHex(x1, length) + toBigEndianHex(x2, length).slice(2));
+  const formattedY = curve === 'Bls12_381'
+      ? (endianess === 'LE' ? toLittleEndianHex(y2, length) + toLittleEndianHex(y1, length).slice(2) : toBigEndianHex(y2, length) + toBigEndianHex(y1, length).slice(2))
+      : (endianess === 'LE' ? toLittleEndianHex(y1, length) + toLittleEndianHex(y2, length).slice(2) : toBigEndianHex(y1, length) + toBigEndianHex(y2, length).slice(2));
+
+  return formattedX + formattedY.slice(2);
 };
+
+/**
+ * Formats a scalar value as little-endian hexadecimal string.
+ *
+ * @param {string} scalar - Scalar value to format.
+ * @returns {string} - Formatted scalar as little-endian hex.
+ */
+const formatScalar = (scalar: string): string => toLittleEndianHex(BigInt(scalar), 32);

@@ -1,13 +1,13 @@
 import fs from 'fs';
 import path from 'path';
 import { zkVerifySession } from '../src';
-import { ZkVerifyEvents } from "../src/enums";
+import { ZkVerifyEvents } from "../src";
 
 jest.setTimeout(180000);
 
 describe('verify with bad data - Groth16', () => {
     it('should fail when sending groth16 data that cannot be formatted and emit an error event', async () => {
-        const dataPath = path.join(__dirname, 'data', 'groth16_error.json');
+        const dataPath = path.join(__dirname, 'common/data', 'groth16_error.json');
         const groth16Data = JSON.parse(fs.readFileSync(dataPath, 'utf8'));
 
         const badProof = { ...groth16Data.proof, pi_a: 'bad_data' };
@@ -50,7 +50,7 @@ describe('verify with bad data - Groth16', () => {
     });
 
     it('should fail when sending groth16 data that passes formatting but is not accepted by zkVerify', async () => {
-        const dataPath = path.join(__dirname, 'data', 'groth16_error.json');
+        const dataPath = path.join(__dirname, 'common/data', 'groth16_error.json');
         const groth16Data = JSON.parse(fs.readFileSync(dataPath, 'utf8'));
 
         const { proof, publicSignals, vk } = groth16Data;

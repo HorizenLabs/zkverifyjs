@@ -8,7 +8,7 @@ import {
 } from '../../../types';
 import { TransactionType } from '../../../enums';
 import { DispatchInfo } from '@polkadot/types/interfaces';
-import { getProofPallet } from '../../helpers/index';
+import { getProofPallet } from '../../helpers';
 
 export const handleTransactionEvents = (
   api: ApiPromise,
