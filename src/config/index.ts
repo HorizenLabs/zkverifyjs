@@ -20,6 +20,12 @@ export enum ProofType {
   // ADD_NEW_PROOF_TYPE
 }
 
+export enum Groth16CurveType {
+  bn128 = 'bn128',
+  bn254 = 'bn254',
+  bls12381 = 'bls12381',
+}
+
 interface ProofConfig {
   pallet: string;
   processor: ProofProcessor;

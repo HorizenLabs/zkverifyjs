@@ -14,24 +14,25 @@ import {
 import path from "path";
 import fs from "fs";
 
-
 export interface ProofData {
     proof: any;
     publicSignals: any;
     vk?: string;
 }
 
-export const loadProofData = (proofType: ProofType): ProofData => {
-    const dataPath = path.join(__dirname, 'data', `${proofType}.json`);
+export const loadProofData = (proofType: ProofType, curve?: string): ProofData => {
+    const fileName = curve ? `${proofType}_${curve}` : proofType;
+    const dataPath = path.join(__dirname, 'data', `${fileName}.json`);
     return JSON.parse(fs.readFileSync(dataPath, 'utf8'));
 };
 
-export const loadVerificationKey = (proofType: ProofType): string => {
+export const loadVerificationKey = (proofType: ProofType, curve?: string): string => {
     if (proofType === ProofType.ultraplonk) {
         const vkPath = path.join(__dirname, 'data', 'ultraplonk_vk.bin');
         return fs.readFileSync(vkPath).toString('hex');
     } else {
-        const dataPath = path.join(__dirname, 'data', `${proofType}.json`);
+        const fileName = curve ? `${proofType}_${curve}` : proofType;
+        const dataPath = path.join(__dirname, 'data', `${fileName}.json`);
         const proofData: ProofData = JSON.parse(fs.readFileSync(dataPath, 'utf8'));
         return proofData.vk!;
     }
@@ -68,7 +69,6 @@ export const performVerifyTransaction = async (
 
     const { events, transactionResult } = await verify.execute(proof, publicSignals, vk);
 
-    console.log(`${proofType} Setting up event listeners...`);
     const eventResults = withAttestation
         ? handleEventsWithAttestation(events, proofType, 'verify')
         : handleCommonEvents(events, proofType, 'verify');
@@ -83,7 +83,6 @@ export const performVerifyTransaction = async (
         await validatePoE(session, transactionInfo.attestationId!, transactionInfo.leafDigest!);
     }
 
-    console.log(`${proofType} Closing session...`);
     await session.close();
 
     return { eventResults, transactionInfo };
@@ -98,7 +97,7 @@ export const performVKRegistrationAndVerification = async (
 ): Promise<void> => {
     const session = await zkVerifySession.start().Testnet().withAccount(process.env.SEED_PHRASE!);
 
-    console.log(`${proofType} Executing VK registration and setting up event listeners...`);
+    console.log(`${proofType} Executing VK registration...`);
     const { events: registerEvents, transactionResult: registerTransactionResult } = await session.registerVerificationKey()[proofType]().execute(vk);
 
     const registerResults = handleCommonEvents(registerEvents, proofType, 'vkRegistration');
@@ -107,7 +106,7 @@ export const performVKRegistrationAndVerification = async (
     validateVKRegistrationTransactionInfo(vkTransactionInfo, proofType);
     validateEventResults(registerResults, false);
 
-    console.log(`${proofType} Executing verification using registered VK and setting up event listeners...`);
+    console.log(`${proofType} Executing verification using registered VK...`);
     const { events: verifyEvents, transactionResult: verifyTransactionResult } = await session.verify()[proofType]().withRegisteredVk().execute(proof, publicSignals, vkTransactionInfo.statementHash!);
     const verifyResults = handleCommonEvents(verifyEvents, proofType, 'verify');
 
@@ -115,7 +114,6 @@ export const performVKRegistrationAndVerification = async (
     validateVerifyTransactionInfo(verifyTransactionInfo, proofType, false);
     validateEventResults(verifyResults, false);
 
-    console.log(`${proofType} Closing session...`);
     await session.close();
 };
 
@@ -163,7 +161,6 @@ export const validateVKRegistrationTransactionInfo = (
     validateTransactionInfo(transactionInfo, expectedProofType);
     expect(transactionInfo.statementHash).toBeDefined();
 };
-
 
 export const validatePoE = async (
     session: zkVerifySession,

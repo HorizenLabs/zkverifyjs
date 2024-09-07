@@ -1,4 +1,5 @@
 export interface Groth16VerificationKeyInput {
+  curve: string;
   vk_alpha_1: string[];
   vk_beta_2: string[][];
   vk_gamma_2: string[][];
@@ -16,6 +17,7 @@ export interface Groth16VerificationKey {
 }
 
 export interface ProofInput {
+  curve: string;
   pi_a: string[];
   pi_b: string[][];
   pi_c: string[];
