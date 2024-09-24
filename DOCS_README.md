@@ -1,4 +1,5 @@
-## zkverifyjs Instructions
+<!-- This is a generated file. Do not modify directly. --> 
+ ## zkverifyjs Instructions
 
 The `zkverifyjs` package is a TypeScript library designed to facilitate sending proofs to zkVerify for verification, listening for transaction events, and waiting for transaction finalization. The package is built with an intuitive API that allows developers to handle real-time transaction events and await final results.
 

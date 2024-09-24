@@ -1,3 +1,5 @@
+const fs = require('fs');
+
 const headingsToRemove = [
     { heading: 'Table of Contents', depth: 1 }, 
     { heading: 'Testing', depth: 2 }
@@ -67,17 +69,15 @@ async function adjustMarkdown(text) {
     return updatedText;
 }
 
-const fs = require('fs');
-
 async function getReadmeForDocs() {
   const source = 'README.md';
   const destination = 'DOCS_README.md';
+  const comment = "<!-- This is a generated file. Do not modify directly. -->";
 
   const markdown = fs.readFileSync(source, 'utf8');
   const adjustedMarkdown = await adjustMarkdown(markdown);
-  console.log('typeof markdown', typeof(adjustedMarkdown))
 
-  fs.writeFile(destination, adjustedMarkdown, 'utf8', (err) => {
+  fs.writeFile(destination, `${comment} \n ${adjustedMarkdown}`, 'utf8', (err) => {
     if (err) {
       console.error('Error writing file:', err);
     } else {
