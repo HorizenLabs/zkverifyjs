@@ -20,6 +20,25 @@ export interface ProofData {
     vk?: string;
 }
 
+const seedPhrases = [
+    process.env.SEED_PHRASE_1,
+    process.env.SEED_PHRASE_2,
+    process.env.SEED_PHRASE_3,
+    process.env.SEED_PHRASE_4,
+    process.env.SEED_PHRASE_5,
+    process.env.SEED_PHRASE_6,
+];
+
+export const getSeedPhrase = (index: number): string => {
+    const seedPhrase = seedPhrases[index % seedPhrases.length];
+
+    if (!seedPhrase) {
+        throw new Error(`Seed phrase for SEED_PHRASE_${index + 1} is not defined in the environment variables.`);
+    }
+
+    return seedPhrase;
+};
+
 export const loadProofData = (proofType: ProofType, curve?: string): ProofData => {
     const fileName = curve ? `${proofType}_${curve}` : proofType;
     const dataPath = path.join(__dirname, 'data', `${fileName}.json`);
@@ -54,6 +73,7 @@ export const validateEventResults = (eventResults: EventResults, expectAttestati
 };
 
 export const performVerifyTransaction = async (
+    seedPhrase: string,
     proofType: ProofType,
     proof: any,
     publicSignals: any,
@@ -61,7 +81,7 @@ export const performVerifyTransaction = async (
     withAttestation: boolean,
     validatePoe: boolean = false
 ): Promise<{ eventResults: EventResults; transactionInfo: VerifyTransactionInfo }> => {
-    const session = await zkVerifySession.start().Testnet().withAccount(process.env.SEED_PHRASE!);
+    const session = await zkVerifySession.start().Testnet().withAccount(seedPhrase);
 
     console.log(`${proofType} Executing transaction...`);
     const verifier = session.verify()[proofType]();
@@ -90,12 +110,13 @@ export const performVerifyTransaction = async (
 
 
 export const performVKRegistrationAndVerification = async (
+    seedPhrase: string,
     proofType: ProofType,
     proof: any,
     publicSignals: any,
     vk: string
 ): Promise<void> => {
-    const session = await zkVerifySession.start().Testnet().withAccount(process.env.SEED_PHRASE!);
+    const session = await zkVerifySession.start().Testnet().withAccount(seedPhrase);
 
     console.log(`${proofType} Executing VK registration...`);
     const { events: registerEvents, transactionResult: registerTransactionResult } = await session.registerVerificationKey()[proofType]().execute(vk);

@@ -1,5 +1,11 @@
 import { ProofType, Groth16CurveType } from '../src';
-import { performVerifyTransaction, performVKRegistrationAndVerification, loadProofData, loadVerificationKey } from './common/utils';
+import {
+    performVerifyTransaction,
+    performVKRegistrationAndVerification,
+    loadProofData,
+    loadVerificationKey,
+    getSeedPhrase
+} from './common/utils';
 
 jest.setTimeout(300000);
 
@@ -20,55 +26,92 @@ const loadProofAndVK = (proofType: ProofType, curve?: string) => {
     }
 };
 
-const runVerifyTest = async (proofType: ProofType, withAttestation: boolean = false, checkExistence: boolean = false) => {
-    if (proofType === ProofType.groth16) {
-        for (const curve of curveTypes) {
-            console.log(`Running ${proofType} test with curve: ${curve}`);
-            const { proof, vk } = loadProofAndVK(proofType, curve);
-
-            await performVerifyTransaction(proofType, proof.proof, proof.publicSignals, vk, withAttestation, checkExistence);
-        }
+const runVerifyTest = async (
+    proofType: ProofType,
+    withAttestation: boolean = false,
+    checkExistence: boolean = false,
+    seedPhrase: string,
+    curve?: string
+) => {
+    if (proofType === ProofType.groth16 && curve) {
+        console.log(`Running ${proofType} test with curve: ${curve}`);
+        const { proof, vk } = loadProofAndVK(proofType, curve);
+        await performVerifyTransaction(seedPhrase, proofType, proof.proof, proof.publicSignals, vk, withAttestation, checkExistence);
     } else {
+        console.log(`Running ${proofType} test`);
         const { proof, vk } = loadProofAndVK(proofType);
-        await performVerifyTransaction(proofType, proof.proof, proof.publicSignals, vk, withAttestation, checkExistence);
+        await performVerifyTransaction(seedPhrase, proofType, proof.proof, proof.publicSignals, vk, withAttestation, checkExistence);
     }
 };
 
-const runVKRegistrationTest = async (proofType: ProofType) => {
+const runVKRegistrationTest = async (proofType: ProofType, seedPhrase: string) => {
     if (proofType === ProofType.groth16) {
         for (const curve of curveTypes) {
             console.log(`Running VK registration for ${proofType} with curve: ${curve}`);
             const { proof, vk } = loadProofAndVK(proofType, curve);
-
-            await performVKRegistrationAndVerification(proofType, proof.proof, proof.publicSignals, vk);
+            await performVKRegistrationAndVerification(seedPhrase, proofType, proof.proof, proof.publicSignals, vk);
         }
     } else {
+        console.log(`Running VK registration for ${proofType}`);
         const { proof, vk } = loadProofAndVK(proofType);
-        await performVKRegistrationAndVerification(proofType, proof.proof, proof.publicSignals, vk);
+        await performVKRegistrationAndVerification(seedPhrase, proofType, proof.proof, proof.publicSignals, vk);
     }
 };
 
+const runAllProofTests = async (
+    proofTypes: ProofType[],
+    curveTypes: Groth16CurveType[],
+    withAttestation: boolean
+) => {
+    const testPromises: Promise<void>[] = [];
+    let seedIndex = 0;
+
+    proofTypes.forEach((proofType) => {
+        if (proofType === ProofType.groth16) {
+            curveTypes.forEach((curve) => {
+                console.log(`${proofType} ${curve} Seed Index: ${seedIndex}`);
+                const seedPhrase = getSeedPhrase(seedIndex++);
+                testPromises.push(runVerifyTest(proofType, withAttestation, false, seedPhrase, curve));
+            });
+        } else {
+            console.log(`${proofType} Seed Index: ${seedIndex}`);
+            const seedPhrase = getSeedPhrase(seedIndex++);
+            testPromises.push(runVerifyTest(proofType, withAttestation, false, seedPhrase));
+        }
+    });
+
+    await Promise.allSettled(testPromises);
+};
+
+const runAllVKRegistrationTests = async (proofTypes: ProofType[], curveTypes: Groth16CurveType[]) => {
+    const testPromises: Promise<void>[] = [];
+    let seedIndex = 0;
+
+    proofTypes.forEach((proofType) => {
+        if (proofType === ProofType.groth16) {
+            curveTypes.forEach((curve) => {
+                const seedPhrase = getSeedPhrase(seedIndex++);
+                testPromises.push(runVKRegistrationTest(proofType, seedPhrase));
+            });
+        } else {
+            const seedPhrase = getSeedPhrase(seedIndex++);
+            testPromises.push(runVKRegistrationTest(proofType, seedPhrase));
+        }
+    });
+
+    await Promise.allSettled(testPromises);
+};
+
 describe('zkVerify proof user journey tests', () => {
-    test.each(proofTypes)(
-        'should verify %s proof and respond on finalization without waiting for Attestation event',
-        async (proofType: ProofType) => {
-            console.log(`Running test for proof type: ${proofType}`);
-            await runVerifyTest(proofType, false, false);
-        }
-    );
+    test('should verify all proof types and respond on finalization without waiting for Attestation event', async () => {
+        await runAllProofTests(proofTypes, curveTypes, false);
+    });
 
-    test.each(proofTypes)(
-        'should verify %s proof, wait for Attestation event, then check proof of existence',
-        async (proofType: ProofType) => {
-            console.log(`Running test for proof type: ${proofType}`);
-            await runVerifyTest(proofType, true, true);
-        }
-    );
+    test('should verify all proof types, wait for Attestation event, and then check proof of existence', async () => {
+        await runAllProofTests(proofTypes, curveTypes, true);
+    });
 
-    test.each(proofTypes)(
-        'should register a VK and then verify the proof using the VK hash - %s proof',
-        async (proofType: ProofType) => {
-            await runVKRegistrationTest(proofType);
-        }
-    );
+    test('should register VK and verify the proof using the VK hash for all proof types', async () => {
+        await runAllVKRegistrationTests(proofTypes, curveTypes);
+    });
 });
