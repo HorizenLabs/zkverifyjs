@@ -2,6 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import { zkVerifySession } from '../src';
 import { ZkVerifyEvents } from "../src";
+import { getSeedPhrase } from "./common/utils";
 
 jest.setTimeout(180000);
 
@@ -13,7 +14,7 @@ describe('verify with bad data - Groth16', () => {
         const badProof = { ...groth16Data.proof, pi_a: 'bad_data' };
         const { publicSignals, vk } = groth16Data;
 
-        const session = await zkVerifySession.start().Testnet().withAccount(process.env.SEED_PHRASE!);
+        const session = await zkVerifySession.start().Testnet().withAccount(getSeedPhrase(0));
 
         let errorEventEmitted = false;
 
@@ -55,7 +56,7 @@ describe('verify with bad data - Groth16', () => {
 
         const { proof, publicSignals, vk } = groth16Data;
 
-        const session = await zkVerifySession.start().Testnet().withAccount(process.env.SEED_PHRASE!);
+        const session = await zkVerifySession.start().Testnet().withAccount(getSeedPhrase(0));
 
         let errorEventEmitted = false;
 

@@ -4,7 +4,7 @@ import {
     TransactionInfo,
     TransactionStatus,
     VerifyTransactionInfo,
-    VKRegistrationTransactionInfo
+    VKRegistrationTransactionInfo, Groth16CurveType
 } from '../../src';
 import {
     handleCommonEvents,
@@ -19,6 +19,9 @@ export interface ProofData {
     publicSignals: any;
     vk?: string;
 }
+
+export const proofTypes = Object.keys(ProofType).map((key) => ProofType[key as keyof typeof ProofType]);
+export const curveTypes = Object.keys(Groth16CurveType).map((key) => Groth16CurveType[key as keyof typeof Groth16CurveType]);
 
 const seedPhrases = [
     process.env.SEED_PHRASE_1,
@@ -195,4 +198,18 @@ export const validatePoE = async (
     expect(proofDetails.leafIndex).toBeGreaterThanOrEqual(0);
     expect(proofDetails.numberOfLeaves).toBeGreaterThanOrEqual(0);
     expect(proofDetails.leaf).toBeDefined();
+};
+
+export const loadProofAndVK = (proofType: ProofType, curve?: string) => {
+    if (proofType === ProofType.groth16 && curve) {
+        return {
+            proof: loadProofData(proofType, curve),
+            vk: loadVerificationKey(proofType, curve)
+        };
+    } else {
+        return {
+            proof: loadProofData(proofType),
+            vk: loadVerificationKey(proofType)
+        };
+    }
 };
