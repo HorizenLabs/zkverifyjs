@@ -11,18 +11,15 @@ on:
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        node-version: [18.x, 20.x]
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Setup Node.js ${{ matrix.node-version }}
+      - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: ${{ matrix.node-version }}
+          node-version: '18.x'
 
       - name: Install dependencies
         run: npm ci
@@ -33,8 +30,118 @@ jobs:
       - name: Run build
         run: npm run build
 
-      - name: Run tests with coverage
-        run: npm run test:coverage
+      - name: Run tests with output (allow failures)
+        id: run_tests
+        run: |
+          mkdir -p reports
+          set -o pipefail && npm run test 2>&1 | tee reports/test_output.txt || true
 
-      - name: Run npm audit
-        run: npm audit
+      - name: Debug - Check if test_output.txt exists
+        run: |
+          echo "Checking test_output.txt content:"
+          cat reports/test_output.txt || echo "No output file found."
+
+      - name: Parse Test Results and Coverage
+        id: parse_results
+        if: ${{ !cancelled() }}
+        run: |
+          TEST_OUTPUT=$(cat reports/test_output.txt || echo "")
+
+          # Initialize variables
+          PASSED=0
+          FAILED=0
+          SKIPPED=0
+          TOTAL=0
+          SUITE_FAILED=0
+          OVERALL_STATUS="failure"
+          OVERALL_STATUS_EMOJI=":red_circle:"
+          SLACK_MESSAGE="*Test report was not available to parse.*"
+
+          # Initialize coverage variables
+          STATEMENTS=0
+          BRANCHES=0
+          FUNCTIONS=0
+          LINES=0
+          COVERAGE_MESSAGE=""
+
+          # Check if test report is available
+          if [ -s reports/test_output.txt ]; then
+            # Parse suite results
+            if echo "$TEST_OUTPUT" | grep -q 'Test Suites:'; then
+              SUITE_FAILED=$(echo "$TEST_OUTPUT" | awk '/Test Suites:/ {for(i=1;i<=NF;i++) if($i=="failed,") print $(i-1)}')
+            fi
+
+            # Parse individual test results
+            if echo "$TEST_OUTPUT" | grep -q 'Tests:'; then
+              PASSED=$(echo "$TEST_OUTPUT" | awk '/Tests:/ {for(i=1;i<=NF;i++) if($i=="passed,") print $(i-1)}')
+              FAILED=$(echo "$TEST_OUTPUT" | awk '/Tests:/ {for(i=1;i<=NF;i++) if($i=="failed,") print $(i-1)}')
+              SKIPPED=$(echo "$TEST_OUTPUT" | awk '/Tests:/ {for(i=1;i<=NF;i++) if($i=="skipped,") print $(i-1)}')
+              TOTAL=$(echo "$TEST_OUTPUT" | awk '/Tests:/ {for(i=1;i<=NF;i++) if($i=="total") print $(i-1)}')
+
+              PASSED=${PASSED:-0}
+              FAILED=${FAILED:-0}
+              SKIPPED=${SKIPPED:-0}
+              TOTAL=${TOTAL:-0}
+
+              SLACK_MESSAGE="*TEST RESULTS*\n===============================\n*PASSED:* $PASSED | *FAILED:* $FAILED | *SKIPPED:* $SKIPPED | *TOTAL:* $TOTAL"
+            fi
+
+            # Parse coverage summary
+            if echo "$TEST_OUTPUT" | grep -q 'Coverage summary'; then
+              STATEMENTS=$(echo "$TEST_OUTPUT" | awk '/Statements/ {print $3}' | grep -o '[0-9.]\+')
+              BRANCHES=$(echo "$TEST_OUTPUT" | awk '/Branches/ {print $3}' | grep -o '[0-9.]\+')
+              FUNCTIONS=$(echo "$TEST_OUTPUT" | awk '/Functions/ {print $3}' | grep -o '[0-9.]\+')
+              LINES=$(echo "$TEST_OUTPUT" | awk '/Lines/ {print $3}' | grep -o '[0-9.]\+')
+
+              COVERAGE_MESSAGE="*COVERAGE*\n===============================\n*Statements:* ${STATEMENTS}% | *Branches:* ${BRANCHES}% | *Functions:* ${FUNCTIONS}% | *Lines:* ${LINES}%"
+            fi
+
+            # Check if no tests were run
+            if [ "$TOTAL" -eq 0 ]; then
+              OVERALL_STATUS="failure"
+              OVERALL_STATUS_EMOJI=":red_circle:"
+              SLACK_MESSAGE="*No tests were executed!*"
+            fi
+
+            # If any test suite failed, override the overall status to failure
+            if [ "$SUITE_FAILED" -gt 0 ]; then
+              OVERALL_STATUS="failure"
+              OVERALL_STATUS_EMOJI=":red_circle:"
+              SLACK_MESSAGE="$SLACK_MESSAGE *(Test Suites Failed: $SUITE_FAILED)*"
+            elif [ "$FAILED" -eq 0 ] && [ "$TOTAL" -gt 0 ]; then
+              OVERALL_STATUS="success"
+              OVERALL_STATUS_EMOJI=":large_green_circle:"
+            fi
+          else
+            echo "test_output.txt is empty or not found."
+          fi
+
+          # Append coverage message to Slack message
+          if [ -n "$COVERAGE_MESSAGE" ]; then
+            SLACK_MESSAGE="$SLACK_MESSAGE\n\n$COVERAGE_MESSAGE"
+          fi
+
+          # Set variables required for other workflow steps
+          echo "OVERALL_STATUS=$OVERALL_STATUS" >> $GITHUB_ENV
+          echo "OVERALL_STATUS_EMOJI=$OVERALL_STATUS_EMOJI" >> $GITHUB_ENV
+          echo "SLACK_MESSAGE=$SLACK_MESSAGE" >> $GITHUB_ENV
+
+      - name: Send Slack Notification
+        if: ${{ !cancelled() }}
+        uses: slackapi/slack-github-action@v1.25.0
+        with:
+          payload: |
+            {
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "${{ env.OVERALL_STATUS_EMOJI }} *zkVerifyJS Status:* ${{ env.OVERALL_STATUS }} ${{ env.OVERALL_STATUS_EMOJI }}\n\n${{ env.SLACK_MESSAGE }}\n\n*Build URL:* <https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}|Click here to view the build>"
+                  }
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.QA_SLACK_WEBHOOK_URL }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK

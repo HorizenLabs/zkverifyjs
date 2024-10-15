@@ -36,7 +36,22 @@ jobs:
       - name: Publish to npm
         run: npm publish
 
-      - name: Notify Slack of package release
-        if: success()
-        run: |
-        // TODO
+      - name: Send Slack Notification
+        if: ${{ !cancelled() }}
+        uses: slackapi/slack-github-action@v1.25.0
+        with:
+          payload: |
+            {
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*zkVerifyJS Package Published*\n\n*Build URL:* <https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}|Click here to view the build>"
+                  }
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.QA_SLACK_WEBHOOK_URL }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK

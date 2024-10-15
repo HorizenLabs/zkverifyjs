@@ -8,6 +8,6 @@ module.exports = {
   collectCoverageFrom: ['src/**/*.{js,ts,tsx}'],
   coveragePathIgnorePatterns: ['tests/'],
   coverageDirectory: 'coverage',
-  coverageReporters: ['json', 'lcov', 'text', 'clover'],
+  coverageReporters: ['json', 'lcov', 'text', 'clover', 'text-summary'],
   setupFiles: ['dotenv/config'],
 };
