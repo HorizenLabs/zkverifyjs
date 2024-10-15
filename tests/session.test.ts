@@ -1,6 +1,7 @@
 import { zkVerifySession } from '../src';
 import { EventEmitter } from 'events';
 import { ProofMethodMap } from "../src/session/builders/verify";
+import { getSeedPhrase } from "./common/utils";
 
 describe('zkVerifySession class', () => {
     let session: zkVerifySession;
@@ -34,7 +35,7 @@ describe('zkVerifySession class', () => {
     });
 
     it('should start a session with an account when seed phrase is provided', async () => {
-        session = await zkVerifySession.start().Testnet().withAccount(process.env.SEED_PHRASE!);
+        session = await zkVerifySession.start().Testnet().withAccount(getSeedPhrase(0));
         expect(session.readOnly).toBe(false);
         expect(session.api).toBeDefined();
     });
@@ -48,7 +49,7 @@ describe('zkVerifySession class', () => {
     });
 
     it('should start a session with a custom WebSocket URL and an account when seed phrase is provided', async () => {
-        session = await zkVerifySession.start().Custom("wss://testnet-rpc.zkverify.io").withAccount(process.env.SEED_PHRASE!);
+        session = await zkVerifySession.start().Custom("wss://testnet-rpc.zkverify.io").withAccount(getSeedPhrase(0));
         expect(session).toBeDefined();
         expect(session.readOnly).toBe(false);
         expect(session.api).toBeDefined();
@@ -59,13 +60,13 @@ describe('zkVerifySession class', () => {
         session = await zkVerifySession.start().Testnet().readOnly();
         expect(session.readOnly).toBe(true);
 
-        session.addAccount(process.env.SEED_PHRASE!);
+        session.addAccount(getSeedPhrase(0));
         expect(session.readOnly).toBe(false);
 
         session.removeAccount();
         expect(session.readOnly).toBe(true);
 
-        session.addAccount(process.env.SEED_PHRASE!);
+        session.addAccount(getSeedPhrase(0));
         expect(session.readOnly).toBe(false);
 
         session.removeAccount();
@@ -73,7 +74,7 @@ describe('zkVerifySession class', () => {
     });
 
     it('should throw an error when adding an account to a session that already has one', async () => {
-        session = await zkVerifySession.start().Testnet().withAccount(process.env.SEED_PHRASE!);
+        session = await zkVerifySession.start().Testnet().withAccount(getSeedPhrase(0));
         expect(session.readOnly).toBe(false);
 
         expect(() => session.addAccount('random-seed-phrase')).toThrow('An account is already active in this session.');
@@ -94,7 +95,7 @@ describe('zkVerifySession class', () => {
     });
 
     it('should allow verification when an account is active', async () => {
-        session = await zkVerifySession.start().Testnet().withAccount(process.env.SEED_PHRASE!);
+        session = await zkVerifySession.start().Testnet().withAccount(getSeedPhrase(0));
         expect(session.readOnly).toBe(false);
 
         const mockBuilder = {
@@ -118,7 +119,7 @@ describe('zkVerifySession class', () => {
     });
 
     it('should return account information when an account is active', async () => {
-        session = await zkVerifySession.start().Testnet().withAccount(process.env.SEED_PHRASE!);
+        session = await zkVerifySession.start().Testnet().withAccount(getSeedPhrase(0));
         expect(session.readOnly).toBe(false);
 
         session.accountInfo = jest.fn(async () => ({
@@ -138,7 +139,7 @@ describe('zkVerifySession class', () => {
     });
 
     it('should handle multiple verify calls concurrently', async () => {
-        session = await zkVerifySession.start().Testnet().withAccount(process.env.SEED_PHRASE!);
+        session = await zkVerifySession.start().Testnet().withAccount(getSeedPhrase(0));
         expect(session.readOnly).toBe(false);
 
         const mockBuilder = {

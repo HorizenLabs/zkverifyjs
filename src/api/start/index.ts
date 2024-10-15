@@ -30,14 +30,15 @@ export async function startSession(
 export async function startWalletSession(
   options: zkVerifySessionOptions,
 ): Promise<WalletConnection> {
-  const { host, customWsUrl } = options;
-  const { api, provider } = await establishConnection(host, customWsUrl);
 
   if (typeof window === 'undefined') {
     throw new Error(
-      'This function must be called in a browser environment, for server side / backend use "startSession"',
+        'This function must be called in a browser environment, for server side / backend use "startSession"',
     );
   }
+
+  const { host, customWsUrl } = options;
+  const { api, provider } = await establishConnection(host, customWsUrl);
 
   const { web3Enable, web3Accounts, web3FromSource } = await import(
     '@polkadot/extension-dapp'

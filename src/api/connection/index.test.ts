@@ -8,6 +8,10 @@ jest.mock('../../utils/helpers');
 jest.mock('../../config', () => ({
   zkvTypes: {},
   zkvRpc: {},
+  SupportedNetwork: {
+    Testnet: 'wss://testnet-rpc.zkverify.io',
+    Custom: 'custom',
+  },
 }));
 
 describe('establishConnection', () => {

@@ -3,17 +3,36 @@ import {
   Groth16VerificationKeyInput,
   ProofInput,
 } from '../types';
-import { Proof, ProofInner } from '../types';
+import { Proof } from '../types';
 
-const unstringifyBigInts = (o: any): any => {
+/**
+ * Recursively converts numeric strings and hexadecimal strings in an object, array, or string
+ * to `bigint`. Handles nested arrays and objects.
+ *
+ * @param {unknown} o - The input, which can be a string, array, or object containing numeric or
+ *                      hexadecimal string values.
+ * @returns {unknown} - The transformed input where all numeric and hexadecimal strings are
+ *                      converted to `bigint`. Other values remain unchanged.
+ *
+ * The function performs the following transformations:
+ * - If the input is a string containing only digits or a hexadecimal string (starting with `0x`),
+ *   it converts the string to a `bigint`.
+ * - If the input is an array, it recursively applies the same logic to each element.
+ * - If the input is an object, it recursively applies the transformation to each property value.
+ * - If the input is none of the above, it returns the input unchanged.
+ */
+const unstringifyBigInts = (o: unknown): unknown => {
   if (typeof o === 'string' && /^[0-9]+$/.test(o)) return BigInt(o);
   if (typeof o === 'string' && /^0x[0-9a-fA-F]+$/.test(o)) return BigInt(o);
   if (Array.isArray(o)) return o.map(unstringifyBigInts);
   if (typeof o === 'object' && o !== null) {
-    return Object.keys(o).reduce((res, k) => {
-      res[k] = unstringifyBigInts(o[k]);
-      return res;
-    }, {} as any);
+    const result: Record<string, unknown> = {};
+    for (const key in o) {
+      if (Object.prototype.hasOwnProperty.call(o, key)) {
+        result[key] = unstringifyBigInts((o as Record<string, unknown>)[key]);
+      }
+    }
+    return result;
   }
   return o;
 };
@@ -25,7 +44,7 @@ const unstringifyBigInts = (o: any): any => {
  * @returns {Proof<ProofInner>} - Formatted proof data.
  */
 export const formatProof = (proof: ProofInput): Proof => {
-  const proofData = unstringifyBigInts(proof);
+  const proofData = unstringifyBigInts(proof) as ProofInput;
   const curve = extractCurve(proofData);
   const endianess = getEndianess(curve);
 
@@ -46,7 +65,7 @@ export const formatProof = (proof: ProofInput): Proof => {
  * @returns {Groth16VerificationKey} - Formatted verification key.
  */
 export const formatVk = (vk: Groth16VerificationKeyInput): Groth16VerificationKey => {
-  const vkData = unstringifyBigInts(vk);
+  const vkData = unstringifyBigInts(vk) as Groth16VerificationKeyInput;
   const curve = extractCurve(vkData);
   const endianess = getEndianess(curve);
 

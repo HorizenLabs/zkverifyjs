@@ -1,5 +1,6 @@
 import { cryptoWaitReady } from '@polkadot/util-crypto';
 import { setupAccount } from './index';
+import { getSeedPhrase } from "../../../tests/common/utils";
 
 describe('setupAccount', () => {
   beforeAll(async () => {
@@ -7,7 +8,7 @@ describe('setupAccount', () => {
   });
 
   it('should return a KeyringPair when provided with a valid seed phrase', () => {
-    const account = setupAccount(process.env.SEED_PHRASE!);
+    const account = setupAccount(getSeedPhrase(0));
 
     expect(account).toBeDefined();
     expect(account.publicKey).toBeDefined();

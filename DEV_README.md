@@ -49,11 +49,25 @@ If we want to add a new configured network (e.g. mainnet)
 
 - Search for `ADD_NEW_SUPPORTED_NETWORK` in the codebase.
 
+## Local GitHub Actions with Act
+
+Build & Test
+
+```shell
+act workflow_dispatch -j build-and-test -P ubuntu-latest=ghcr.io/catthehacker/ubuntu:act-latest --network host
+```
+
+Publish Package
+
+```shell
+act workflow_dispatch -j publish-package -P ubuntu-latest=ghcr.io/catthehacker/ubuntu:act-latest --network host
+```
+
 ## Run Tests
 
 - Run a specific test
 ```shell
-npx jest tests/verify.fflonk.test.ts  
+npx jest tests/verify.test.ts  
 ```
 
 - Run all tests
