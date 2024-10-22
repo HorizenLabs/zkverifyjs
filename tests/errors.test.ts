@@ -13,7 +13,8 @@ describe('verify with bad data - Groth16', () => {
 
         const badProof = { ...groth16Data.proof, pi_a: 'bad_data' };
         const { publicSignals, vk } = groth16Data;
-        // Uses SEED_PHRASE_7
+        // ADD_NEW_PROOF_TYPE
+        // Uses SEED_PHRASE_7 but increment as needed if new proof types have been added, this should run without affecting the other tests.
         const session = await zkVerifySession.start().Testnet().withAccount(getSeedPhrase(6));
 
         let errorEventEmitted = false;

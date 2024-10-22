@@ -82,8 +82,6 @@ describe('startSession', () => {
         await expect(startSession(mockOptions)).rejects.toThrow(
             'startSession should not be called in a browser environment, use "startWalletSession"',
         );
-
-        delete (global as any).window;
     });
 
     it('should return an EstablishedConnection when no seedPhrase is provided', async () => {
@@ -131,8 +129,6 @@ describe('startWalletSession', () => {
     });
 
     it('should throw an error when called outside of a browser environment', async () => {
-        delete (global as any).window;
-
         await expect(startWalletSession(mockOptions)).rejects.toThrow(
             'This function must be called in a browser environment, for server side / backend use "startSession"',
         );

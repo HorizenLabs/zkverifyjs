@@ -23,6 +23,7 @@ export interface ProofData {
 export const proofTypes = Object.keys(ProofType).map((key) => ProofType[key as keyof typeof ProofType]);
 export const curveTypes = Object.keys(Groth16CurveType).map((key) => Groth16CurveType[key as keyof typeof Groth16CurveType]);
 
+// One Seed Phrase per proof type / curve combo.  NOTE:  SEED_PHRASE_7 used by unit tests and will need updating when new verifier added.
 const seedPhrases = [
     process.env.SEED_PHRASE_1,
     process.env.SEED_PHRASE_2,
