@@ -1,11 +1,12 @@
 import { zkVerifySession } from '../src';
 import { AccountInfo } from "../src";
+import { getSeedPhrase } from "./common/utils";
 
 jest.setTimeout(120000);
 
 describe('zkVerifySession - accountInfo', () => {
     it('should retrieve the account info including address, nonce, free balance and reserved balance', async () => {
-        const session = await zkVerifySession.start().Testnet().withAccount(process.env.SEED_PHRASE!);
+        const session = await zkVerifySession.start().Testnet().withAccount(getSeedPhrase(0));
 
         try {
             const accountInfo: AccountInfo = await session.accountInfo();

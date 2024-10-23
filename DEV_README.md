@@ -38,6 +38,8 @@ npm run pack-and-install
 
 1. Update `src/config/index.ts`
 2. Add a new proof to src/proofTypes including processor and formatter, and add export to `src/proofTypes/index.ts`
+3. Add new `SEED_PHRASE_*` environment variable to ensure parallel test runs continue to work.  
+4. Also note that the unit tests require an additional seed phrase (proof types / curve combo + 1)
 
 - Search for `ADD_NEW_PROOF_TYPE` in the codebase.
 
@@ -49,11 +51,29 @@ If we want to add a new configured network (e.g. mainnet)
 
 - Search for `ADD_NEW_SUPPORTED_NETWORK` in the codebase.
 
+## Local GitHub Actions with Act
+
+### Environment 
+
+- Copy the `.env.template` into `.env` file and set the required values.
+
+### Build & Test
+
+```shell
+act workflow_dispatch -j build-and-test -P ubuntu-latest=ghcr.io/catthehacker/ubuntu:act-latest --network host
+```
+
+### Publish Package
+
+```shell
+act workflow_dispatch -j publish-package -P ubuntu-latest=ghcr.io/catthehacker/ubuntu:act-latest --network host
+```
+
 ## Run Tests
 
 - Run a specific test
 ```shell
-npx jest tests/verify.fflonk.test.ts  
+npx jest tests/verify.test.ts  
 ```
 
 - Run all tests

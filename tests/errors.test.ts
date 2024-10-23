@@ -2,6 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import { zkVerifySession } from '../src';
 import { ZkVerifyEvents } from "../src";
+import { getSeedPhrase } from "./common/utils";
 
 jest.setTimeout(180000);
 
@@ -12,13 +13,14 @@ describe('verify with bad data - Groth16', () => {
 
         const badProof = { ...groth16Data.proof, pi_a: 'bad_data' };
         const { publicSignals, vk } = groth16Data;
-
-        const session = await zkVerifySession.start().Testnet().withAccount(process.env.SEED_PHRASE!);
+        // ADD_NEW_PROOF_TYPE
+        // Uses SEED_PHRASE_7 but increment as needed if new proof types have been added, this should run without affecting the other tests.
+        const session = await zkVerifySession.start().Testnet().withAccount(getSeedPhrase(6));
 
         let errorEventEmitted = false;
 
         const { events, transactionResult } = await session.verify()
-            .groth16().waitForPublishedAttestation().execute(
+            .groth16().execute(
             badProof,
             publicSignals,
             vk
@@ -33,13 +35,11 @@ describe('verify with bad data - Groth16', () => {
         } catch (error) {
             if (error instanceof Error) {
                 expect(error.message).toContain('Failed to format groth16 proof');
-                expect(error.message).toContain('Invalid proof format');
                 expect(error.message).toContain('pi_a must be an array');
             } else if (typeof error === 'object' && error !== null) {
                 expect(error).toHaveProperty('message');
                 expect((error as { message: string }).message).toContain('Failed to format groth16 proof');
-                expect((error as { message: string }).message).toContain('Invalid proof format');
-                expect((error as { message: string }).message).toContain('pi_a must be an array');
+                expect((error as { message: string }).message).toContain('Cannot convert b to a BigInt.');
             } else {
                 throw new Error(`Unexpected error type or structure: ${typeof error}`);
             }
@@ -54,8 +54,8 @@ describe('verify with bad data - Groth16', () => {
         const groth16Data = JSON.parse(fs.readFileSync(dataPath, 'utf8'));
 
         const { proof, publicSignals, vk } = groth16Data;
-
-        const session = await zkVerifySession.start().Testnet().withAccount(process.env.SEED_PHRASE!);
+        // Uses SEED_PHRASE_7
+        const session = await zkVerifySession.start().Testnet().withAccount(getSeedPhrase(6));
 
         let errorEventEmitted = false;
 

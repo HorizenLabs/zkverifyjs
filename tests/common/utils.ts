@@ -4,7 +4,7 @@ import {
     TransactionInfo,
     TransactionStatus,
     VerifyTransactionInfo,
-    VKRegistrationTransactionInfo
+    VKRegistrationTransactionInfo, Groth16CurveType
 } from '../../src';
 import {
     handleCommonEvents,
@@ -19,6 +19,29 @@ export interface ProofData {
     publicSignals: any;
     vk?: string;
 }
+
+export const proofTypes = Object.keys(ProofType).map((key) => ProofType[key as keyof typeof ProofType]);
+export const curveTypes = Object.keys(Groth16CurveType).map((key) => Groth16CurveType[key as keyof typeof Groth16CurveType]);
+
+// One Seed Phrase per proof type / curve combo.  NOTE:  SEED_PHRASE_7 used by unit tests and will need updating when new verifier added.
+const seedPhrases = [
+    process.env.SEED_PHRASE_1,
+    process.env.SEED_PHRASE_2,
+    process.env.SEED_PHRASE_3,
+    process.env.SEED_PHRASE_4,
+    process.env.SEED_PHRASE_5,
+    process.env.SEED_PHRASE_6,
+];
+
+export const getSeedPhrase = (index: number): string => {
+    const seedPhrase = seedPhrases[index % seedPhrases.length];
+
+    if (!seedPhrase) {
+        throw new Error(`Seed phrase for SEED_PHRASE_${index + 1} is not defined in the environment variables.`);
+    }
+
+    return seedPhrase;
+};
 
 export const loadProofData = (proofType: ProofType, curve?: string): ProofData => {
     const fileName = curve ? `${proofType}_${curve}` : proofType;
@@ -54,6 +77,7 @@ export const validateEventResults = (eventResults: EventResults, expectAttestati
 };
 
 export const performVerifyTransaction = async (
+    seedPhrase: string,
     proofType: ProofType,
     proof: any,
     publicSignals: any,
@@ -61,7 +85,7 @@ export const performVerifyTransaction = async (
     withAttestation: boolean,
     validatePoe: boolean = false
 ): Promise<{ eventResults: EventResults; transactionInfo: VerifyTransactionInfo }> => {
-    const session = await zkVerifySession.start().Testnet().withAccount(process.env.SEED_PHRASE!);
+    const session = await zkVerifySession.start().Testnet().withAccount(seedPhrase);
 
     console.log(`${proofType} Executing transaction...`);
     const verifier = session.verify()[proofType]();
@@ -90,12 +114,13 @@ export const performVerifyTransaction = async (
 
 
 export const performVKRegistrationAndVerification = async (
+    seedPhrase: string,
     proofType: ProofType,
     proof: any,
     publicSignals: any,
     vk: string
 ): Promise<void> => {
-    const session = await zkVerifySession.start().Testnet().withAccount(process.env.SEED_PHRASE!);
+    const session = await zkVerifySession.start().Testnet().withAccount(seedPhrase);
 
     console.log(`${proofType} Executing VK registration...`);
     const { events: registerEvents, transactionResult: registerTransactionResult } = await session.registerVerificationKey()[proofType]().execute(vk);
@@ -174,4 +199,18 @@ export const validatePoE = async (
     expect(proofDetails.leafIndex).toBeGreaterThanOrEqual(0);
     expect(proofDetails.numberOfLeaves).toBeGreaterThanOrEqual(0);
     expect(proofDetails.leaf).toBeDefined();
+};
+
+export const loadProofAndVK = (proofType: ProofType, curve?: string) => {
+    if (proofType === ProofType.groth16 && curve) {
+        return {
+            proof: loadProofData(proofType, curve),
+            vk: loadVerificationKey(proofType, curve)
+        };
+    } else {
+        return {
+            proof: loadProofData(proofType),
+            vk: loadVerificationKey(proofType)
+        };
+    }
 };
