@@ -54,7 +54,8 @@ describe('verify with bad data - Groth16', () => {
         const groth16Data = JSON.parse(fs.readFileSync(dataPath, 'utf8'));
 
         const { proof, publicSignals, vk } = groth16Data;
-        // Uses SEED_PHRASE_8
+        // ADD NEW_PROOF_TYPE
+        // Uses SEED_PHRASE_8 - increment after adding new proof types
         const session = await zkVerifySession.start().Testnet().withAccount(getSeedPhrase(7));
 
         let errorEventEmitted = false;
