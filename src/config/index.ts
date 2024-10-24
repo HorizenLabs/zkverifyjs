@@ -2,6 +2,7 @@ import { ProofProcessor } from '../types';
 import {
   FflonkProcessor,
   Groth16Processor,
+  ProofOfSqlProcessor,
   Risc0Processor,
   UltraPlonkProcessor,
 } from '../proofTypes';
@@ -17,6 +18,7 @@ export enum ProofType {
   groth16 = 'groth16',
   risc0 = 'risc0',
   ultraplonk = 'ultraplonk',
+  proofofsql = 'proofofsql'
   // ADD_NEW_PROOF_TYPE
 }
 
@@ -47,6 +49,10 @@ export const proofConfigurations: Record<ProofType, ProofConfig> = {
   [ProofType.ultraplonk]: {
     pallet: 'settlementUltraplonkPallet',
     processor: UltraPlonkProcessor,
+  },
+  [ProofType.proofofsql]: {
+    pallet: 'settlementProofOfSqlPallet',
+    processor: ProofOfSqlProcessor,
   },
   // ADD_NEW_PROOF_TYPE
 };
