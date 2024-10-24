@@ -30,15 +30,18 @@ export async function startSession(
 export async function startWalletSession(
   options: zkVerifySessionOptions,
 ): Promise<WalletConnection> {
-
   if (typeof window === 'undefined') {
     throw new Error(
-        'This function must be called in a browser environment, for server side / backend use "startSession"',
+      'This function must be called in a browser environment, for server side / backend use "startSession"',
     );
   }
 
-  const { host, customWsUrl } = options;
+  const { host, customWsUrl, wallet } = options;
   const { api, provider } = await establishConnection(host, customWsUrl);
+
+  if (!wallet || !wallet.source || !wallet.accountAddress) {
+    throw new Error('Wallet source and accountAddress must be provided.');
+  }
 
   const { web3Enable, web3Accounts, web3FromSource } = await import(
     '@polkadot/extension-dapp'
@@ -54,8 +57,24 @@ export async function startWalletSession(
     throw new Error('No accounts found.');
   }
 
-  const selectedAccount = accounts[0];
-  const injector = await web3FromSource(selectedAccount.meta.source);
+  const selectedAccount = accounts.find(
+    (account) =>
+      account.meta.source === wallet.source &&
+      account.address === wallet.accountAddress,
+  );
 
-  return { api, provider, injector, accountAddress: selectedAccount.address };
+  if (!selectedAccount) {
+    throw new Error(
+      `No account found for wallet source: ${wallet.source} and address: ${wallet.accountAddress}`,
+    );
+  }
+
+  const injector = await web3FromSource(wallet.source);
+
+  return {
+    api,
+    provider,
+    injector,
+    accountAddress: selectedAccount.address,
+  };
 }

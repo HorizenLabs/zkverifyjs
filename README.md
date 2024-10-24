@@ -71,13 +71,19 @@ const session = await zkVerifySession.start()
 ```typescript
 const session = await zkVerifySession.start()
         .Testnet()
-        .withWallet(); // Uses browser session context "window"
+        .withWallet({
+          source: selectedWallet,
+          accountAddress: selectedAccount,
+        }); // Uses browser session context "window"
 ```
 6. Full Frontend Browser Session (send transactions)  with Custom WebSocket:
 ```typescript
 const session = await zkVerifySession.start()
         .Custom("wss://testnet-rpc.zkverify.io") // Custom network
-        .withWallet(); // Uses browser session context "window"
+        .withWallet({
+          source: selectedWallet,
+          accountAddress: selectedAccount,
+        }); // Uses browser session context "window"
 ```
 
 Not specifying `withAccount()` or `withWallet()` will start a read-only session, transaction methods cannot be used, and only calls to read data are allowed:
@@ -268,13 +274,16 @@ await zkVerifySession.start()
         .Testnet() // 1. Either preconfigured network selection
         .Custom('wss://custom') // 2. Or specify a custom network selection
         .withAccount(process.env.SEED_PHRASE!) // Optional
-        .withWallet() // Optional
+        .withWallet({
+          source: selectedWallet,
+          accountAddress: selectedAccount,
+        }) // Optional
         .readOnly() // Optional
 ```
 
 - Network Selection: Preconfigured options such as `.Testnet()` or provide your own websocket url using `.Custom('wss://custom'')`.
 - withAccount : Create a full session with ability send transactions get account info by using .withAccount('seed-phrase') and specifying your own seed phrase.
-- withWallet : Establish connection to a browser based substrate wallet, cannot be used with `withAccount`;
+- withWallet : Establish connection to a browser extension based substrate wallet like talisman or subwallet, cannot be used with `withAccount`;
 - readOnly: Start the session in read-only mode, unable to send transactions or retrieve account info.
 
 ## `zkVerifySession.close`

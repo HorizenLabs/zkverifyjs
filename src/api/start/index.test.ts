@@ -4,190 +4,263 @@ import { startSession, startWalletSession } from './index';
 import { zkVerifySessionOptions } from '../../session/types';
 import { SupportedNetwork } from '../../config';
 import {
-    AccountConnection,
-    EstablishedConnection,
-    WalletConnection,
+  AccountConnection,
+  EstablishedConnection,
+  WalletConnection,
 } from '../connection/types';
 import { KeyringPair } from '@polkadot/keyring/types';
 import { InjectedExtension } from '@polkadot/extension-inject/types';
 
 jest.mock('../connection', () => ({
-    establishConnection: jest.fn(),
+  establishConnection: jest.fn(),
 }));
 jest.mock('../account', () => ({
-    setupAccount: jest.fn(),
+  setupAccount: jest.fn(),
 }));
 
 jest.mock('@polkadot/extension-dapp', () => ({
-    web3Enable: jest.fn(),
-    web3Accounts: jest.fn(),
-    web3FromSource: jest.fn(),
+  web3Enable: jest.fn(),
+  web3Accounts: jest.fn(),
+  web3FromSource: jest.fn(),
 }));
 
 describe('startSession', () => {
-    let mockOptions: zkVerifySessionOptions;
-    let mockApi: any;
-    let mockProvider: any;
+  let mockOptions: zkVerifySessionOptions;
+  let mockApi: any;
+  let mockProvider: any;
 
-    beforeEach(() => {
-        mockApi = { apiProperty: 'apiValue' };
-        mockProvider = { providerProperty: 'providerValue' };
+  beforeEach(() => {
+    mockApi = { apiProperty: 'apiValue' };
+    mockProvider = { providerProperty: 'providerValue' };
 
-        (establishConnection as jest.Mock).mockResolvedValue({
-            api: mockApi,
-            provider: mockProvider,
-        });
-
-        delete (global as any).window;
+    (establishConnection as jest.Mock).mockResolvedValue({
+      api: mockApi,
+      provider: mockProvider,
     });
 
-    afterEach(() => {
-        delete (global as any).window;
-    });
+    delete (global as any).window;
+  });
 
-    it('should return an AccountConnection when a seedPhrase is provided', async () => {
-        const mockAccount: Partial<KeyringPair> = {
-            address: 'mockAddress',
-            meta: { name: 'mockName' },
-            isLocked: true,
-            sign: jest.fn(),
-        };
+  afterEach(() => {
+    delete (global as any).window;
+  });
 
-        (setupAccount as jest.Mock).mockReturnValue(mockAccount);
+  it('should return an AccountConnection when a seedPhrase is provided', async () => {
+    const mockAccount: Partial<KeyringPair> = {
+      address: 'mockAddress',
+      meta: { name: 'mockName' },
+      isLocked: true,
+      sign: jest.fn(),
+    };
 
-        mockOptions = {
-            host: SupportedNetwork.Testnet,
-            seedPhrase: 'testSeedPhrase',
-            customWsUrl: 'ws://custom-url',
-        };
+    (setupAccount as jest.Mock).mockReturnValue(mockAccount);
 
-        const result = await startSession(mockOptions);
+    mockOptions = {
+      host: SupportedNetwork.Testnet,
+      seedPhrase: 'testSeedPhrase',
+      customWsUrl: 'ws://custom-url',
+    };
 
-        expect(establishConnection).toHaveBeenCalledWith(mockOptions.host, mockOptions.customWsUrl);
-        expect(setupAccount).toHaveBeenCalledWith(mockOptions.seedPhrase);
-        expect(result).toEqual({
-            api: mockApi,
-            provider: mockProvider,
-            account: mockAccount,
-        } as AccountConnection);
-    });
+    const result = await startSession(mockOptions);
 
-    it('should throw an error when called in a browser environment', async () => {
-        Object.defineProperty(global, 'window', { value: {}, writable: true });
+    expect(establishConnection).toHaveBeenCalledWith(
+      mockOptions.host,
+      mockOptions.customWsUrl,
+    );
+    expect(setupAccount).toHaveBeenCalledWith(mockOptions.seedPhrase);
+    expect(result).toEqual({
+      api: mockApi,
+      provider: mockProvider,
+      account: mockAccount,
+    } as AccountConnection);
+  });
 
-        mockOptions = {
-            host: SupportedNetwork.Testnet,
-        };
+  it('should throw an error when called in a browser environment', async () => {
+    Object.defineProperty(global, 'window', { value: {}, writable: true });
 
-        await expect(startSession(mockOptions)).rejects.toThrow(
-            'startSession should not be called in a browser environment, use "startWalletSession"',
-        );
-    });
+    mockOptions = {
+      host: SupportedNetwork.Testnet,
+    };
 
-    it('should return an EstablishedConnection when no seedPhrase is provided', async () => {
-        (global as any).window = undefined;
+    await expect(startSession(mockOptions)).rejects.toThrow(
+      'startSession should not be called in a browser environment, use "startWalletSession"',
+    );
+  });
 
-        mockOptions = {
-            host: SupportedNetwork.Testnet,
-            customWsUrl: 'ws://custom-url',
-        };
+  it('should return an EstablishedConnection when no seedPhrase is provided', async () => {
+    (global as any).window = undefined;
 
-        const result = await startSession(mockOptions);
+    mockOptions = {
+      host: SupportedNetwork.Testnet,
+      customWsUrl: 'ws://custom-url',
+    };
 
-        expect(establishConnection).toHaveBeenCalledWith(mockOptions.host, mockOptions.customWsUrl);
-        expect(result).toEqual({
-            api: mockApi,
-            provider: mockProvider,
-        } as EstablishedConnection);
-    });
+    const result = await startSession(mockOptions);
+
+    expect(establishConnection).toHaveBeenCalledWith(
+      mockOptions.host,
+      mockOptions.customWsUrl,
+    );
+    expect(result).toEqual({
+      api: mockApi,
+      provider: mockProvider,
+    } as EstablishedConnection);
+  });
 });
 
 describe('startWalletSession', () => {
-    let mockOptions: zkVerifySessionOptions;
-    let mockApi: any;
-    let mockProvider: any;
+  let mockOptions: zkVerifySessionOptions;
+  let mockApi: any;
+  let mockProvider: any;
 
-    beforeEach(() => {
-        mockApi = { apiProperty: 'apiValue' };
-        mockProvider = { providerProperty: 'providerValue' };
+  beforeEach(() => {
+    mockApi = { apiProperty: 'apiValue' };
+    mockProvider = { providerProperty: 'providerValue' };
 
-        mockOptions = {
-            host: SupportedNetwork.Custom,
-            customWsUrl: 'ws://custom-url',
-        };
+    mockOptions = {
+      host: SupportedNetwork.Custom,
+      customWsUrl: 'ws://custom-url',
+    };
 
-        (establishConnection as jest.Mock).mockResolvedValue({
-            api: mockApi,
-            provider: mockProvider,
-        });
-
-        delete (global as any).window;
+    (establishConnection as jest.Mock).mockResolvedValue({
+      api: mockApi,
+      provider: mockProvider,
     });
 
-    afterEach(() => {
-        delete (global as any).window;
-    });
+    delete (global as any).window;
+  });
 
-    it('should throw an error when called outside of a browser environment', async () => {
-        await expect(startWalletSession(mockOptions)).rejects.toThrow(
-            'This function must be called in a browser environment, for server side / backend use "startSession"',
-        );
-    });
+  afterEach(() => {
+    delete (global as any).window;
+  });
 
-    it('should throw an error if no extensions are enabled', async () => {
-        Object.defineProperty(global, 'window', { value: {}, writable: true });
+  it('should throw an error when called outside of a browser environment', async () => {
+    await expect(startWalletSession(mockOptions)).rejects.toThrow(
+      'This function must be called in a browser environment, for server side / backend use "startSession"',
+    );
+  });
 
-        const { web3Enable } = await import('@polkadot/extension-dapp');
-        (web3Enable as jest.Mock).mockResolvedValue([]);
+  it('should throw an error if wallet object is not provided', async () => {
+    Object.defineProperty(global, 'window', { value: {}, writable: true });
 
-        await expect(startWalletSession(mockOptions)).rejects.toThrow(
-            'No extension installed or access was denied.',
-        );
-    });
+    mockOptions.wallet = undefined;
 
-    it('should throw an error if no accounts are found', async () => {
-        Object.defineProperty(global, 'window', { value: {}, writable: true });
+    await expect(startWalletSession(mockOptions)).rejects.toThrow(
+      'Wallet source and accountAddress must be provided.',
+    );
+  });
 
-        const { web3Enable, web3Accounts } = await import('@polkadot/extension-dapp');
-        (web3Enable as jest.Mock).mockResolvedValue([{}]);
-        (web3Accounts as jest.Mock).mockResolvedValue([]);
+  it('should throw an error if wallet source or accountAddress is missing', async () => {
+    Object.defineProperty(global, 'window', { value: {}, writable: true });
 
-        await expect(startWalletSession(mockOptions)).rejects.toThrow(
-            'No accounts found.',
-        );
-    });
+    mockOptions.wallet = { source: 'mockSource' } as any;
 
-    it('should successfully return a WalletConnection when extensions and accounts are available', async () => {
-        Object.defineProperty(global, 'window', { value: {}, writable: true });
+    await expect(startWalletSession(mockOptions)).rejects.toThrow(
+      'Wallet source and accountAddress must be provided.',
+    );
+  });
 
-        const { web3Enable, web3Accounts, web3FromSource } = await import('@polkadot/extension-dapp');
-        const mockAccounts = [{ address: 'mockAddress', meta: { source: 'mockSource' } }];
+  it('should throw an error if no extensions are enabled', async () => {
+    Object.defineProperty(global, 'window', { value: {}, writable: true });
 
-        const mockInjector: Partial<InjectedExtension> = {
-            name: 'mockExtension',
-            version: '1.0.0',
-            signer: {
-                signPayload: jest.fn(),
-                signRaw: jest.fn(),
-            },
-        };
+    const { web3Enable } = await import('@polkadot/extension-dapp');
+    (web3Enable as jest.Mock).mockResolvedValue([]);
 
-        (web3Enable as jest.Mock).mockResolvedValue([{}]);
-        (web3Accounts as jest.Mock).mockResolvedValue(mockAccounts);
-        (web3FromSource as jest.Mock).mockResolvedValue(mockInjector);
+    mockOptions.wallet = {
+      source: 'mockSource',
+      accountAddress: 'mockAddress',
+    };
 
-        const result = await startWalletSession(mockOptions);
+    await expect(startWalletSession(mockOptions)).rejects.toThrow(
+      'No extension installed or access was denied.',
+    );
+  });
 
-        expect(establishConnection).toHaveBeenCalledWith(mockOptions.host, mockOptions.customWsUrl);
-        expect(web3Enable).toHaveBeenCalledWith('zkVerify');
-        expect(web3Accounts).toHaveBeenCalled();
-        expect(web3FromSource).toHaveBeenCalledWith('mockSource');
+  it('should throw an error if no accounts are found', async () => {
+    Object.defineProperty(global, 'window', { value: {}, writable: true });
 
-        expect(result).toEqual({
-            api: mockApi,
-            provider: mockProvider,
-            injector: mockInjector,
-            accountAddress: 'mockAddress',
-        } as WalletConnection);
-    });
+    const { web3Enable, web3Accounts } = await import(
+      '@polkadot/extension-dapp'
+    );
+    (web3Enable as jest.Mock).mockResolvedValue([{}]);
+    (web3Accounts as jest.Mock).mockResolvedValue([]);
+
+    mockOptions.wallet = {
+      source: 'mockSource',
+      accountAddress: 'mockAddress',
+    };
+
+    await expect(startWalletSession(mockOptions)).rejects.toThrow(
+      'No accounts found.',
+    );
+  });
+
+  it('should throw an error if no account matches the provided wallet source and address', async () => {
+    Object.defineProperty(global, 'window', { value: {}, writable: true });
+
+    const { web3Enable, web3Accounts } = await import(
+      '@polkadot/extension-dapp'
+    );
+    const mockAccounts = [
+      { address: 'differentAddress', meta: { source: 'mockSource' } },
+    ];
+
+    (web3Enable as jest.Mock).mockResolvedValue([{}]);
+    (web3Accounts as jest.Mock).mockResolvedValue(mockAccounts);
+
+    mockOptions.wallet = {
+      source: 'mockSource',
+      accountAddress: 'mockAddress',
+    };
+
+    await expect(startWalletSession(mockOptions)).rejects.toThrow(
+      'No account found for wallet source: mockSource and address: mockAddress',
+    );
+  });
+
+  it('should successfully return a WalletConnection when extensions and accounts are available and match the wallet', async () => {
+    Object.defineProperty(global, 'window', { value: {}, writable: true });
+
+    const { web3Enable, web3Accounts, web3FromSource } = await import(
+      '@polkadot/extension-dapp'
+    );
+    const mockAccounts = [
+      { address: 'mockAddress', meta: { source: 'mockSource' } },
+    ];
+
+    const mockInjector: Partial<InjectedExtension> = {
+      name: 'mockExtension',
+      version: '1.0.0',
+      signer: {
+        signPayload: jest.fn(),
+        signRaw: jest.fn(),
+      },
+    };
+
+    (web3Enable as jest.Mock).mockResolvedValue([{}]);
+    (web3Accounts as jest.Mock).mockResolvedValue(mockAccounts);
+    (web3FromSource as jest.Mock).mockResolvedValue(mockInjector);
+
+    mockOptions.wallet = {
+      source: 'mockSource',
+      accountAddress: 'mockAddress',
+    };
+
+    const result = await startWalletSession(mockOptions);
+
+    expect(establishConnection).toHaveBeenCalledWith(
+      mockOptions.host,
+      mockOptions.customWsUrl,
+    );
+    expect(web3Enable).toHaveBeenCalledWith('zkVerify');
+    expect(web3Accounts).toHaveBeenCalled();
+    expect(web3FromSource).toHaveBeenCalledWith('mockSource');
+
+    expect(result).toEqual({
+      api: mockApi,
+      provider: mockProvider,
+      injector: mockInjector,
+      accountAddress: 'mockAddress',
+    } as WalletConnection);
+  });
 });

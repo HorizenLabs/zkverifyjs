@@ -26,12 +26,18 @@ SEED_PHRASE="MY SEED PHRASE WORDS GO HERE"
 npm install && npm run pack-and-install
 ```
 
-## Install Package Locally
+## Install Package Locally 
 
 1. Deploy the package with latest code
 
 ```shell
 npm run pack-and-install
+```
+
+2. Install the tgz in frontend project, renaming the tgz in the command below as necessary
+
+```shell
+npm install ./path-to-package/zkverifyjs-0.2.0.tgz
 ```
 
 ## Add New Proof Types

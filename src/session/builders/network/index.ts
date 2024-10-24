@@ -1,4 +1,4 @@
-import { zkVerifySessionOptions } from '../../types';
+import { WalletOptions, zkVerifySessionOptions } from '../../types';
 import { zkVerifySession } from '../../index';
 import { SupportedNetwork } from '../../../config';
 
@@ -33,8 +33,8 @@ export class NetworkBuilder {
     return this.startSession(this.options as zkVerifySessionOptions);
   }
 
-  withWallet(): Promise<zkVerifySession> {
-    this.options.wallet = true;
+  withWallet(wallet: WalletOptions): Promise<zkVerifySession> {
+    this.options.wallet = wallet;
     return this.startSession(this.options as zkVerifySessionOptions);
   }
 

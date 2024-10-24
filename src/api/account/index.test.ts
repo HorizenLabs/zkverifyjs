@@ -1,6 +1,6 @@
 import { cryptoWaitReady } from '@polkadot/util-crypto';
 import { setupAccount } from './index';
-import { getSeedPhrase } from "../../../tests/common/utils";
+import { getSeedPhrase } from '../../../tests/common/utils';
 
 describe('setupAccount', () => {
   beforeAll(async () => {
