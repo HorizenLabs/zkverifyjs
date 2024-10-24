@@ -2,6 +2,13 @@
 
 The `zkverifyjs` package is a TypeScript library designed to facilitate sending proofs to zkVerify for verification, listening for transaction events, and waiting for transaction finalization. The package is built with an intuitive API that allows developers to handle real-time transaction events and await final results.
 
+Currently the following proof verifiers are supported:
+- FFlonk
+- Groth16 (BN128, BN254, BLS12-381 elliptic curves)
+- Risc0
+- Ultraplonk
+- Space and Time
+
 # Table of Contents
 
 - [Installation](#installation)
@@ -123,7 +130,7 @@ try {
 
 ## Registering a Verification Key & Submitting a proof with the Statement Hash
 
-Register your Verification Key on chain and use it in future proof submissions by specifying the registeredVk() option.
+Register your Verification Key on chain and use it in future proof submissions by specifying the `registeredVk()` option.
 
 ```typescript
 const { events, transactionResult } = await session.registerVerificationKey().fflonk().execute(vk);
@@ -175,7 +182,7 @@ events.on('error', (error) => {
 To await the final result of the transaction, use the transactionResult promise. This resolves with the final transaction details after the transaction is finalized in a block.
 
 ```typescript
-const {events, transactionResult} = await session.verify()
+const { events, transactionResult } = await session.verify()
   .groth16()
   .execute(proof, publicSignals, vk)
 
@@ -188,13 +195,9 @@ console.log('Final transaction result:', result);
 Wait for the NewElement event to be published before the transaction info is returned back by the promise.  Occurs around every ~60s.
 
 ```typescript
-const {events, transactionResult} = await session.verify().risc0()
+const { events, transactionResult } = await session.verify().risc0()
     .waitForPublishedAttestation()
-    .execute(
-    proof,
-    publicSignals,
-    vk
-);
+    .execute(proof, publicSignals, vk);
 
 const transactionInfo: VerifyTransactionInfo = await transactionResult;
 
@@ -272,9 +275,9 @@ await zkVerifySession.start()
         .readOnly() // Optional
 ```
 
-- Network Selection: Preconfigured options such as `.Testnet()` or provide your own websocket url using `.Custom('wss://custom'')`.
+- Network Selection: Preconfigured options such as `.Testnet()` or provide your own websocket url using `.Custom('wss://custom')`.
 - withAccount : Create a full session with ability send transactions get account info by using .withAccount('seed-phrase') and specifying your own seed phrase.
-- withWallet : Establish connection to a browser based substrate wallet, cannot be used with `withAccount`;
+- withWallet : Establish connection to a browser based substrate wallet, cannot be used with `.withAccount()`;
 - readOnly: Start the session in read-only mode, unable to send transactions or retrieve account info.
 
 ## `zkVerifySession.close`
