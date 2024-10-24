@@ -7,6 +7,7 @@ Currently the following proof verifiers are supported:
 - Groth16 (BN128, BN254, BLS12-381 elliptic curves)
 - Risc0
 - Ultraplonk
+- Space and Time
 
 # Table of Contents
 
