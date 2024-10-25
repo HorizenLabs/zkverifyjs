@@ -20,10 +20,13 @@ describe('verify with bad data - Groth16', () => {
         let errorEventEmitted = false;
 
         const { events, transactionResult } = await session.verify()
-            .groth16().execute(
-            badProof,
-            publicSignals,
-            vk
+            .groth16().execute({
+                proofData: [
+                    badProof,
+                    publicSignals,
+                    vk
+                ]
+            }
         );
 
         events.on(ZkVerifyEvents.ErrorEvent, (eventData) => {
@@ -61,10 +64,13 @@ describe('verify with bad data - Groth16', () => {
         let errorEventEmitted = false;
 
         const { events, transactionResult } = await session.verify()
-            .groth16().waitForPublishedAttestation().execute(
-            proof,
-            publicSignals,
-            vk
+            .groth16().waitForPublishedAttestation().execute({
+                proofData: [
+                    proof,
+                    publicSignals,
+                    vk
+                ]
+            }
         );
 
         events.on(ZkVerifyEvents.ErrorEvent, (error) => {

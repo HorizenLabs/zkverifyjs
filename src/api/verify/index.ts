@@ -1,105 +1,56 @@
-import {
-  getProofPallet,
-  getProofProcessor,
-  submitProofExtrinsic,
-} from '../../utils/helpers';
+import { getProofPallet } from '../../utils/helpers';
 import { handleTransaction } from '../../utils/transactions';
 import { AccountConnection, WalletConnection } from '../connection/types';
 import { EventEmitter } from 'events';
-import { ProofProcessor, VerifyTransactionInfo } from '../../types';
+import { VerifyTransactionInfo } from '../../types';
 import { VerifyOptions } from '../../session/types';
 import { TransactionType, ZkVerifyEvents } from '../../enums';
+import { format } from "../format";
+import { createSubmittableExtrinsic } from "../extrinsic";
+import { VerifyInput } from "./types";
+import {SubmittableExtrinsic} from "@polkadot/api/types";
 
-export async function verify(
-  connection: AccountConnection | WalletConnection,
-  options: VerifyOptions,
-  emitter: EventEmitter,
-  ...proofData: unknown[]
-): Promise<VerifyTransactionInfo> {
+export const verify = async (
+    connection: AccountConnection | WalletConnection,
+    options: VerifyOptions,
+    emitter: EventEmitter,
+    input: VerifyInput
+): Promise<VerifyTransactionInfo> => {
   try {
     if (!options.proofType) {
       throw new Error('Proof type is required.');
     }
 
-    const processor: ProofProcessor = await getProofProcessor(
-      options.proofType,
-    );
-
-    if (!processor) {
-      throw new Error(`Unsupported proof type: ${options.proofType}`);
-    }
-
-    const [proof, publicSignals, vk] = proofData;
-
-    if (!proof || !publicSignals) {
-      throw new Error(
-        `${options.proofType}: Proof and publicSignals are required and cannot be null or undefined.`,
-      );
-    }
-
-    if (!vk) {
-      throw new Error(
-        `${options.proofType}: Either Verification Key must be provided.`,
-      );
-    }
-
-    let formattedProof, formattedPubs, formattedVk;
-
-    try {
-      formattedProof = processor.formatProof(proof);
-    } catch (error) {
-      const proofSnippet =
-        typeof proof === 'string'
-          ? proof.slice(0, 50)
-          : JSON.stringify(proof).slice(0, 50);
-      throw new Error(
-        `Failed to format ${options.proofType} proof: ${error instanceof Error ? error.message : 'Unknown error'}. Proof snippet: "${proofSnippet}..."`,
-      );
-    }
-
-    try {
-      formattedPubs = processor.formatPubs(publicSignals);
-    } catch (error) {
-      const pubsSnippet = Array.isArray(publicSignals)
-        ? JSON.stringify(publicSignals).slice(0, 50)
-        : publicSignals?.toString().slice(0, 50);
-
-      throw new Error(
-        `Failed to format ${options.proofType} public signals: ${error instanceof Error ? error.message : 'Unknown error'}. Public signals snippet: "${pubsSnippet}..."`,
-      );
-    }
-
-    try {
-      if (options.registeredVk) {
-        formattedVk = { Hash: vk };
-      } else {
-        formattedVk = { Vk: processor.formatVk(vk) };
-      }
-    } catch (error) {
-      const vkSnippet =
-        typeof vk === 'string'
-          ? vk.slice(0, 50)
-          : JSON.stringify(vk).slice(0, 50);
-
-      throw new Error(
-        `Failed to format ${options.proofType} verification key: ${error instanceof Error ? error.message : 'Unknown error'}. Verification key snippet: "${vkSnippet}..."`,
-      );
-    }
-
-    const proofParams = [formattedVk, formattedProof, formattedPubs];
     const { api } = connection;
+    let transaction: SubmittableExtrinsic<'promise'>;
 
-    try {
+    if ('proofData' in input && input.proofData) {
+      const [proof, publicSignals, vk] = input.proofData;
+
+      const proofParams = format(
+          options.proofType,
+          proof,
+          publicSignals,
+          vk,
+          options.registeredVk
+      );
+
       const pallet = getProofPallet(options.proofType);
+
       if (!pallet) {
         throw new Error(`Unsupported proof type: ${options.proofType}`);
       }
 
-      const transaction = submitProofExtrinsic(api, pallet, proofParams);
+      transaction = createSubmittableExtrinsic(api, pallet, proofParams);
+    } else if ('extrinsic' in input && input.extrinsic) {
+      transaction = input.extrinsic;
+    } else {
+      throw new Error('Invalid input: Either proofData or extrinsic must be provided.');
+    }
 
-      const result = await (async () => {
-        if ('account' in connection) {
-          return await handleTransaction(
+    const result = await (async () => {
+      if ('account' in connection) {
+        return await handleTransaction(
             api,
             transaction,
             connection.account,
@@ -107,12 +58,12 @@ export async function verify(
             emitter,
             options,
             TransactionType.Verify,
-          );
-        } else if ('injector' in connection) {
-          const { signer } = connection.injector;
-          const { accountAddress } = connection;
+        );
+      } else if ('injector' in connection) {
+        const { signer } = connection.injector;
+        const { accountAddress } = connection;
 
-          return await handleTransaction(
+        return await handleTransaction(
             api,
             transaction,
             accountAddress,
@@ -120,22 +71,16 @@ export async function verify(
             emitter,
             options,
             TransactionType.Verify,
-          );
-        } else {
-          throw new Error('Unsupported connection type.');
-        }
-      })();
+        );
+      } else {
+        throw new Error('Unsupported connection type.');
+      }
+    })();
 
-      return result as VerifyTransactionInfo;
-    } catch (error) {
-      emitter.emit(ZkVerifyEvents.ErrorEvent, error);
-      throw new Error(
-        `Failed to send ${options.proofType} proof: ${error instanceof Error ? error.message : `${options.proofType}: Unknown error`}`,
-      );
-    }
+    return result as VerifyTransactionInfo;
   } catch (error) {
     emitter.emit(ZkVerifyEvents.ErrorEvent, error);
     emitter.removeAllListeners();
     throw error;
   }
-}
+};

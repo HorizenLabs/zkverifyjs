@@ -31,6 +31,7 @@ import { ProofType, SupportedNetwork } from '../config';
 import { ProofMethodMap, VerificationBuilder } from './builders/verify';
 import { RegisterKeyBuilder, RegisterKeyMethodMap } from './builders/register';
 import { NetworkBuilder, SupportedNetworkMap } from './builders/network';
+import {VerifyInput} from "../api/verify/types";
 
 /**
  * zkVerifySession class provides an interface to zkVerify, direct access to the Polkadot.js API.
@@ -199,18 +200,24 @@ export class zkVerifySession {
   }
 
   /**
-   * Executes the verification process with the provided options and proof data.
+   * Executes the verification process with the provided options and proof data or pre-built extrinsic.
    * This method is intended to be called by the `VerificationBuilder`.
    *
    * @param {VerifyOptions} options - The options for the verification process, including proof type and other optional settings.
-   * @param {...unknown[]} proofData - The proof data required for the verification process.
+   * @param {VerifyInput} input - The verification input, which can be provided as either:
+   *   - `proofData`: An array of proof parameters (proof, public signals, and verification key).
+   *   - `extrinsic`: A pre-built `SubmittableExtrinsic`.
+   *   Ensure only one of these options is provided within the `VerifyInput`.
+   *
    * @returns {Promise<{events: EventEmitter, transactionResult: Promise<VerifyTransactionInfo>}>}
-   * A promise that resolves with an object containing an `EventEmitter` for real-time events and the final transaction result.
+   * A promise that resolves with an object containing:
+   *   - `events`: An `EventEmitter` instance for real-time verification events.
+   *   - `transactionResult`: A promise that resolves to the final transaction information once verification is complete.
    * @private
    */
   private async executeVerify(
-    options: VerifyOptions,
-    ...proofData: unknown[]
+      options: VerifyOptions,
+      input: VerifyInput
   ): Promise<{
     events: EventEmitter;
     transactionResult: Promise<VerifyTransactionInfo>;
@@ -220,10 +227,10 @@ export class zkVerifySession {
     const events = new EventEmitter();
 
     const transactionResult = verify(
-      this.connection as AccountConnection,
-      options,
-      events,
-      ...proofData,
+        this.connection as AccountConnection,
+        options,
+        events,
+        input
     );
 
     return { events, transactionResult };

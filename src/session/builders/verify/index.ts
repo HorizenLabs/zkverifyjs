@@ -2,26 +2,27 @@ import { VerifyOptions } from '../../types';
 import { ProofType } from '../../../config';
 import { EventEmitter } from 'events';
 import { VerifyTransactionInfo } from '../../../types';
+import { VerifyInput } from "../../../api/verify/types";
 
 export type ProofMethodMap = {
   [K in keyof typeof ProofType]: () => VerificationBuilder;
 };
 
 export class VerificationBuilder {
-  private options: VerifyOptions;
+  private readonly options: VerifyOptions;
   private nonceSet = false;
   private waitForPublishedAttestationSet = false;
   private registeredVkSet = false;
 
   constructor(
-    private readonly executeVerify: (
-      options: VerifyOptions,
-      ...proofData: unknown[]
-    ) => Promise<{
-      events: EventEmitter;
-      transactionResult: Promise<VerifyTransactionInfo>;
-    }>,
-    proofType: ProofType,
+      private readonly executeVerify: (
+          options: VerifyOptions,
+          input: VerifyInput
+      ) => Promise<{
+        events: EventEmitter;
+        transactionResult: Promise<VerifyTransactionInfo>;
+      }>,
+      proofType: ProofType,
   ) {
     this.options = { proofType };
   }
@@ -53,10 +54,10 @@ export class VerificationBuilder {
     return this;
   }
 
-  async execute(...proofData: unknown[]): Promise<{
+  async execute(input: VerifyInput): Promise<{
     events: EventEmitter;
     transactionResult: Promise<VerifyTransactionInfo>;
   }> {
-    return this.executeVerify(this.options, ...proofData);
+    return this.executeVerify(this.options, input);
   }
 }
