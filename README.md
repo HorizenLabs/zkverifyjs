@@ -19,6 +19,10 @@ The `zkverifyjs` package is a TypeScript library designed to facilitate sending 
     - [zkVerifySession.verify](#zkverifysessionverify)
     - [zkVerifySession.registerVerificationKey](#zkverifysessionregisterverificationkey)
     - [zkVerifySession.poe](#zkverifysessionpoe)
+    - [zkVerifySession.format](#zkverifysessionformat)
+    - [zkVerifySession.createSubmittableExtrinsic](#zkverifysessioncreatesubmittableextrinsic)
+    - [zkVerifySession.createExtrinsicHex](#zkverifysessioncreateextrinsichex)
+    - [zkVerifySession.createExtrinsicFromHex](#zkverifysessioncreateextrinsicfromhex)
     - [zkVerifySession.accountInfo](#zkverifysessionaccountinfo)
     - [zkVerifySession.addAccount](#zkverifysessionaddaccount)
     - [zkVerifySession.removeAccount](#zkverifysessionremoveaccount)
@@ -105,7 +109,7 @@ const { events, transactionResult } = await session
         .nonce(1)                                  // Set the nonce (optional)
         .waitForPublishedAttestation()             // Wait for the attestation to be published (optional)
         .withRegisteredVk()                        // Indicate that the verification key is already registered (optional)
-        .execute(proof, publicSignals, vk);        // Execute the verification with the provided proof data
+        .execute({proofData: [proof, publicSignals, vk]});  // Execute the verification with the provided proof data
 
 ```
 
@@ -113,7 +117,7 @@ const { events, transactionResult } = await session
 ```typescript
 const { events, transactionResult } = await session.verify()
         .groth16()
-        .execute(proofData, publicSignals, vkey);
+        .execute({proofData: [proof, publicSignals, vk]});
 
 events.on('ErrorEvent', (eventData) => {
   console.error(JSON.stringify(eventData));
@@ -138,7 +142,7 @@ const vkTransactionInfo: VKRegistrationTransactionInfo = await transactionResult
 const {events: verifyEvents, transactionResult: verifyTransactionResult} = await session.verify()
         .fflonk()
         .withRegisteredVk() // Option needs to be specified as we're using the registered statement hash.
-        .execute(proof, publicSignals, vkTransactionInfo.statementHash);
+        .execute({proofData: [proof, publicSignals, vkTransactionInfo.statementHash]});
 
 const verifyTransactionInfo: VerifyTransactionInfo = await verifyTransactionResult;
 ```
@@ -183,7 +187,7 @@ To await the final result of the transaction, use the transactionResult promise.
 ```typescript
 const {events, transactionResult} = await session.verify()
   .groth16()
-  .execute(proof, publicSignals, vk)
+  .execute({proofData: [proof, publicSignals, vk]})
 
 const result = await transactionResult;
 console.log('Final transaction result:', result);
@@ -196,11 +200,7 @@ Wait for the NewElement event to be published before the transaction info is ret
 ```typescript
 const {events, transactionResult} = await session.verify().risc0()
     .waitForPublishedAttestation()
-    .execute(
-    proof,
-    publicSignals,
-    vk
-);
+    .execute({proofData: [proof, publicSignals, vk]});
 
 const transactionInfo: VerifyTransactionInfo = await transactionResult;
 
@@ -222,7 +222,7 @@ async function executeVerificationTransaction(proof: unknown, publicSignals: unk
   // Execute the verification transaction
   const { events, transactionResult } = await session.verify().risc0()
           .waitForPublishedAttestation()
-          .execute(proof, publicSignals, vk);
+          .execute({proofData: [proof, publicSignals, vk]});
 
   // Listen for the 'includedInBlock' event
   events.on(ZkVerifyEvents.IncludedInBlock, (eventData) => {
@@ -301,14 +301,16 @@ const { events, transactionResult } = await session.verify()
         .nonce(1)
         .waitForPublishedAttestation()
         .withRegisteredVk()
-        .execute(proof, publicSignals, vk);
+        .execute({ proofData: [proof, publicSignals, vk] }); // 1. Directly pass proof data
+        .execute({ extrinsic: submittableExtrinsic }); // 2. OR pass in a pre-built SubmittableExtrinsic
 
 ```
 
 - Proof Type: `.fflonk()` specifies the type of proof to be used. Options available for all supported proof types.
 - Nonce: `.nonce(1)` sets the nonce for the transaction. This is optional and can be omitted if not required.
 - Attestation Option: `.waitForPublishedAttestation()` specifies that the transaction should wait for the attestation to be published before completing. This is optional.
-  Registered Verification Key: `.withRegisteredVk()` indicates that the verification key being used is registered on the chain. This option is optional and defaults to false.
+- Registered Verification Key: `.withRegisteredVk()` indicates that the verification key being used is registered on the chain. This option is optional and defaults to false.
+- Execute:  You can either send in the raw proof details using `{ proofData: ... }` or verify a prebuilt extrinsic `{ extrinsic: ... }`
 - Returns: An object containing an EventEmitter for real-time events and a Promise that resolves with the final transaction result, including waiting for the `poe.NewElement` attestation confirmation if waitForPublishedAttestation is specified.
 
 ## `zkVerifySession.registerVerificationKey`
@@ -330,6 +332,53 @@ const proofDetails = await session.poe(attestationId, leafDigest, blockHash);
 - `leafDigest`: A string representing the leaf digest to be used in the proof path retrieval.
 - `blockHash`: (Optional) A string representing the block hash at which the proof should be retrieved.
 - Returns: A Promise that resolves to a MerkleProof object containing the proof path details.
+
+## `zkVerifySession.format`
+
+```typescript
+const formattedProof = await session.format(proofType, proof, publicSignals, vk, registeredVk);
+```
+- `proofType`: An enum value representing the type of proof being formatted (e.g., ProofType.groth16).
+- `proof`: The proof data that needs to be formatted.
+- `publicSignals`: The public signals associated with the proof, which are also formatted.
+- `vk`: The verification key that may be either registered or unregistered, depending on the context.
+- `registeredVk`: (Optional) A boolean indicating if the verification key is already registered.
+Returns: A Promise that resolves to an array containing:
+formattedVk: The formatted verification key.
+formattedProof: The formatted proof data.
+formattedPubs: The formatted public signals.
+
+## `zkVerifySession.createSubmittableExtrinsic`
+
+```shell
+const extrinsic = await session.createSubmittableExtrinsic(api, pallet, params);
+```
+
+- `api`: An instance of the Polkadot API that provides the necessary methods for interacting with the blockchain.
+- `pallet`: A string representing the name of the pallet that contains the proof submission method.
+- `params`: An array of formatted proof parameters required for the extrinsic.
+Returns: A Promise that resolves to a SubmittableExtrinsic<'promise'>, allowing you to submit the proof to the blockchain.
+
+## `zkVerifySession.createExtrinsicHex`
+
+```shell
+const hex = await session.createExtrinsicHex(api, pallet, params);
+```
+
+- `api`: An instance of the Polkadot API used to create the extrinsic.
+- `pallet`: A string representing the name of the pallet that contains the proof submission method.
+- `params`: An array of formatted proof parameters needed for the extrinsic.
+Returns: A Promise that resolves to a hex-encoded string representing the SubmittableExtrinsic.
+
+## `zkVerifySession.createExtrinsicFromHex`
+
+```shell
+const extrinsic = await session.createExtrinsicFromHex(api, extrinsicHex);
+```
+
+- `api`: An instance of the Polkadot API used for creating the extrinsic.
+- `extrinsicHex`: A string representing the hex-encoded SubmittableExtrinsic to be reconstructed.
+Returns: A Promise that resolves to a SubmittableExtrinsic<'promise'>, allowing you to interact with the reconstructed extrinsic.
 
 ## `zkVerifySession.accountInfo`
 
