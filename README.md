@@ -23,6 +23,7 @@ The `zkverifyjs` package is a TypeScript library designed to facilitate sending 
     - [zkVerifySession.createSubmittableExtrinsic](#zkverifysessioncreatesubmittableextrinsic)
     - [zkVerifySession.createExtrinsicHex](#zkverifysessioncreateextrinsichex)
     - [zkVerifySession.createExtrinsicFromHex](#zkverifysessioncreateextrinsicfromhex)
+    - [zkVerifySession.estimateCost](#zkverifysessionestimatecost)
     - [zkVerifySession.accountInfo](#zkverifysessionaccountinfo)
     - [zkVerifySession.addAccount](#zkverifysessionaddaccount)
     - [zkVerifySession.removeAccount](#zkverifysessionremoveaccount)
@@ -336,7 +337,8 @@ const proofDetails = await session.poe(attestationId, leafDigest, blockHash);
 ## `zkVerifySession.format`
 
 ```typescript
-const formattedProof = await session.format(proofType, proof, publicSignals, vk, registeredVk);
+const [formattedVk, formattedProof, formattedPubs] = await session.format(proofType, proof, publicSignals, vk, registeredVk);
+
 ```
 - `proofType`: An enum value representing the type of proof being formatted (e.g., ProofType.groth16).
 - `proof`: The proof data that needs to be formatted.
@@ -380,6 +382,21 @@ const extrinsic = await session.createExtrinsicFromHex(api, extrinsicHex);
 - `extrinsicHex`: A string representing the hex-encoded SubmittableExtrinsic to be reconstructed.
 Returns: A Promise that resolves to a SubmittableExtrinsic<'promise'>, allowing you to interact with the reconstructed extrinsic.
 
+## `zkVerifySession.estimateCost`
+
+```shell
+const extrinsic = await session.estimateCost(extrinsic);
+```
+
+- `extrinstic`: A submitProof SubmittableExtrinsic.
+  Returns: A Promise that resolves to an ExtrinsicCostEstimate:
+  ```
+  partialFee: string;
+  estimatedFeeInTokens: string;
+  weight: string;
+  length: number;
+  ```
+  
 ## `zkVerifySession.accountInfo`
 
 ```typescript

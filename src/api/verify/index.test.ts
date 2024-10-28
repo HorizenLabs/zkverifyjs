@@ -1,7 +1,4 @@
-import {
-  getProofPallet,
-  getProofProcessor,
-} from '../../utils/helpers';
+import { getProofPallet, getProofProcessor } from '../../utils/helpers';
 import { handleTransaction } from '../../utils/transactions';
 import { verify } from './index';
 import { EventEmitter } from 'events';
@@ -11,8 +8,8 @@ import { TransactionType, ZkVerifyEvents } from '../../enums';
 import { ProofProcessor } from '../../types';
 import { ProofType } from '../../config';
 import { VerifyInput } from './types';
-import { SubmittableExtrinsic } from "@polkadot/api/types";
-import { createSubmittableExtrinsic } from "../extrinsic";
+import { SubmittableExtrinsic } from '@polkadot/api/types';
+import { createSubmittableExtrinsic } from '../extrinsic';
 
 jest.mock('../../utils/helpers', () => ({
   getProofPallet: jest.fn(),
@@ -64,31 +61,49 @@ describe('verify', () => {
   });
 
   it('should throw an error if proofType is not provided', async () => {
-    const invalidOptions = { ...mockOptions, proofType: undefined } as Partial<VerifyOptions>;
+    const invalidOptions = {
+      ...mockOptions,
+      proofType: undefined,
+    } as Partial<VerifyOptions>;
     const input: VerifyInput = { proofData: ['proof', 'signals', 'vk'] };
 
-    await expect(verify(mockAccountConnection, invalidOptions as VerifyOptions, emitter, input))
-        .rejects.toThrow('Proof type is required.');
+    await expect(
+      verify(
+        mockAccountConnection,
+        invalidOptions as VerifyOptions,
+        emitter,
+        input,
+      ),
+    ).rejects.toThrow('Proof type is required.');
   });
 
   it('should throw an error if unsupported proofType is provided', async () => {
     (getProofProcessor as jest.Mock).mockReturnValue(null);
     const input: VerifyInput = { proofData: ['proof', 'signals', 'vk'] };
 
-    await expect(verify(mockAccountConnection, mockOptions, emitter, input))
-        .rejects.toThrow(`Unsupported proof type: ${mockOptions.proofType}`);
+    await expect(
+      verify(mockAccountConnection, mockOptions, emitter, input),
+    ).rejects.toThrow(`Unsupported proof type: ${mockOptions.proofType}`);
   });
 
   it('should throw an error if proofData is missing proof or publicSignals', async () => {
     (getProofProcessor as jest.Mock).mockReturnValue(mockProcessor);
 
     await expect(
-        verify(mockAccountConnection, mockOptions, emitter, { proofData: [null, 'signals', 'vk'] })
-    ).rejects.toThrow(`${mockOptions.proofType}: Proof is required and cannot be null or undefined.`);
+      verify(mockAccountConnection, mockOptions, emitter, {
+        proofData: [null, 'signals', 'vk'],
+      }),
+    ).rejects.toThrow(
+      `${mockOptions.proofType}: Proof is required and cannot be null, undefined, or an empty string.`,
+    );
 
     await expect(
-        verify(mockAccountConnection, mockOptions, emitter, { proofData: ['proof', null, 'vk'] })
-    ).rejects.toThrow(`${mockOptions.proofType}: Public signals are required and cannot be null or undefined.`);
+      verify(mockAccountConnection, mockOptions, emitter, {
+        proofData: ['proof', null, 'vk'],
+      }),
+    ).rejects.toThrow(
+      `${mockOptions.proofType}: Public signals are required and cannot be null, undefined, or an empty string.`,
+    );
   });
 
   it('should throw an error if formatting proof fails', async () => {
@@ -98,8 +113,11 @@ describe('verify', () => {
     });
     const input: VerifyInput = { proofData: ['proof', 'signals', 'vk'] };
 
-    await expect(verify(mockAccountConnection, mockOptions, emitter, input))
-        .rejects.toThrow(`Failed to format ${mockOptions.proofType} proof: Formatting error. Proof snippet: "proof..."`);
+    await expect(
+      verify(mockAccountConnection, mockOptions, emitter, input),
+    ).rejects.toThrow(
+      `Failed to format ${mockOptions.proofType} proof: Formatting error. Proof snippet: "proof..."`,
+    );
   });
 
   it('should throw an error if formatting public signals fails', async () => {
@@ -109,8 +127,11 @@ describe('verify', () => {
     });
     const input: VerifyInput = { proofData: ['proof', 'signals', 'vk'] };
 
-    await expect(verify(mockAccountConnection, mockOptions, emitter, input))
-        .rejects.toThrow(`Failed to format ${mockOptions.proofType} public signals: Formatting error. Public signals snippet: "signals..."`);
+    await expect(
+      verify(mockAccountConnection, mockOptions, emitter, input),
+    ).rejects.toThrow(
+      `Failed to format ${mockOptions.proofType} public signals: Formatting error. Public signals snippet: "signals..."`,
+    );
   });
 
   it('should throw an error if getProofPallet returns undefined', async () => {
@@ -118,28 +139,36 @@ describe('verify', () => {
     (getProofPallet as jest.Mock).mockReturnValue(undefined);
     const input: VerifyInput = { proofData: ['proof', 'signals', 'vk'] };
 
-    await expect(verify(mockAccountConnection, mockOptions, emitter, input))
-        .rejects.toThrow(`Unsupported proof type: ${mockOptions.proofType}`);
+    await expect(
+      verify(mockAccountConnection, mockOptions, emitter, input),
+    ).rejects.toThrow(`Unsupported proof type: ${mockOptions.proofType}`);
   });
 
   it('should handle the transaction with AccountConnection when proofData is provided', async () => {
     (getProofProcessor as jest.Mock).mockReturnValue(mockProcessor);
     (getProofPallet as jest.Mock).mockReturnValue('mockPallet');
-    (createSubmittableExtrinsic as jest.Mock).mockReturnValue('mockTransaction');
+    (createSubmittableExtrinsic as jest.Mock).mockReturnValue(
+      'mockTransaction',
+    );
     (handleTransaction as jest.Mock).mockResolvedValue({ success: true });
     const input: VerifyInput = { proofData: ['proof', 'signals', 'vk'] };
 
-    const result = await verify(mockAccountConnection, mockOptions, emitter, input);
+    const result = await verify(
+      mockAccountConnection,
+      mockOptions,
+      emitter,
+      input,
+    );
 
     expect(result).toEqual({ success: true });
     expect(handleTransaction).toHaveBeenCalledWith(
-        mockAccountConnection.api,
-        'mockTransaction',
-        mockAccountConnection.account,
-        undefined,
-        emitter,
-        mockOptions,
-        TransactionType.Verify,
+      mockAccountConnection.api,
+      'mockTransaction',
+      mockAccountConnection.account,
+      undefined,
+      emitter,
+      mockOptions,
+      TransactionType.Verify,
     );
   });
 
@@ -148,40 +177,54 @@ describe('verify', () => {
     const input: VerifyInput = { extrinsic: mockExtrinsic };
     (handleTransaction as jest.Mock).mockResolvedValue({ success: true });
 
-    const result = await verify(mockWalletConnection, mockOptions, emitter, input);
+    const result = await verify(
+      mockWalletConnection,
+      mockOptions,
+      emitter,
+      input,
+    );
 
     expect(result).toEqual({ success: true });
     expect(handleTransaction).toHaveBeenCalledWith(
-        mockWalletConnection.api,
-        mockExtrinsic,
-        mockWalletConnection.accountAddress,
-        mockWalletConnection.injector.signer,
-        emitter,
-        mockOptions,
-        TransactionType.Verify,
+      mockWalletConnection.api,
+      mockExtrinsic,
+      mockWalletConnection.accountAddress,
+      mockWalletConnection.injector.signer,
+      emitter,
+      mockOptions,
+      TransactionType.Verify,
     );
   });
 
   it('should throw an error if unsupported connection type is provided', async () => {
-    const mockUnsupportedConnection = { api: {}, provider: {} } as unknown as AccountConnection;
+    const mockUnsupportedConnection = {
+      api: {},
+      provider: {},
+    } as unknown as AccountConnection;
     const input: VerifyInput = { proofData: ['proof', 'signals', 'vk'] };
 
-    await expect(verify(mockUnsupportedConnection, mockOptions, emitter, input))
-        .rejects.toThrow('Unsupported connection type.');
+    await expect(
+      verify(mockUnsupportedConnection, mockOptions, emitter, input),
+    ).rejects.toThrow('Unsupported connection type.');
   });
 
   it('should emit an error and throw if transaction submission fails', async () => {
     (getProofProcessor as jest.Mock).mockReturnValue(mockProcessor);
     (getProofPallet as jest.Mock).mockReturnValue('mockPallet');
-    (createSubmittableExtrinsic as jest.Mock).mockReturnValue('mockTransaction');
-    (handleTransaction as jest.Mock).mockRejectedValue(new Error('Transaction error'));
+    (createSubmittableExtrinsic as jest.Mock).mockReturnValue(
+      'mockTransaction',
+    );
+    (handleTransaction as jest.Mock).mockRejectedValue(
+      new Error('Transaction error'),
+    );
     const input: VerifyInput = { proofData: ['proof', 'signals', 'vk'] };
 
     const errorListener = jest.fn();
     emitter.on(ZkVerifyEvents.ErrorEvent, errorListener);
 
-    await expect(verify(mockAccountConnection, mockOptions, emitter, input))
-        .rejects.toThrow('Transaction error');
+    await expect(
+      verify(mockAccountConnection, mockOptions, emitter, input),
+    ).rejects.toThrow('Transaction error');
 
     expect(errorListener).toHaveBeenCalledWith(new Error('Transaction error'));
   });
@@ -193,10 +236,17 @@ describe('verify', () => {
     emitter.on(ZkVerifyEvents.ErrorEvent, errorListener);
     emitter.removeAllListeners = jest.fn();
 
-    await expect(verify(mockAccountConnection, mockOptions, emitter, input))
-        .rejects.toThrow('Invalid input: Either proofData or extrinsic must be provided.');
+    await expect(
+      verify(mockAccountConnection, mockOptions, emitter, input),
+    ).rejects.toThrow(
+      'Invalid input: Either proofData or extrinsic must be provided.',
+    );
 
-    expect(errorListener).toHaveBeenCalledWith(new Error('Invalid input: Either proofData or extrinsic must be provided.'));
+    expect(errorListener).toHaveBeenCalledWith(
+      new Error(
+        'Invalid input: Either proofData or extrinsic must be provided.',
+      ),
+    );
     expect(emitter.removeAllListeners).toHaveBeenCalled();
   });
 });

@@ -1,6 +1,5 @@
 import 'dotenv/config';
 import { ApiPromise } from '@polkadot/api';
-import { SubmittableExtrinsic } from '@polkadot/api/types';
 import { EventEmitter } from 'events';
 import { AttestationEvent, ProofProcessor } from '../../types';
 import { ZkVerifyEvents } from '../../enums';

@@ -14,3 +14,4 @@ export {
   AccountInfo,
   AttestationEvent,
 } from './types';
+export { ExtrinsicCostEstimate } from './api/estimate/types';

@@ -5,16 +5,16 @@ import { EventEmitter } from 'events';
 import { VerifyTransactionInfo } from '../../types';
 import { VerifyOptions } from '../../session/types';
 import { TransactionType, ZkVerifyEvents } from '../../enums';
-import { format } from "../format";
-import { createSubmittableExtrinsic } from "../extrinsic";
-import { VerifyInput } from "./types";
-import {SubmittableExtrinsic} from "@polkadot/api/types";
+import { format } from '../format';
+import { createSubmittableExtrinsic } from '../extrinsic';
+import { VerifyInput } from './types';
+import { SubmittableExtrinsic } from '@polkadot/api/types';
 
 export const verify = async (
-    connection: AccountConnection | WalletConnection,
-    options: VerifyOptions,
-    emitter: EventEmitter,
-    input: VerifyInput
+  connection: AccountConnection | WalletConnection,
+  options: VerifyOptions,
+  emitter: EventEmitter,
+  input: VerifyInput,
 ): Promise<VerifyTransactionInfo> => {
   try {
     if (!options.proofType) {
@@ -27,13 +27,15 @@ export const verify = async (
     if ('proofData' in input && input.proofData) {
       const [proof, publicSignals, vk] = input.proofData;
 
-      const proofParams = format(
-          options.proofType,
-          proof,
-          publicSignals,
-          vk,
-          options.registeredVk
+      const { formattedProof, formattedPubs, formattedVk } = format(
+        options.proofType,
+        proof,
+        publicSignals,
+        vk,
+        options.registeredVk,
       );
+
+      const proofParams = [formattedProof, formattedPubs, formattedVk];
 
       const pallet = getProofPallet(options.proofType);
 
@@ -45,32 +47,34 @@ export const verify = async (
     } else if ('extrinsic' in input && input.extrinsic) {
       transaction = input.extrinsic;
     } else {
-      throw new Error('Invalid input: Either proofData or extrinsic must be provided.');
+      throw new Error(
+        'Invalid input: Either proofData or extrinsic must be provided.',
+      );
     }
 
     const result = await (async () => {
       if ('account' in connection) {
         return await handleTransaction(
-            api,
-            transaction,
-            connection.account,
-            undefined,
-            emitter,
-            options,
-            TransactionType.Verify,
+          api,
+          transaction,
+          connection.account,
+          undefined,
+          emitter,
+          options,
+          TransactionType.Verify,
         );
       } else if ('injector' in connection) {
         const { signer } = connection.injector;
         const { accountAddress } = connection;
 
         return await handleTransaction(
-            api,
-            transaction,
-            accountAddress,
-            signer,
-            emitter,
-            options,
-            TransactionType.Verify,
+          api,
+          transaction,
+          accountAddress,
+          signer,
+          emitter,
+          options,
+          TransactionType.Verify,
         );
       } else {
         throw new Error('Unsupported connection type.');
