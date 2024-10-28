@@ -1,9 +1,9 @@
 import { ApiPromise } from '@polkadot/api';
 import { SubmittableExtrinsic } from '@polkadot/api/types';
 import { hexToU8a } from '@polkadot/util';
-import {ProofType} from "../../config";
-import {getProofPallet} from "../../utils/helpers";
-import {FormattedProofData} from "../format/types";
+import { ProofType } from '../../config';
+import { getProofPallet } from '../../utils/helpers';
+import { FormattedProofData } from '../format/types';
 
 /**
  * Creates a SubmittableExtrinsic using formatted proof details to enable submitting a proof.
@@ -15,11 +15,10 @@ import {FormattedProofData} from "../format/types";
  * @throws {Error} - Throws an error if the extrinsic creation fails.
  */
 export const createSubmittableExtrinsic = (
-    api: ApiPromise,
-    proofType: ProofType,
-    params: FormattedProofData,
+  api: ApiPromise,
+  proofType: ProofType,
+  params: FormattedProofData,
 ): SubmittableExtrinsic<'promise'> => {
-
   const pallet = getProofPallet(proofType);
 
   if (!pallet) {
@@ -27,7 +26,11 @@ export const createSubmittableExtrinsic = (
   }
 
   try {
-    return api.tx[pallet].submitProof(params.formattedVk, params.formattedProof, params.formattedPubs);
+    return api.tx[pallet].submitProof(
+      params.formattedVk,
+      params.formattedProof,
+      params.formattedPubs,
+    );
   } catch (error: unknown) {
     throw new Error(formatError(error, proofType, params));
   }
@@ -43,9 +46,9 @@ export const createSubmittableExtrinsic = (
  * @throws {Error} - Throws an error if the extrinsic creation fails.
  */
 export const createExtrinsicHex = (
-    api: ApiPromise,
-    proofType: ProofType,
-    params: FormattedProofData,
+  api: ApiPromise,
+  proofType: ProofType,
+  params: FormattedProofData,
 ): string => {
   const extrinsic = createSubmittableExtrinsic(api, proofType, params);
   return extrinsic.toHex();
@@ -60,17 +63,17 @@ export const createExtrinsicHex = (
  * @throws {Error} - Throws an error if the reconstruction from hex fails.
  */
 export const createExtrinsicFromHex = (
-    api: ApiPromise,
-    extrinsicHex: string,
+  api: ApiPromise,
+  extrinsicHex: string,
 ): SubmittableExtrinsic<'promise'> => {
   try {
     return api.createType(
-        'Extrinsic',
-        hexToU8a(extrinsicHex),
+      'Extrinsic',
+      hexToU8a(extrinsicHex),
     ) as SubmittableExtrinsic<'promise'>;
   } catch (error) {
     throw new Error(
-        `Failed to reconstruct extrinsic from hex: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      `Failed to reconstruct extrinsic from hex: ${error instanceof Error ? error.message : 'Unknown error'}`,
     );
   }
 };
@@ -84,11 +87,11 @@ export const createExtrinsicFromHex = (
  * @returns {string} A formatted error message string with details.
  */
 const formatError = (
-    error: unknown,
-    proofType: ProofType,
-    params: FormattedProofData,
+  error: unknown,
+  proofType: ProofType,
+  params: FormattedProofData,
 ): string => {
   const errorMessage =
-      error instanceof Error ? error.message : 'An unknown error occurred';
+    error instanceof Error ? error.message : 'An unknown error occurred';
   return `Error creating submittable extrinsic: ${proofType} Params: ${JSON.stringify(params, null, 2)} ${errorMessage}`;
 };

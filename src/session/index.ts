@@ -315,7 +315,10 @@ export class zkVerifySession {
    * @returns {string} Hex-encoded string of the SubmittableExtrinsic.
    * @throws {Error} - Throws an error if the hex generation fails.
    */
-  async createExtrinsicHex(proofType: ProofType, params: FormattedProofData): Promise<string> {
+  async createExtrinsicHex(
+    proofType: ProofType,
+    params: FormattedProofData,
+  ): Promise<string> {
     return createExtrinsicHex(this.connection.api, proofType, params);
   }
 

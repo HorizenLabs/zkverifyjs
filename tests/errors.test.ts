@@ -18,6 +18,12 @@ function checkErrorMessage(error: unknown, expectedMessage: string): void {
 }
 
 describe('verify with bad data - Groth16', () => {
+    let session: zkVerifySession;
+
+    afterEach(async () => {
+        if (session) await session.close();
+    });
+
     it('should fail when sending groth16 data that cannot be formatted and emit an error event', async () => {
         const dataPath = path.join(__dirname, 'common/data', 'groth16_error.json');
         const groth16Data = JSON.parse(fs.readFileSync(dataPath, 'utf8'));
@@ -25,7 +31,7 @@ describe('verify with bad data - Groth16', () => {
         const badProof = { ...groth16Data.proof, pi_a: 'bad_data' };
         const { publicSignals, vk } = groth16Data;
 
-        const session = await zkVerifySession.start().Testnet().withAccount(getSeedPhrase(7));
+        session = await zkVerifySession.start().Testnet().withAccount(getSeedPhrase(7));
         let errorEventEmitted = false;
 
         const { events, transactionResult } = await session.verify()
@@ -47,16 +53,15 @@ describe('verify with bad data - Groth16', () => {
             checkErrorMessage(error, 'Failed to format groth16 proof');
         } finally {
             expect(errorEventEmitted).toBe(false);
-            await session.close();
         }
     });
 
-    it('should fail when sending groth16 data that passes formatting but is not accepted by zkVerify', async () => {
+    it('should fail and emit an error event when sending groth16 data that passes formatting but is not accepted by zkVerify', async () => {
         const dataPath = path.join(__dirname, 'common/data', 'groth16_error.json');
         const groth16Data = JSON.parse(fs.readFileSync(dataPath, 'utf8'));
 
         const { proof, publicSignals, vk } = groth16Data;
-        const session = await zkVerifySession.start().Testnet().withAccount(getSeedPhrase(7));
+        session = await zkVerifySession.start().Testnet().withAccount(getSeedPhrase(7));
         let errorEventEmitted = false;
 
         const { events, transactionResult } = await session.verify()
@@ -78,7 +83,7 @@ describe('verify with bad data - Groth16', () => {
         } catch (error) {
             checkErrorMessage(error, 'Error creating submittable extrinsic');
         } finally {
-            await session.close();
+            expect(errorEventEmitted).toBe(true);
         }
     });
 });

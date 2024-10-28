@@ -1,4 +1,3 @@
-import { getProofPallet } from '../../utils/helpers';
 import { handleTransaction } from '../../utils/transactions';
 import { AccountConnection, WalletConnection } from '../connection/types';
 import { EventEmitter } from 'events';
@@ -10,7 +9,7 @@ import { createSubmittableExtrinsic } from '../extrinsic';
 import { VerifyInput } from './types';
 import { ProofData } from '../../types';
 import { SubmittableExtrinsic } from '@polkadot/api/types';
-import {FormattedProofData} from "../format/types";
+import { FormattedProofData } from '../format/types';
 
 export const verify = async (
   connection: AccountConnection | WalletConnection,
@@ -37,7 +36,11 @@ export const verify = async (
         options.registeredVk,
       );
 
-      transaction = createSubmittableExtrinsic(api, options.proofType, formattedProofData);
+      transaction = createSubmittableExtrinsic(
+        api,
+        options.proofType,
+        formattedProofData,
+      );
     } else if ('extrinsic' in input && input.extrinsic) {
       transaction = input.extrinsic;
     } else {
