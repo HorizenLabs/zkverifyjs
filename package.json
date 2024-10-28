@@ -1,6 +1,6 @@
 {
   "name": "zkverifyjs",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Submit proofs to zkVerify and query proof state with ease using our npm package.",
   "author": "Horizen Labs <research@horizenlabs.io>",
   "license": "GPL-3.0",
@@ -32,6 +32,12 @@
     "test:file:coverage": "node -e 'const path = process.argv[1]; require(\"child_process\").execSync(`jest --coverage --collectCoverageFrom=\"${path}/index.ts\" ${path}/index.test.ts`, { stdio: \"inherit\" });' --",
     "lint": "eslint 'src/**/*.ts' --fix --ignore-pattern '**/*.test.ts'",
     "format": "prettier --write 'src/**/*.ts'"
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "npm run format && npm run lint",
+      "pre-push": "npm run build && npm test"
+    }
   },
   "keywords": [
     "blockchain",
@@ -78,6 +84,7 @@
     "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-prettier": "^5.2.1",
     "globals": "^15.9.0",
+    "husky": "^9.1.6",
     "jest": "^29.7.0",
     "ls-engines": "^0.9.3",
     "prettier": "^3.3.3",

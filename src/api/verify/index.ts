@@ -8,6 +8,7 @@ import { TransactionType, ZkVerifyEvents } from '../../enums';
 import { format } from '../format';
 import { createSubmittableExtrinsic } from '../extrinsic';
 import { VerifyInput } from './types';
+import { ProofData } from '../../types';
 import { SubmittableExtrinsic } from '@polkadot/api/types';
 
 export const verify = async (
@@ -25,7 +26,7 @@ export const verify = async (
     let transaction: SubmittableExtrinsic<'promise'>;
 
     if ('proofData' in input && input.proofData) {
-      const [proof, publicSignals, vk] = input.proofData;
+      const { proof, publicSignals, vk } = input.proofData as ProofData;
 
       const { formattedProof, formattedPubs, formattedVk } = format(
         options.proofType,

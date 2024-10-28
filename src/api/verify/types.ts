@@ -1,5 +1,6 @@
 import { SubmittableExtrinsic } from '@polkadot/api/types';
+import { ProofData } from '../../types';
 
 export type VerifyInput =
-  | { proofData?: unknown[]; extrinsic?: never }
-  | { extrinsic?: SubmittableExtrinsic<'promise'>; proofData?: never };
+  | { proofData: ProofData; extrinsic?: never }
+  | { extrinsic: SubmittableExtrinsic<'promise'>; proofData?: never };

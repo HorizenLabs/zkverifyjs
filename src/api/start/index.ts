@@ -69,7 +69,7 @@ export async function startWalletSession(
     );
   }
 
-  const injector = await web3FromSource(wallet.source);
+  const injector = await web3FromSource(selectedAccount.meta.source);
 
   return {
     api,

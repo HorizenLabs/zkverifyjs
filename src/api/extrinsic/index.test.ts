@@ -46,7 +46,7 @@ describe('extrinsic utilities', () => {
       expect(() =>
         createSubmittableExtrinsic(mockApi, 'mockPallet', ['param1']),
       ).toThrow(
-        'Error creating submittable extrinsic:\n        Pallet: mockPallet\n        Params: [\n  "param1"\n]\n        Error: Submission error',
+        'Error creating submittable extrinsic: mockPallet Params: [\n  "param1"\n] Submission error',
       );
     });
 
@@ -58,7 +58,7 @@ describe('extrinsic utilities', () => {
       expect(() =>
         createSubmittableExtrinsic(mockApi, 'mockPallet', ['param1']),
       ).toThrow(
-        'Error creating submittable extrinsic:\n        Pallet: mockPallet\n        Params: [\n  "param1"\n]\n        Error: An unknown error occurred',
+        'Error creating submittable extrinsic: mockPallet Params: [\n  "param1"\n] An unknown error occurred',
       );
     });
   });
@@ -80,7 +80,7 @@ describe('extrinsic utilities', () => {
       expect(() =>
         createExtrinsicHex(mockApi, 'mockPallet', ['param1']),
       ).toThrow(
-        'Error creating submittable extrinsic:\n        Pallet: mockPallet\n        Params: [\n  "param1"\n]\n        Error: Hex generation error',
+        'Error creating submittable extrinsic: mockPallet Params: [\n  "param1"\n] Hex generation error',
       );
     });
   });

@@ -80,10 +80,5 @@ const formatError = (
 ): string => {
   const errorMessage =
     error instanceof Error ? error.message : 'An unknown error occurred';
-  return `
-        Error creating submittable extrinsic:
-        Pallet: ${pallet}
-        Params: ${JSON.stringify(params, null, 2)}
-        Error: ${errorMessage}
-    `;
+  return `Error creating submittable extrinsic: ${pallet} Params: ${JSON.stringify(params, null, 2)} ${errorMessage}`;
 };

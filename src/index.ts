@@ -7,6 +7,7 @@ export {
 export { ProofType, SupportedNetwork, Groth16CurveType } from './config';
 export { ZkVerifyEvents, TransactionStatus, TransactionType } from './enums';
 export {
+  ProofData,
   VerifyTransactionInfo,
   VKRegistrationTransactionInfo,
   TransactionInfo,

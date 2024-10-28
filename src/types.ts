@@ -7,6 +7,12 @@ export interface ProofProcessor {
   formatPubs(pubs: unknown): unknown;
 }
 
+export interface ProofData {
+  proof: unknown;
+  publicSignals: unknown;
+  vk?: unknown;
+}
+
 export interface TransactionInfo {
   blockHash: string;
   proofType: ProofType;

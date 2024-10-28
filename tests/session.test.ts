@@ -90,7 +90,12 @@ describe('zkVerifySession class', () => {
         session = await zkVerifySession.start().Testnet().readOnly();
         expect(session.readOnly).toBe(true);
         await expect(
-            session.verify().groth16().execute({ proofData: ['proofData'] })
+            session.verify().groth16().execute({ proofData: {
+                    proof: 'proofData',
+                    publicSignals: 'publicSignals',
+                    vk: 'vk'
+                }
+            })
         ).rejects.toThrow('This action requires an active account. The session is currently in read-only mode because no account is associated with it. Please provide an account at session start, or add one to the current session using `addAccount`.');
     });
 
@@ -106,7 +111,12 @@ describe('zkVerifySession class', () => {
 
         session.verify = jest.fn(() => mockBuilder);
 
-        const { events, transactionResult } = await session.verify().fflonk().execute({ proofData: ['proofData'] });
+        const { events, transactionResult } = await session.verify().fflonk().execute({ proofData: {
+                proof: 'proofData',
+                publicSignals: 'publicSignals',
+                vk: 'vk'
+            }
+        });
 
         expect(events).toBeDefined();
         expect(transactionResult).toBeDefined();
@@ -150,8 +160,18 @@ describe('zkVerifySession class', () => {
         session.verify = jest.fn(() => mockBuilder);
 
         const [result1, result2] = await Promise.all([
-            session.verify().fflonk().execute({ proofData: ['proofData'] }),
-            session.verify().groth16().execute({ proofData: ['proofData'] })
+            session.verify().fflonk().execute({ proofData: {
+                proof: 'proofData',
+                publicSignals: 'publicSignals',
+                vk: 'vk'
+                }
+            }),
+            session.verify().groth16().execute({ proofData: {
+                    proof: 'proofData',
+                    publicSignals: 'publicSignals',
+                    vk: 'vk'
+                }
+            })
         ]);
 
         expect(result1.events).toBeDefined();
