@@ -40,7 +40,7 @@ import { NetworkBuilder, SupportedNetworkMap } from './builders/network';
 import { VerifyInput } from '../api/verify/types';
 import { SubmittableExtrinsic } from '@polkadot/api/types';
 import { format } from '../api/format';
-import { FormattedProofResult } from '../api/format/types';
+import { FormattedProofData } from '../api/format/types';
 import { ExtrinsicCostEstimate } from '../api/estimate/types';
 
 /**
@@ -295,28 +295,28 @@ export class zkVerifySession {
   /**
    * Creates a SubmittableExtrinsic using formatted proof details to enable submitting a proof.
    *
-   * @param {string} pallet - The name of the pallet containing the proof submission method.
-   * @param {unknown[]} params - Formatted Proof Parameters required by the extrinsic.
+   * @param {ProofType} proofType - The type of proof, to decide which pallet to use.
+   * @param {FormattedProofData} params - Formatted Proof Parameters required by the extrinsic.
    * @returns {SubmittableExtrinsic<'promise'>} The generated SubmittableExtrinsic for submission.
    * @throws {Error} - Throws an error if the extrinsic creation fails.
    */
   async createSubmittableExtrinsic(
-    pallet: string,
-    params: unknown[],
+    proofType: ProofType,
+    params: FormattedProofData,
   ): Promise<SubmittableExtrinsic<'promise'>> {
-    return createSubmittableExtrinsic(this.connection.api, pallet, params);
+    return createSubmittableExtrinsic(this.connection.api, proofType, params);
   }
 
   /**
    * Generates the hex representation of a SubmittableExtrinsic using formatted proof details.
    *
-   * @param {string} pallet - The name of the pallet containing the proof submission method.
-   * @param {unknown[]} params - Formatted Proof Parameters required by the extrinsic.
+   * @param {ProofType} proofType - The type of supported proof, used to select the correct pallet.
+   * @param {FormattedProofData} params - Formatted Proof Parameters required by the extrinsic.
    * @returns {string} Hex-encoded string of the SubmittableExtrinsic.
    * @throws {Error} - Throws an error if the hex generation fails.
    */
-  async createExtrinsicHex(pallet: string, params: unknown[]): Promise<string> {
-    return createExtrinsicHex(this.connection.api, pallet, params);
+  async createExtrinsicHex(proofType: ProofType, params: FormattedProofData): Promise<string> {
+    return createExtrinsicHex(this.connection.api, proofType, params);
   }
 
   /**
@@ -358,7 +358,7 @@ export class zkVerifySession {
    * @param {unknown} publicSignals - The public signals to format.
    * @param {unknown} vk - The verification key to format.
    * @param {boolean} [registeredVk] - Optional flag indicating if the verification key is registered.
-   * @returns {Promise<FormattedProofResult>} A promise that resolves to an object containing formatted verification key, proof, and public signals.
+   * @returns {Promise<FormattedProofData>} A promise that resolves to an object containing formatted verification key, proof, and public signals.
    * @throws {Error} - Throws an error if formatting fails.
    */
   async format(
@@ -367,7 +367,7 @@ export class zkVerifySession {
     publicSignals: unknown,
     vk: unknown,
     registeredVk?: boolean,
-  ): Promise<FormattedProofResult> {
+  ): Promise<FormattedProofData> {
     return format(proofType, proof, publicSignals, vk, registeredVk);
   }
 

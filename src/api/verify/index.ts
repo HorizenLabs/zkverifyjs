@@ -10,6 +10,7 @@ import { createSubmittableExtrinsic } from '../extrinsic';
 import { VerifyInput } from './types';
 import { ProofData } from '../../types';
 import { SubmittableExtrinsic } from '@polkadot/api/types';
+import {FormattedProofData} from "../format/types";
 
 export const verify = async (
   connection: AccountConnection | WalletConnection,
@@ -28,7 +29,7 @@ export const verify = async (
     if ('proofData' in input && input.proofData) {
       const { proof, publicSignals, vk } = input.proofData as ProofData;
 
-      const { formattedProof, formattedPubs, formattedVk } = format(
+      const formattedProofData: FormattedProofData = format(
         options.proofType,
         proof,
         publicSignals,
@@ -36,15 +37,7 @@ export const verify = async (
         options.registeredVk,
       );
 
-      const proofParams = [formattedProof, formattedPubs, formattedVk];
-
-      const pallet = getProofPallet(options.proofType);
-
-      if (!pallet) {
-        throw new Error(`Unsupported proof type: ${options.proofType}`);
-      }
-
-      transaction = createSubmittableExtrinsic(api, pallet, proofParams);
+      transaction = createSubmittableExtrinsic(api, options.proofType, formattedProofData);
     } else if ('extrinsic' in input && input.extrinsic) {
       transaction = input.extrinsic;
     } else {

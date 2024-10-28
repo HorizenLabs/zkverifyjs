@@ -1,5 +1,5 @@
-export interface FormattedProofResult {
+export interface FormattedProofData {
+  formattedVk: unknown;
   formattedProof: unknown;
   formattedPubs: unknown;
-  formattedVk: unknown;
 }

@@ -1,7 +1,7 @@
 import { ProofProcessor } from '../../types';
 import { getProofProcessor } from '../../utils/helpers';
 import { ProofType } from '../../config';
-import { FormattedProofResult } from './types';
+import { FormattedProofData } from './types';
 
 export function format(
   proofType: ProofType,
@@ -9,7 +9,7 @@ export function format(
   publicSignals: unknown,
   vk: unknown,
   registeredVk?: boolean,
-): FormattedProofResult {
+): FormattedProofData {
   const processor: ProofProcessor = getProofProcessor(proofType);
 
   if (!processor) {

@@ -6,6 +6,15 @@ import {
   createExtrinsicHex,
   createExtrinsicFromHex,
 } from './index';
+import { ProofType } from "../../config";
+import { FormattedProofData } from "../format/types";
+
+jest.mock('../../utils/helpers', () => ({
+  ...jest.requireActual('../../utils/helpers'),
+  getProofPallet: (proofType: ProofType) => {
+    return proofType === ProofType.groth16 ? 'settlementGroth16Pallet' : undefined;
+  },
+}));
 
 const mockTxMethod = {
   submitProof: jest.fn().mockReturnValue({
@@ -15,27 +24,38 @@ const mockTxMethod = {
 
 const mockApi = {
   tx: {
-    mockPallet: mockTxMethod,
+    settlementGroth16Pallet: mockTxMethod,
   },
   createType: jest.fn().mockReturnValue({ type: 'Extrinsic' }),
 } as unknown as ApiPromise;
 
 describe('extrinsic utilities', () => {
+  const proofParams: FormattedProofData = {
+    formattedVk: 'vk_data',
+    formattedProof: 'proof_data',
+    formattedPubs: 'pub_data',
+  };
+
   beforeEach(() => {
     jest.clearAllMocks();
   });
 
   describe('createSubmittableExtrinsic', () => {
-    it('should create a submittable extrinsic with the given parameters', () => {
-      const params = ['param1', 'param2'];
-      const extrinsic = createSubmittableExtrinsic(
-        mockApi,
-        'mockPallet',
-        params,
-      );
+    it('should create a submittable extrinsic with the given formatted proof parameters', () => {
+      const extrinsic = createSubmittableExtrinsic(mockApi, ProofType.groth16, proofParams);
 
-      expect(mockTxMethod.submitProof).toHaveBeenCalledWith(...params);
+      expect(mockTxMethod.submitProof).toHaveBeenCalledWith(
+          proofParams.formattedVk,
+          proofParams.formattedProof,
+          proofParams.formattedPubs,
+      );
       expect(extrinsic.toHex()).toBe('0x1234');
+    });
+
+    it('should throw an error if the proof type is unsupported', () => {
+      expect(() => {
+        createSubmittableExtrinsic(mockApi, ProofType.fflonk, proofParams);
+      }).toThrow('Unsupported proof type: fflonk');
     });
 
     it('should throw a formatted error if extrinsic creation fails', () => {
@@ -44,9 +64,9 @@ describe('extrinsic utilities', () => {
       });
 
       expect(() =>
-        createSubmittableExtrinsic(mockApi, 'mockPallet', ['param1']),
+          createSubmittableExtrinsic(mockApi, ProofType.groth16, proofParams),
       ).toThrow(
-        'Error creating submittable extrinsic: mockPallet Params: [\n  "param1"\n] Submission error',
+          'Error creating submittable extrinsic: groth16 Params: {\n  "formattedVk": "vk_data",\n  "formattedProof": "proof_data",\n  "formattedPubs": "pub_data"\n} Submission error',
       );
     });
 
@@ -56,20 +76,29 @@ describe('extrinsic utilities', () => {
       });
 
       expect(() =>
-        createSubmittableExtrinsic(mockApi, 'mockPallet', ['param1']),
+          createSubmittableExtrinsic(mockApi, ProofType.groth16, proofParams),
       ).toThrow(
-        'Error creating submittable extrinsic: mockPallet Params: [\n  "param1"\n] An unknown error occurred',
+          'Error creating submittable extrinsic: groth16 Params: {\n  "formattedVk": "vk_data",\n  "formattedProof": "proof_data",\n  "formattedPubs": "pub_data"\n} An unknown error occurred',
       );
     });
   });
 
   describe('createExtrinsicHex', () => {
     it('should return the hex representation of a submittable extrinsic', () => {
-      const params = ['param1', 'param2'];
-      const hex = createExtrinsicHex(mockApi, 'mockPallet', params);
+      const hex = createExtrinsicHex(mockApi, ProofType.groth16, proofParams);
 
-      expect(mockTxMethod.submitProof).toHaveBeenCalledWith(...params);
+      expect(mockTxMethod.submitProof).toHaveBeenCalledWith(
+          proofParams.formattedVk,
+          proofParams.formattedProof,
+          proofParams.formattedPubs,
+      );
       expect(hex).toBe('0x1234');
+    });
+
+    it('should throw an error if proof type is unsupported in hex generation', () => {
+      expect(() => createExtrinsicHex(mockApi, ProofType.fflonk, proofParams)).toThrow(
+          'Unsupported proof type: fflonk',
+      );
     });
 
     it('should throw a formatted error if hex generation fails', () => {
@@ -78,9 +107,9 @@ describe('extrinsic utilities', () => {
       });
 
       expect(() =>
-        createExtrinsicHex(mockApi, 'mockPallet', ['param1']),
+          createExtrinsicHex(mockApi, ProofType.groth16, proofParams),
       ).toThrow(
-        'Error creating submittable extrinsic: mockPallet Params: [\n  "param1"\n] Hex generation error',
+          'Error creating submittable extrinsic: groth16 Params: {\n  "formattedVk": "vk_data",\n  "formattedProof": "proof_data",\n  "formattedPubs": "pub_data"\n} Hex generation error',
       );
     });
   });
@@ -94,8 +123,8 @@ describe('extrinsic utilities', () => {
       const recreatedExtrinsic = createExtrinsicFromHex(mockApi, hexString);
 
       expect(mockApi.createType).toHaveBeenCalledWith(
-        'Extrinsic',
-        hexToU8a(hexString),
+          'Extrinsic',
+          hexToU8a(hexString),
       );
       expect(recreatedExtrinsic).toBe(mockExtrinsic);
     });
@@ -106,7 +135,7 @@ describe('extrinsic utilities', () => {
       });
 
       expect(() => createExtrinsicFromHex(mockApi, '0x1234')).toThrow(
-        'Failed to reconstruct extrinsic from hex: Reconstruction error',
+          'Failed to reconstruct extrinsic from hex: Reconstruction error',
       );
     });
 
@@ -116,7 +145,7 @@ describe('extrinsic utilities', () => {
       });
 
       expect(() => createExtrinsicFromHex(mockApi, '0x1234')).toThrow(
-        'Failed to reconstruct extrinsic from hex: Unknown error',
+          'Failed to reconstruct extrinsic from hex: Unknown error',
       );
     });
   });

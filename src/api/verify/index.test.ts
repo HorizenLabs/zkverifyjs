@@ -166,22 +166,6 @@ describe('verify', () => {
     );
   });
 
-  it('should throw an error if getProofPallet returns undefined', async () => {
-    (getProofProcessor as jest.Mock).mockReturnValue(mockProcessor);
-    (getProofPallet as jest.Mock).mockReturnValue(undefined);
-    const input: VerifyInput = {
-      proofData: {
-        proof: 'proof',
-        publicSignals: 'signals',
-        vk: 'vk',
-      },
-    };
-
-    await expect(
-      verify(mockAccountConnection, mockOptions, emitter, input),
-    ).rejects.toThrow(`Unsupported proof type: ${mockOptions.proofType}`);
-  });
-
   it('should handle the transaction with AccountConnection when proofData is provided', async () => {
     (getProofProcessor as jest.Mock).mockReturnValue(mockProcessor);
     (getProofPallet as jest.Mock).mockReturnValue('mockPallet');
