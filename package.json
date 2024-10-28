@@ -23,6 +23,7 @@
     "node": ">= 18"
   },
   "scripts": {
+    "prepare": "husky",
     "build": "tsc",
     "pack-and-install": "npm run build && npm pack && rm -rf node_modules/zkverifyjs && npm install ./$(npm pack | tail -n 1) --no-save",
     "bump-version": "npm version $npm_config_level && git add . && git commit -S -m \"chore: bump version to $npm_package_version\" && git push && npm run build",
