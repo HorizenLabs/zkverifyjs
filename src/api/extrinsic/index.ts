@@ -14,7 +14,7 @@ import { FormattedProofData } from '../format/types';
  * @returns {SubmittableExtrinsic<'promise'>} The generated SubmittableExtrinsic for submission.
  * @throws {Error} - Throws an error if the extrinsic creation fails.
  */
-export const createSubmittableExtrinsic = (
+export const createSubmitProofExtrinsic = (
   api: ApiPromise,
   proofType: ProofType,
   params: FormattedProofData,
@@ -50,7 +50,7 @@ export const createExtrinsicHex = (
   proofType: ProofType,
   params: FormattedProofData,
 ): string => {
-  const extrinsic = createSubmittableExtrinsic(api, proofType, params);
+  const extrinsic = createSubmitProofExtrinsic(api, proofType, params);
   return extrinsic.toHex();
 };
 

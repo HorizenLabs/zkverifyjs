@@ -11,7 +11,7 @@ import {
 } from '../api/attestation';
 import { getProofDetails } from '../api/poe';
 import {
-  createSubmittableExtrinsic,
+  createSubmitProofExtrinsic,
   createExtrinsicHex,
   createExtrinsicFromHex,
 } from '../api/extrinsic';
@@ -300,11 +300,11 @@ export class zkVerifySession {
    * @returns {SubmittableExtrinsic<'promise'>} The generated SubmittableExtrinsic for submission.
    * @throws {Error} - Throws an error if the extrinsic creation fails.
    */
-  async createSubmittableExtrinsic(
+  async createSubmitProofExtrinsic(
     proofType: ProofType,
     params: FormattedProofData,
   ): Promise<SubmittableExtrinsic<'promise'>> {
-    return createSubmittableExtrinsic(this.connection.api, proofType, params);
+    return createSubmitProofExtrinsic(this.connection.api, proofType, params);
   }
 
   /**

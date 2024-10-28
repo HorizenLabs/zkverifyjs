@@ -28,7 +28,7 @@ describe('zkVerifySession - estimateCost', () => {
             groth16Data.publicSignals,
             groth16Data.vk
         );
-        return session.createSubmittableExtrinsic(ProofType.groth16, formattedProofData);
+        return session.createSubmitProofExtrinsic(ProofType.groth16, formattedProofData);
     }
 
     it('should format proof data, create a SubmittableExtrinsic and then estimate the cost of the submitProof extrinsic', async () => {

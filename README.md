@@ -27,7 +27,7 @@ Currently the following proof verifiers are supported:
     - [zkVerifySession.registerVerificationKey](#zkverifysessionregisterverificationkey)
     - [zkVerifySession.poe](#zkverifysessionpoe)
     - [zkVerifySession.format](#zkverifysessionformat)
-    - [zkVerifySession.createSubmittableExtrinsic](#zkverifysessioncreatesubmittableextrinsic)
+    - [zkVerifySession.createSubmitProofExtrinsic](#zkverifysessioncreatesubmitproofextrinsic)
     - [zkVerifySession.createExtrinsicHex](#zkverifysessioncreateextrinsichex)
     - [zkVerifySession.createExtrinsicFromHex](#zkverifysessioncreateextrinsicfromhex)
     - [zkVerifySession.estimateCost](#zkverifysessionestimatecost)
@@ -359,15 +359,15 @@ formattedVk: The formatted verification key.
 formattedProof: The formatted proof data.
 formattedPubs: The formatted public signals.
 
-## `zkVerifySession.createSubmittableExtrinsic`
+## `zkVerifySession.createSubmitProofExtrinsic`
 
 ```shell
-const extrinsic = await session.createSubmittableExtrinsic(api, pallet, params);
+const extrinsic = await session.createSubmitProofExtrinsic(api, proofType, params);
 ```
 
 - `api`: An instance of the Polkadot API that provides the necessary methods for interacting with the blockchain.
-- `pallet`: A string representing the name of the pallet that contains the proof submission method.
-- `params`: An array of formatted proof parameters required for the extrinsic.
+- `proofType`: ProofType enum - used to obtain the name of the pallet that contains the proof submission method.
+- `params`: A FormattedProofData object containing formatted proof parameters required for the extrinsic.
 Returns: A Promise that resolves to a SubmittableExtrinsic<'promise'>, allowing you to submit the proof to the blockchain.
 
 ## `zkVerifySession.createExtrinsicHex`

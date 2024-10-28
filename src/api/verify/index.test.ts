@@ -9,7 +9,7 @@ import { ProofProcessor } from '../../types';
 import { ProofType } from '../../config';
 import { VerifyInput } from './types';
 import { SubmittableExtrinsic } from '@polkadot/api/types';
-import { createSubmittableExtrinsic } from '../extrinsic';
+import { createSubmitProofExtrinsic } from '../extrinsic';
 
 jest.mock('../../utils/helpers', () => ({
   getProofPallet: jest.fn(),
@@ -19,7 +19,7 @@ jest.mock('../../utils/transactions', () => ({
   handleTransaction: jest.fn(),
 }));
 jest.mock('../extrinsic', () => ({
-  createSubmittableExtrinsic: jest.fn(),
+  createSubmitProofExtrinsic: jest.fn(),
 }));
 
 describe('verify', () => {
@@ -169,7 +169,7 @@ describe('verify', () => {
   it('should handle the transaction with AccountConnection when proofData is provided', async () => {
     (getProofProcessor as jest.Mock).mockReturnValue(mockProcessor);
     (getProofPallet as jest.Mock).mockReturnValue('mockPallet');
-    (createSubmittableExtrinsic as jest.Mock).mockReturnValue(
+    (createSubmitProofExtrinsic as jest.Mock).mockReturnValue(
       'mockTransaction',
     );
     (handleTransaction as jest.Mock).mockResolvedValue({ success: true });
@@ -245,7 +245,7 @@ describe('verify', () => {
   it('should emit an error and throw if transaction submission fails', async () => {
     (getProofProcessor as jest.Mock).mockReturnValue(mockProcessor);
     (getProofPallet as jest.Mock).mockReturnValue('mockPallet');
-    (createSubmittableExtrinsic as jest.Mock).mockReturnValue(
+    (createSubmitProofExtrinsic as jest.Mock).mockReturnValue(
       'mockTransaction',
     );
     (handleTransaction as jest.Mock).mockRejectedValue(

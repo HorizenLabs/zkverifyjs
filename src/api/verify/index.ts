@@ -5,7 +5,7 @@ import { VerifyTransactionInfo } from '../../types';
 import { VerifyOptions } from '../../session/types';
 import { TransactionType, ZkVerifyEvents } from '../../enums';
 import { format } from '../format';
-import { createSubmittableExtrinsic } from '../extrinsic';
+import { createSubmitProofExtrinsic } from '../extrinsic';
 import { VerifyInput } from './types';
 import { ProofData } from '../../types';
 import { SubmittableExtrinsic } from '@polkadot/api/types';
@@ -36,7 +36,7 @@ export const verify = async (
         options.registeredVk,
       );
 
-      transaction = createSubmittableExtrinsic(
+      transaction = createSubmitProofExtrinsic(
         api,
         options.proofType,
         formattedProofData,

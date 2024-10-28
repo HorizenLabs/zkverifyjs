@@ -2,7 +2,7 @@ import { ApiPromise } from '@polkadot/api';
 import { SubmittableExtrinsic } from '@polkadot/api/types';
 import { hexToU8a } from '@polkadot/util';
 import {
-  createSubmittableExtrinsic,
+  createSubmitProofExtrinsic,
   createExtrinsicHex,
   createExtrinsicFromHex,
 } from './index';
@@ -42,9 +42,9 @@ describe('extrinsic utilities', () => {
     jest.clearAllMocks();
   });
 
-  describe('createSubmittableExtrinsic', () => {
+  describe('createSubmitProofExtrinsic', () => {
     it('should create a submittable extrinsic with the given formatted proof parameters', () => {
-      const extrinsic = createSubmittableExtrinsic(
+      const extrinsic = createSubmitProofExtrinsic(
         mockApi,
         ProofType.groth16,
         proofParams,
@@ -60,7 +60,7 @@ describe('extrinsic utilities', () => {
 
     it('should throw an error if the proof type is unsupported', () => {
       expect(() => {
-        createSubmittableExtrinsic(mockApi, ProofType.fflonk, proofParams);
+        createSubmitProofExtrinsic(mockApi, ProofType.fflonk, proofParams);
       }).toThrow('Unsupported proof type: fflonk');
     });
 
@@ -70,7 +70,7 @@ describe('extrinsic utilities', () => {
       });
 
       expect(() =>
-        createSubmittableExtrinsic(mockApi, ProofType.groth16, proofParams),
+        createSubmitProofExtrinsic(mockApi, ProofType.groth16, proofParams),
       ).toThrow(
         'Error creating submittable extrinsic: groth16 Params: {\n  "formattedVk": "vk_data",\n  "formattedProof": "proof_data",\n  "formattedPubs": "pub_data"\n} Submission error',
       );
@@ -82,7 +82,7 @@ describe('extrinsic utilities', () => {
       });
 
       expect(() =>
-        createSubmittableExtrinsic(mockApi, ProofType.groth16, proofParams),
+        createSubmitProofExtrinsic(mockApi, ProofType.groth16, proofParams),
       ).toThrow(
         'Error creating submittable extrinsic: groth16 Params: {\n  "formattedVk": "vk_data",\n  "formattedProof": "proof_data",\n  "formattedPubs": "pub_data"\n} An unknown error occurred',
       );
