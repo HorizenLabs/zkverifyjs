@@ -4,7 +4,12 @@ export interface zkVerifySessionOptions {
   host: SupportedNetwork;
   seedPhrase?: string;
   customWsUrl?: string;
-  wallet?: boolean;
+  wallet?: WalletOptions;
+}
+
+export interface WalletOptions {
+  source: string;
+  accountAddress: string;
 }
 
 export interface VerifyOptions {

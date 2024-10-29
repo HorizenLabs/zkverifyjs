@@ -1,5 +1,5 @@
 import { ProofProcessor } from '../../../types';
-import { ProofOfSqlProof, ProofOfSqlVk , ProofOfSqlPubs } from '../types';
+import { ProofOfSqlProof, ProofOfSqlVk, ProofOfSqlPubs } from '../types';
 import * as formatter from '../formatter';
 
 class ProofOfSqlProcessor implements ProofProcessor {

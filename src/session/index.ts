@@ -4,11 +4,17 @@ import { verify } from '../api/verify';
 import { accountInfo } from '../api/accountInfo';
 import { startSession, startWalletSession } from '../api/start';
 import { closeSession } from '../api/close';
+import { estimateCost } from '../api/estimate';
 import {
   subscribeToNewAttestations,
   unsubscribeFromNewAttestations,
 } from '../api/attestation';
 import { getProofDetails } from '../api/poe';
+import {
+  createSubmitProofExtrinsic,
+  createExtrinsicHex,
+  createExtrinsicFromHex,
+} from '../api/extrinsic';
 import {
   AccountInfo,
   AttestationEvent,
@@ -31,6 +37,11 @@ import { ProofType, SupportedNetwork } from '../config';
 import { ProofMethodMap, VerificationBuilder } from './builders/verify';
 import { RegisterKeyBuilder, RegisterKeyMethodMap } from './builders/register';
 import { NetworkBuilder, SupportedNetworkMap } from './builders/network';
+import { VerifyInput } from '../api/verify/types';
+import { SubmittableExtrinsic } from '@polkadot/api/types';
+import { format } from '../api/format';
+import { FormattedProofData } from '../api/format/types';
+import { ExtrinsicCostEstimate } from '../api/estimate/types';
 
 /**
  * zkVerifySession class provides an interface to zkVerify, direct access to the Polkadot.js API.
@@ -199,18 +210,24 @@ export class zkVerifySession {
   }
 
   /**
-   * Executes the verification process with the provided options and proof data.
+   * Executes the verification process with the provided options and proof data or pre-built extrinsic.
    * This method is intended to be called by the `VerificationBuilder`.
    *
    * @param {VerifyOptions} options - The options for the verification process, including proof type and other optional settings.
-   * @param {...unknown[]} proofData - The proof data required for the verification process.
+   * @param {VerifyInput} input - The verification input, which can be provided as either:
+   *   - `proofData`: An array of proof parameters (proof, public signals, and verification key).
+   *   - `extrinsic`: A pre-built `SubmittableExtrinsic`.
+   *   Ensure only one of these options is provided within the `VerifyInput`.
+   *
    * @returns {Promise<{events: EventEmitter, transactionResult: Promise<VerifyTransactionInfo>}>}
-   * A promise that resolves with an object containing an `EventEmitter` for real-time events and the final transaction result.
+   * A promise that resolves with an object containing:
+   *   - `events`: An `EventEmitter` instance for real-time verification events.
+   *   - `transactionResult`: A promise that resolves to the final transaction information once verification is complete.
    * @private
    */
   private async executeVerify(
     options: VerifyOptions,
-    ...proofData: unknown[]
+    input: VerifyInput,
   ): Promise<{
     events: EventEmitter;
     transactionResult: Promise<VerifyTransactionInfo>;
@@ -223,7 +240,7 @@ export class zkVerifySession {
       this.connection as AccountConnection,
       options,
       events,
-      ...proofData,
+      input,
     );
 
     return { events, transactionResult };
@@ -273,6 +290,88 @@ export class zkVerifySession {
       leafDigest,
       blockHash,
     );
+  }
+
+  /**
+   * Creates a SubmittableExtrinsic using formatted proof details to enable submitting a proof.
+   *
+   * @param {ProofType} proofType - The type of proof, to decide which pallet to use.
+   * @param {FormattedProofData} params - Formatted Proof Parameters required by the extrinsic.
+   * @returns {SubmittableExtrinsic<'promise'>} The generated SubmittableExtrinsic for submission.
+   * @throws {Error} - Throws an error if the extrinsic creation fails.
+   */
+  async createSubmitProofExtrinsic(
+    proofType: ProofType,
+    params: FormattedProofData,
+  ): Promise<SubmittableExtrinsic<'promise'>> {
+    return createSubmitProofExtrinsic(this.connection.api, proofType, params);
+  }
+
+  /**
+   * Generates the hex representation of a SubmittableExtrinsic using formatted proof details.
+   *
+   * @param {ProofType} proofType - The type of supported proof, used to select the correct pallet.
+   * @param {FormattedProofData} params - Formatted Proof Parameters required by the extrinsic.
+   * @returns {string} Hex-encoded string of the SubmittableExtrinsic.
+   * @throws {Error} - Throws an error if the hex generation fails.
+   */
+  async createExtrinsicHex(
+    proofType: ProofType,
+    params: FormattedProofData,
+  ): Promise<string> {
+    return createExtrinsicHex(this.connection.api, proofType, params);
+  }
+
+  /**
+   * Recreates an extrinsic from its hex-encoded representation.
+   *
+   * @param {string} extrinsicHex - Hex-encoded string of the SubmittableExtrinsic.
+   * @returns {SubmittableExtrinsic<'promise'>} The reconstructed SubmittableExtrinsic.
+   * @throws {Error} - Throws an error if the reconstruction from hex fails.
+   */
+  async createExtrinsicFromHex(
+    extrinsicHex: string,
+  ): Promise<SubmittableExtrinsic<'promise'>> {
+    return createExtrinsicFromHex(this.connection.api, extrinsicHex);
+  }
+
+  /**
+   * Estimates the cost of a given extrinsic.
+   *
+   * @param {SubmittableExtrinsic<'promise'>} extrinsic - The extrinsic to estimate.
+   * @returns {Promise<ExtrinsicCostEstimate>} A promise that resolves to an object containing the estimated fee and extrinsic details.
+   * @throws {Error} - Throws an error if the session is in read-only mode or account information is missing.
+   */
+  async estimateCost(
+    extrinsic: SubmittableExtrinsic<'promise'>,
+  ): Promise<ExtrinsicCostEstimate> {
+    checkReadOnly(this.readOnly);
+    return estimateCost(
+      this.connection.api,
+      extrinsic,
+      this.connection as AccountConnection,
+    );
+  }
+
+  /**
+   * Formats proof details for the specified proof type.
+   *
+   * @param {ProofType} proofType - The type of proof to format.
+   * @param {unknown} proof - The proof data to format.
+   * @param {unknown} publicSignals - The public signals to format.
+   * @param {unknown} vk - The verification key to format.
+   * @param {boolean} [registeredVk] - Optional flag indicating if the verification key is registered.
+   * @returns {Promise<FormattedProofData>} A promise that resolves to an object containing formatted verification key, proof, and public signals.
+   * @throws {Error} - Throws an error if formatting fails.
+   */
+  async format(
+    proofType: ProofType,
+    proof: unknown,
+    publicSignals: unknown,
+    vk: unknown,
+    registeredVk?: boolean,
+  ): Promise<FormattedProofData> {
+    return format(proofType, proof, publicSignals, vk, registeredVk);
   }
 
   /**

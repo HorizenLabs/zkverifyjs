@@ -1,6 +1,5 @@
 import 'dotenv/config';
 import { ApiPromise } from '@polkadot/api';
-import { SubmittableExtrinsic } from '@polkadot/api/types';
 import { EventEmitter } from 'events';
 import { AttestationEvent, ProofProcessor } from '../../types';
 import { ZkVerifyEvents } from '../../enums';
@@ -79,43 +78,8 @@ export async function waitForNodeToSync(api: ApiPromise): Promise<void> {
   }
 }
 
-/**
- * Create a SubmittableExtrinsic for submitting a proof.
- *
- * @param {ApiPromise} api - The API instance.
- * @param {string} pallet - The pallet name.
- * @param {any[]} params - The parameters to pass to the extrinsic.
- * @returns {SubmittableExtrinsic<'promise'>} The created SubmittableExtrinsic.
- * @throws {Error} - Throws an error with detailed information if extrinsic creation fails.
- */
-export const submitProofExtrinsic = (
-  api: ApiPromise,
-  pallet: string,
-  params: unknown[],
-): SubmittableExtrinsic<'promise'> => {
-  try {
-    return api.tx[pallet].submitProof(...params);
-  } catch (error: unknown) {
-    let errorMessage = 'An unknown error occurred';
-
-    if (error instanceof Error) {
-      errorMessage = error.message;
-    }
-
-    const errorDetails = `
-            Error creating submittable extrinsic:
-            Pallet: ${pallet}
-            Params: ${JSON.stringify(params, null, 2)}
-            Error: ${errorMessage}
-        `;
-    throw new Error(errorDetails);
-  }
-};
-
-export async function getProofProcessor(
-  proofType: ProofType,
-): Promise<ProofProcessor> {
-  const config = proofConfigurations[proofType as ProofType];
+export function getProofProcessor(proofType: ProofType): ProofProcessor {
+  const config = proofConfigurations[proofType];
   if (!config) {
     throw new Error(`No config found for Proof Processor: ${proofType}`);
   }

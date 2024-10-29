@@ -18,7 +18,7 @@ export enum ProofType {
   groth16 = 'groth16',
   risc0 = 'risc0',
   ultraplonk = 'ultraplonk',
-  proofofsql = 'proofofsql'
+  proofofsql = 'proofofsql',
   // ADD_NEW_PROOF_TYPE
 }
 

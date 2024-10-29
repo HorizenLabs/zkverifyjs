@@ -26,6 +26,11 @@ Currently the following proof verifiers are supported:
     - [zkVerifySession.verify](#zkverifysessionverify)
     - [zkVerifySession.registerVerificationKey](#zkverifysessionregisterverificationkey)
     - [zkVerifySession.poe](#zkverifysessionpoe)
+    - [zkVerifySession.format](#zkverifysessionformat)
+    - [zkVerifySession.createSubmitProofExtrinsic](#zkverifysessioncreatesubmitproofextrinsic)
+    - [zkVerifySession.createExtrinsicHex](#zkverifysessioncreateextrinsichex)
+    - [zkVerifySession.createExtrinsicFromHex](#zkverifysessioncreateextrinsicfromhex)
+    - [zkVerifySession.estimateCost](#zkverifysessionestimatecost)
     - [zkVerifySession.accountInfo](#zkverifysessionaccountinfo)
     - [zkVerifySession.addAccount](#zkverifysessionaddaccount)
     - [zkVerifySession.removeAccount](#zkverifysessionremoveaccount)
@@ -78,13 +83,19 @@ const session = await zkVerifySession.start()
 ```typescript
 const session = await zkVerifySession.start()
         .Testnet()
-        .withWallet(); // Uses browser session context "window"
+        .withWallet({
+          source: selectedWallet,
+          accountAddress: selectedAccount,
+        }); // Uses browser session context "window"
 ```
 6. Full Frontend Browser Session (send transactions)  with Custom WebSocket:
 ```typescript
 const session = await zkVerifySession.start()
         .Custom("wss://testnet-rpc.zkverify.io") // Custom network
-        .withWallet(); // Uses browser session context "window"
+        .withWallet({
+          source: selectedWallet,
+          accountAddress: selectedAccount,
+        }); // Uses browser session context "window"
 ```
 
 Not specifying `withAccount()` or `withWallet()` will start a read-only session, transaction methods cannot be used, and only calls to read data are allowed:
@@ -106,7 +117,7 @@ const { events, transactionResult } = await session
         .nonce(1)                                  // Set the nonce (optional)
         .waitForPublishedAttestation()             // Wait for the attestation to be published (optional)
         .withRegisteredVk()                        // Indicate that the verification key is already registered (optional)
-        .execute(proof, publicSignals, vk);        // Execute the verification with the provided proof data
+        .execute({ proofData: { proof, publicSignals, vk } });  // Execute the verification with the provided proof data
 
 ```
 
@@ -114,7 +125,7 @@ const { events, transactionResult } = await session
 ```typescript
 const { events, transactionResult } = await session.verify()
         .groth16()
-        .execute(proofData, publicSignals, vkey);
+        .execute({ proofData: { proof, publicSignals, vk } });
 
 events.on('ErrorEvent', (eventData) => {
   console.error(JSON.stringify(eventData));
@@ -139,7 +150,7 @@ const vkTransactionInfo: VKRegistrationTransactionInfo = await transactionResult
 const {events: verifyEvents, transactionResult: verifyTransactionResult} = await session.verify()
         .fflonk()
         .withRegisteredVk() // Option needs to be specified as we're using the registered statement hash.
-        .execute(proof, publicSignals, vkTransactionInfo.statementHash);
+        .execute({ proofData: { proof, publicSignals, vkTransactionInfo.statementHash } });
 
 const verifyTransactionInfo: VerifyTransactionInfo = await verifyTransactionResult;
 ```
@@ -154,11 +165,13 @@ You can listen for transaction events using the events emitter. Common events in
 - `error`: Triggered if an error occurs during the transaction process.
 
 ```typescript
-const { events, transactionResult } = await session.verify().risc0().execute(
-  proof,
-  publicSignals,
-  vk
-);
+const { events, transactionResult } = await session.verify().risc0().execute({
+  proofData: {
+    proof,
+    publicSignals,
+    vk
+  }
+});
 
 events.on('includedInBlock', (eventData) => {
     console.log('Transaction included in block:', eventData);
@@ -184,7 +197,7 @@ To await the final result of the transaction, use the transactionResult promise.
 ```typescript
 const { events, transactionResult } = await session.verify()
   .groth16()
-  .execute(proof, publicSignals, vk)
+  .execute({ proofData: { proof, publicSignals, vk } })
 
 const result = await transactionResult;
 console.log('Final transaction result:', result);
@@ -197,7 +210,7 @@ Wait for the NewElement event to be published before the transaction info is ret
 ```typescript
 const { events, transactionResult } = await session.verify().risc0()
     .waitForPublishedAttestation()
-    .execute(proof, publicSignals, vk);
+    .execute({ proofData: { proof, publicSignals, vk } });
 
 const transactionInfo: VerifyTransactionInfo = await transactionResult;
 
@@ -219,7 +232,7 @@ async function executeVerificationTransaction(proof: unknown, publicSignals: unk
   // Execute the verification transaction
   const { events, transactionResult } = await session.verify().risc0()
           .waitForPublishedAttestation()
-          .execute(proof, publicSignals, vk);
+          .execute({ proofData: { proof, publicSignals, vk } });
 
   // Listen for the 'includedInBlock' event
   events.on(ZkVerifyEvents.IncludedInBlock, (eventData) => {
@@ -271,13 +284,16 @@ await zkVerifySession.start()
         .Testnet() // 1. Either preconfigured network selection
         .Custom('wss://custom') // 2. Or specify a custom network selection
         .withAccount(process.env.SEED_PHRASE!) // Optional
-        .withWallet() // Optional
+        .withWallet({
+          source: selectedWallet,
+          accountAddress: selectedAccount,
+        }) // Optional
         .readOnly() // Optional
 ```
 
 - Network Selection: Preconfigured options such as `.Testnet()` or provide your own websocket url using `.Custom('wss://custom')`.
-- withAccount : Create a full session with ability send transactions get account info by using .withAccount('seed-phrase') and specifying your own seed phrase.
-- withWallet : Establish connection to a browser based substrate wallet, cannot be used with `.withAccount()`;
+- withAccount : Create a full session with ability send transactions get account info by using .withAccount('seed-phrase') and specifying your own seed phrase, cannot be used with `withWallet()`.
+- withWallet : Establish connection to a browser extension based substrate wallet like talisman or subwallet, cannot be used with `withAccount()`;
 - readOnly: Start the session in read-only mode, unable to send transactions or retrieve account info.
 
 ## `zkVerifySession.close`
@@ -295,14 +311,16 @@ const { events, transactionResult } = await session.verify()
         .nonce(1)
         .waitForPublishedAttestation()
         .withRegisteredVk()
-        .execute(proof, publicSignals, vk);
+        .execute({ proofData: { proof, publicSignals, vk }  }); // 1. Directly pass proof data
+        // .execute({ extrinsic: submittableExtrinsic }); // 2. OR pass in a pre-built SubmittableExtrinsic
 
 ```
 
 - Proof Type: `.fflonk()` specifies the type of proof to be used. Options available for all supported proof types.
 - Nonce: `.nonce(1)` sets the nonce for the transaction. This is optional and can be omitted if not required.
 - Attestation Option: `.waitForPublishedAttestation()` specifies that the transaction should wait for the attestation to be published before completing. This is optional.
-  Registered Verification Key: `.withRegisteredVk()` indicates that the verification key being used is registered on the chain. This option is optional and defaults to false.
+- Registered Verification Key: `.withRegisteredVk()` indicates that the verification key being used is registered on the chain. This option is optional and defaults to false.
+- Execute:  You can either send in the raw proof details using `{ proofData: ... }` or verify a prebuilt extrinsic `{ extrinsic: ... }`
 - Returns: An object containing an EventEmitter for real-time events and a Promise that resolves with the final transaction result, including waiting for the `poe.NewElement` attestation confirmation if waitForPublishedAttestation is specified.
 
 ## `zkVerifySession.registerVerificationKey`
@@ -325,6 +343,69 @@ const proofDetails = await session.poe(attestationId, leafDigest, blockHash);
 - `blockHash`: (Optional) A string representing the block hash at which the proof should be retrieved.
 - Returns: A Promise that resolves to a MerkleProof object containing the proof path details.
 
+## `zkVerifySession.format`
+
+```typescript
+const {formattedVk, formattedProof, formattedPubs} = await session.format(proofType, proof, publicSignals, vk, registeredVk);
+
+```
+- `proofType`: An enum value representing the type of proof being formatted (e.g., ProofType.groth16).
+- `proof`: The proof data that needs to be formatted.
+- `publicSignals`: The public signals associated with the proof, which are also formatted.
+- `vk`: The verification key that may be either registered or unregistered, depending on the context.
+- `registeredVk`: (Optional) A boolean indicating if the verification key is already registered.
+Returns: A Promise that resolves to a FormattedProofData object containing:
+formattedVk: The formatted verification key.
+formattedProof: The formatted proof data.
+formattedPubs: The formatted public signals.
+
+## `zkVerifySession.createSubmitProofExtrinsic`
+
+```shell
+const extrinsic = await session.createSubmitProofExtrinsic(api, proofType, params);
+```
+
+- `api`: An instance of the Polkadot API that provides the necessary methods for interacting with the blockchain.
+- `proofType`: ProofType enum - used to obtain the name of the pallet that contains the proof submission method.
+- `params`: A FormattedProofData object containing formatted proof parameters required for the extrinsic.
+Returns: A Promise that resolves to a SubmittableExtrinsic<'promise'>, allowing you to submit the proof to the blockchain.
+
+## `zkVerifySession.createExtrinsicHex`
+
+```shell
+const hex = await session.createExtrinsicHex(api, pallet, params);
+```
+
+- `api`: An instance of the Polkadot API used to create the extrinsic.
+- `pallet`: A string representing the name of the pallet that contains the proof submission method.
+- `params`: A FormattedProofData object of formatted proof parameters needed for the extrinsic.
+Returns: A Promise that resolves to a hex-encoded string representing the SubmittableExtrinsic.
+
+## `zkVerifySession.createExtrinsicFromHex`
+
+```shell
+const extrinsic = await session.createExtrinsicFromHex(api, extrinsicHex);
+```
+
+- `api`: An instance of the Polkadot API used for creating the extrinsic.
+- `extrinsicHex`: A string representing the hex-encoded SubmittableExtrinsic to be reconstructed.
+Returns: A Promise that resolves to a SubmittableExtrinsic<'promise'>, allowing you to interact with the reconstructed extrinsic.
+
+## `zkVerifySession.estimateCost`
+
+```shell
+const extrinsic = await session.estimateCost(extrinsic);
+```
+
+- `extrinstic`: A submitProof SubmittableExtrinsic.
+  Returns: A Promise that resolves to an ExtrinsicCostEstimate:
+  ```
+  partialFee: string;
+  estimatedFeeInTokens: string;
+  weight: string;
+  length: number;
+  ```
+  
 ## `zkVerifySession.accountInfo`
 
 ```typescript

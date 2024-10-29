@@ -1,16 +1,22 @@
 name: CI Build And Test Workflow
 
 on:
-  push:
-    branches:
-      - main
   pull_request:
-    branches:
-      - main
+    types: [opened]
+  workflow_dispatch:
 
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
+    env:
+      SEED_PHRASE_1: ${{ secrets.SEED_PHRASE_1 }}
+      SEED_PHRASE_2: ${{ secrets.SEED_PHRASE_2 }}
+      SEED_PHRASE_3: ${{ secrets.SEED_PHRASE_3 }}
+      SEED_PHRASE_4: ${{ secrets.SEED_PHRASE_4 }}
+      SEED_PHRASE_5: ${{ secrets.SEED_PHRASE_5 }}
+      SEED_PHRASE_6: ${{ secrets.SEED_PHRASE_6 }}
+      SEED_PHRASE_7: ${{ secrets.SEED_PHRASE_7 }}
+      SEED_PHRASE_8: ${{ secrets.SEED_PHRASE_8 }}
 
     steps:
       - name: Checkout code
@@ -30,16 +36,11 @@ jobs:
       - name: Run build
         run: npm run build
 
-      - name: Run tests with output (allow failures)
+      - name: Run tests & generate test output files
         id: run_tests
         run: |
           mkdir -p reports
-          set -o pipefail && npm run test 2>&1 | tee reports/test_output.txt || true
-
-      - name: Debug - Check if test_output.txt exists
-        run: |
-          echo "Checking test_output.txt content:"
-          cat reports/test_output.txt || echo "No output file found."
+          set -o pipefail && npm run test 2>&1 | tee reports/test_output.txt
 
       - name: Parse Test Results and Coverage
         id: parse_results

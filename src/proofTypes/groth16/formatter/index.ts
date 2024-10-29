@@ -64,7 +64,9 @@ export const formatProof = (proof: ProofInput): Proof => {
  * @param {Groth16VerificationKeyInput} vk - Raw verification key data.
  * @returns {Groth16VerificationKey} - Formatted verification key.
  */
-export const formatVk = (vk: Groth16VerificationKeyInput): Groth16VerificationKey => {
+export const formatVk = (
+  vk: Groth16VerificationKeyInput,
+): Groth16VerificationKey => {
   const vkData = unstringifyBigInts(vk) as Groth16VerificationKeyInput;
   const curve = extractCurve(vkData);
   const endianess = getEndianess(curve);
@@ -87,7 +89,9 @@ export const formatVk = (vk: Groth16VerificationKeyInput): Groth16VerificationKe
  */
 export const formatPubs = (pubs: string[]): string[] => {
   if (!Array.isArray(pubs) || pubs.some(() => false)) {
-    throw new Error('Invalid public signals format: Expected an array of strings.');
+    throw new Error(
+      'Invalid public signals format: Expected an array of strings.',
+    );
   }
   return pubs.map(formatScalar);
 };
@@ -123,7 +127,15 @@ const getEndianess = (curve: string): 'LE' | 'BE' => {
  * @returns {string} - Little-endian hexadecimal representation.
  */
 export const toLittleEndianHex = (value: bigint, length: number): string => {
-  return '0x' + value.toString(16).padStart(length * 2, '0').match(/.{1,2}/g)!.reverse().join('');
+  return (
+    '0x' +
+    value
+      .toString(16)
+      .padStart(length * 2, '0')
+      .match(/.{1,2}/g)!
+      .reverse()
+      .join('')
+  );
 };
 
 /**
@@ -148,8 +160,8 @@ const formatG1Point = (point: string[], endianess: 'LE' | 'BE'): string => {
   const [x, y] = [BigInt(point[0]), BigInt(point[1])];
   const length = endianess === 'BE' ? 48 : 32;
   return endianess === 'LE'
-      ? toLittleEndianHex(x, length) + toLittleEndianHex(y, length).slice(2)
-      : toBigEndianHex(x, length) + toBigEndianHex(y, length).slice(2);
+    ? toLittleEndianHex(x, length) + toLittleEndianHex(y, length).slice(2)
+    : toBigEndianHex(x, length) + toBigEndianHex(y, length).slice(2);
 };
 
 /**
@@ -160,15 +172,34 @@ const formatG1Point = (point: string[], endianess: 'LE' | 'BE'): string => {
  * @param {string} curve - Curve type.
  * @returns {string} - Formatted G2 point as hex string.
  */
-const formatG2Point = (point: string[][], endianess: 'LE' | 'BE', curve: string): string => {
-  const [x1, x2, y1, y2] = [BigInt(point[0][0]), BigInt(point[0][1]), BigInt(point[1][0]), BigInt(point[1][1])];
+const formatG2Point = (
+  point: string[][],
+  endianess: 'LE' | 'BE',
+  curve: string,
+): string => {
+  const [x1, x2, y1, y2] = [
+    BigInt(point[0][0]),
+    BigInt(point[0][1]),
+    BigInt(point[1][0]),
+    BigInt(point[1][1]),
+  ];
   const length = endianess === 'BE' ? 48 : 32;
-  const formattedX = curve === 'Bls12_381'
-      ? (endianess === 'LE' ? toLittleEndianHex(x2, length) + toLittleEndianHex(x1, length).slice(2) : toBigEndianHex(x2, length) + toBigEndianHex(x1, length).slice(2))
-      : (endianess === 'LE' ? toLittleEndianHex(x1, length) + toLittleEndianHex(x2, length).slice(2) : toBigEndianHex(x1, length) + toBigEndianHex(x2, length).slice(2));
-  const formattedY = curve === 'Bls12_381'
-      ? (endianess === 'LE' ? toLittleEndianHex(y2, length) + toLittleEndianHex(y1, length).slice(2) : toBigEndianHex(y2, length) + toBigEndianHex(y1, length).slice(2))
-      : (endianess === 'LE' ? toLittleEndianHex(y1, length) + toLittleEndianHex(y2, length).slice(2) : toBigEndianHex(y1, length) + toBigEndianHex(y2, length).slice(2));
+  const formattedX =
+    curve === 'Bls12_381'
+      ? endianess === 'LE'
+        ? toLittleEndianHex(x2, length) + toLittleEndianHex(x1, length).slice(2)
+        : toBigEndianHex(x2, length) + toBigEndianHex(x1, length).slice(2)
+      : endianess === 'LE'
+        ? toLittleEndianHex(x1, length) + toLittleEndianHex(x2, length).slice(2)
+        : toBigEndianHex(x1, length) + toBigEndianHex(x2, length).slice(2);
+  const formattedY =
+    curve === 'Bls12_381'
+      ? endianess === 'LE'
+        ? toLittleEndianHex(y2, length) + toLittleEndianHex(y1, length).slice(2)
+        : toBigEndianHex(y2, length) + toBigEndianHex(y1, length).slice(2)
+      : endianess === 'LE'
+        ? toLittleEndianHex(y1, length) + toLittleEndianHex(y2, length).slice(2)
+        : toBigEndianHex(y1, length) + toBigEndianHex(y2, length).slice(2);
 
   return formattedX + formattedY.slice(2);
 };
@@ -179,4 +210,5 @@ const formatG2Point = (point: string[][], endianess: 'LE' | 'BE', curve: string)
  * @param {string} scalar - Scalar value to format.
  * @returns {string} - Formatted scalar as little-endian hex.
  */
-const formatScalar = (scalar: string): string => toLittleEndianHex(BigInt(scalar), 32);
+const formatScalar = (scalar: string): string =>
+  toLittleEndianHex(BigInt(scalar), 32);

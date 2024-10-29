@@ -93,7 +93,12 @@ export const performVerifyTransaction = async (
     const verifier = session.verify()[proofType]();
     const verify = withAttestation ? verifier.waitForPublishedAttestation() : verifier;
 
-    const { events, transactionResult } = await verify.execute(proof, publicSignals, vk);
+    const { events, transactionResult } = await verify.execute({ proofData: {
+        proof: proof,
+        publicSignals: publicSignals,
+        vk: vk
+        }
+    });
 
     const eventResults = withAttestation
         ? handleEventsWithAttestation(events, proofType, 'verify')
@@ -134,7 +139,14 @@ export const performVKRegistrationAndVerification = async (
     validateEventResults(registerResults, false);
 
     console.log(`${proofType} Executing verification using registered VK...`);
-    const { events: verifyEvents, transactionResult: verifyTransactionResult } = await session.verify()[proofType]().withRegisteredVk().execute(proof, publicSignals, vkTransactionInfo.statementHash!);
+    const { events: verifyEvents, transactionResult: verifyTransactionResult } = await session.verify()[proofType]()
+        .withRegisteredVk()
+        .execute({ proofData: {
+            proof: proof,
+            publicSignals: publicSignals,
+            vk: vkTransactionInfo.statementHash!
+            }
+        });
     const verifyResults = handleCommonEvents(verifyEvents, proofType, 'verify');
 
     const verifyTransactionInfo: VerifyTransactionInfo = await verifyTransactionResult;
