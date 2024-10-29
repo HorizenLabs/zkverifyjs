@@ -74,10 +74,11 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: echo "//registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN}" > ~/.npmrc
 
+      - name: Disable prepare (Husky) script
+        run: sed -i '/"prepare":/d' package.json
+
       - name: Publish to npm
         id: publish
-        env:
-          HUSKY: 0
         run: npm publish
 
       - name: Send Slack Notification for Publish
