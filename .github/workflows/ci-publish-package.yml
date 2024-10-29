@@ -40,7 +40,7 @@ jobs:
 
       - name: Extract Package Version
         id: extract_version
-        run: echo "package_version=$(jq -r '.version' package.json)" >> $GITHUB_ENV
+        run: echo "package_version=$(node -p "require('./package.json').version")" >> $GITHUB_ENV
 
       - name: Upload build artifacts
         id: upload_build
