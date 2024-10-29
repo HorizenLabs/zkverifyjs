@@ -32,15 +32,9 @@ jobs:
 
       - name: Run tests & generate test output files
         id: run_tests
-        continue-on-error: true
         run: |
           mkdir -p reports
           set -o pipefail && npm run test 2>&1 | tee reports/test_output.txt
-
-      - name: Debug - Check if test_output.txt exists
-        run: |
-          echo "Checking test_output.txt content:"
-          cat reports/test_output.txt || echo "No output file found."
 
       - name: Parse Test Results and Coverage
         id: parse_results
