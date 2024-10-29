@@ -86,7 +86,7 @@ jobs:
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": "*:tada:  :zk-logo-icon-square-black:  zkVerifyJS Package Published  :zk-logo-icon-square-black:  :tada:*\n\n*Build URL:* <https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}|Click here to view the build>\n\n*Published Package:* <https://www.npmjs.com/package/zkverifyjs/v/${{ env.package_version }}|zkverifyjs@${{ env.package_version }}>"
+                    "text": "*:tada:  :zk-logo-icon-square-black:  zkVerifyJS Package v${{ env.package_version }} Published  :zk-logo-icon-square-black:  :tada:*\n\n*Build URL:* <https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}|Click here to view the build>\n\n*Published Package:* <https://www.npmjs.com/package/zkverifyjs/v/${{ env.package_version }}|zkverifyjs@${{ env.package_version }}>"
                   }
                 }
               ]
