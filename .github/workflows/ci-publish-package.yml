@@ -74,8 +74,9 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: echo "//registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN}" > ~/.npmrc
 
-      - name: Disable prepare (Husky) script
-        run: sed -i '/"prepare":/d' package.json
+      - name: Remove prepare script (Husky)
+        run: |
+          node -e "let pkg = require('./package.json'); delete pkg.scripts.prepare; require('fs').writeFileSync('./package.json', JSON.stringify(pkg, null, 2));"
 
       - name: Publish to npm
         id: publish
