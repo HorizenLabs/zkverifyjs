@@ -346,7 +346,7 @@ const proofDetails = await session.poe(attestationId, leafDigest, blockHash);
 ## `zkVerifySession.format`
 
 ```typescript
-const [formattedVk, formattedProof, formattedPubs] = await session.format(proofType, proof, publicSignals, vk, registeredVk);
+const {formattedVk, formattedProof, formattedPubs} = await session.format(proofType, proof, publicSignals, vk, registeredVk);
 
 ```
 - `proofType`: An enum value representing the type of proof being formatted (e.g., ProofType.groth16).
@@ -354,7 +354,7 @@ const [formattedVk, formattedProof, formattedPubs] = await session.format(proofT
 - `publicSignals`: The public signals associated with the proof, which are also formatted.
 - `vk`: The verification key that may be either registered or unregistered, depending on the context.
 - `registeredVk`: (Optional) A boolean indicating if the verification key is already registered.
-Returns: A Promise that resolves to an array containing:
+Returns: A Promise that resolves to a FormattedProofData object containing:
 formattedVk: The formatted verification key.
 formattedProof: The formatted proof data.
 formattedPubs: The formatted public signals.
@@ -378,7 +378,7 @@ const hex = await session.createExtrinsicHex(api, pallet, params);
 
 - `api`: An instance of the Polkadot API used to create the extrinsic.
 - `pallet`: A string representing the name of the pallet that contains the proof submission method.
-- `params`: An array of formatted proof parameters needed for the extrinsic.
+- `params`: A FormattedProofData object of formatted proof parameters needed for the extrinsic.
 Returns: A Promise that resolves to a hex-encoded string representing the SubmittableExtrinsic.
 
 ## `zkVerifySession.createExtrinsicFromHex`
