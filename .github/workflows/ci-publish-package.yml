@@ -38,10 +38,6 @@ jobs:
       - name: Run tests
         run: npm run test
 
-      - name: Extract Package Version
-        id: extract_version
-        run: echo "package_version=$(node -p "require('./package.json').version")" >> $GITHUB_ENV
-
       - name: Upload build artifacts
         id: upload_build
         uses: actions/upload-artifact@v4
@@ -68,6 +64,10 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: '18.x'
+
+      - name: Extract Package Version
+        id: extract_version
+        run: echo "package_version=$(node -p "require('./package.json').version")" >> $GITHUB_ENV
 
       - name: Authenticate to npm registry
         env:
