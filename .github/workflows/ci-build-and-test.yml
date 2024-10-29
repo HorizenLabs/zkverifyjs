@@ -30,11 +30,12 @@ jobs:
       - name: Run build
         run: npm run build
 
-      - name: Run tests with output (allow failures)
+      - name: Run tests & generate test output files
         id: run_tests
+        continue-on-error: true
         run: |
           mkdir -p reports
-          set -o pipefail && npm run test 2>&1 | tee reports/test_output.txt || true
+          set -o pipefail && npm run test 2>&1 | tee reports/test_output.txt
 
       - name: Debug - Check if test_output.txt exists
         run: |
