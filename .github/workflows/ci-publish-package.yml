@@ -76,7 +76,9 @@ jobs:
 
       - name: Publish to npm
         id: publish
-        run: npm publish --ignore-scripts
+        env:
+          HUSKY: 0
+        run: npm publish
 
       - name: Send Slack Notification for Publish
         if: steps.publish.outcome == 'success'
