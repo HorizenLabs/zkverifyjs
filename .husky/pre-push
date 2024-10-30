@@ -1,1 +1,2 @@
 npm run build && npm test
+npm run generate-readme-for-docs

@@ -71,7 +71,7 @@ async function adjustMarkdown(text) {
 
 async function getReadmeForDocs() {
   const source = 'README.md';
-  const destination = 'DOCS_README.md';
+  const destination = 'DOCS.md';
   const comment = "<!-- This is a generated file. Do not modify directly. -->";
 
   const markdown = fs.readFileSync(source, 'utf8');
