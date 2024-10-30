@@ -353,7 +353,7 @@ const extrinsic = await session.createSubmitProofExtrinsic(api, proofType, param
 * `api`: An instance of the Polkadot API that provides the necessary methods for interacting with the blockchain.
 * `proofType`: ProofType enum - used to obtain the name of the pallet that contains the proof submission method.
 * `params`: A FormattedProofData object containing formatted proof parameters required for the extrinsic.
-* Returns: A Promise that resolves to a SubmittableExtrinsic<'promise'>, allowing you to submit the proof to the blockchain.
+* Returns: A Promise that resolves to a `SubmittableExtrinsic<'promise'>`, allowing you to submit the proof to the blockchain.
 
 ### `zkVerifySession.createExtrinsicHex`
 
@@ -374,7 +374,7 @@ const extrinsic = await session.createExtrinsicFromHex(api, extrinsicHex);
 
 * `api`: An instance of the Polkadot API used for creating the extrinsic.
 * `extrinsicHex`: A string representing the hex-encoded SubmittableExtrinsic to be reconstructed.
-* Returns: A Promise that resolves to a SubmittableExtrinsic<'promise'>, allowing you to interact with the reconstructed extrinsic.
+* Returns: A Promise that resolves to a `SubmittableExtrinsic<'promise'>`, allowing you to interact with the reconstructed extrinsic.
 
 ### `zkVerifySession.estimateCost`
 
