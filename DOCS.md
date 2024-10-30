@@ -325,7 +325,7 @@ const proofDetails = await session.poe(attestationId, leafDigest, blockHash);
 * `attestationId`: A number representing the published attestation ID from which the proof path is to be retrieved.
 * `leafDigest`: A string representing the leaf digest to be used in the proof path retrieval.
 * `blockHash`: (Optional) A string representing the block hash at which the proof should be retrieved.
-* Returns: A Promise that resolves to a MerkleProof object containing the proof path details.
+* Returns: A Promise that resolves to a `MerkleProof` object containing the proof path details.
 
 ### `zkVerifySession.format`
 
@@ -339,10 +339,10 @@ const {formattedVk, formattedProof, formattedPubs} = await session.format(proofT
 * `publicSignals`: The public signals associated with the proof, which are also formatted.
 * `vk`: The verification key that may be either registered or unregistered, depending on the context.
 * `registeredVk`: (Optional) A boolean indicating if the verification key is already registered.
-* Returns: A Promise that resolves to a FormattedProofData object containing:
-  formattedVk: The formatted verification key.
-  formattedProof: The formatted proof data.
-  formattedPubs: The formatted public signals.
+* Returns: A Promise that resolves to a `FormattedProofData` object containing:
+  * formattedVk: The formatted verification key.
+  * formattedProof: The formatted proof data.
+  * formattedPubs: The formatted public signals.
 
 ### `zkVerifySession.createSubmitProofExtrinsic`
 
