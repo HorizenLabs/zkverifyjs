@@ -339,7 +339,7 @@ const {formattedVk, formattedProof, formattedPubs} = await session.format(proofT
 * `publicSignals`: The public signals associated with the proof, which are also formatted.
 * `vk`: The verification key that may be either registered or unregistered, depending on the context.
 * `registeredVk`: (Optional) A boolean indicating if the verification key is already registered.
-  Returns: A Promise that resolves to a FormattedProofData object containing:
+* Returns: A Promise that resolves to a FormattedProofData object containing:
   formattedVk: The formatted verification key.
   formattedProof: The formatted proof data.
   formattedPubs: The formatted public signals.
@@ -353,7 +353,7 @@ const extrinsic = await session.createSubmitProofExtrinsic(api, proofType, param
 * `api`: An instance of the Polkadot API that provides the necessary methods for interacting with the blockchain.
 * `proofType`: ProofType enum - used to obtain the name of the pallet that contains the proof submission method.
 * `params`: A FormattedProofData object containing formatted proof parameters required for the extrinsic.
-  Returns: A Promise that resolves to a SubmittableExtrinsic/\</'promise/'/>, allowing you to submit the proof to the blockchain.
+* Returns: A Promise that resolves to a SubmittableExtrinsic/\</'promise/'/>, allowing you to submit the proof to the blockchain.
 
 ### `zkVerifySession.createExtrinsicHex`
 
@@ -364,7 +364,7 @@ const hex = await session.createExtrinsicHex(api, pallet, params);
 * `api`: An instance of the Polkadot API used to create the extrinsic.
 * `pallet`: A string representing the name of the pallet that contains the proof submission method.
 * `params`: A FormattedProofData object of formatted proof parameters needed for the extrinsic.
-  Returns: A Promise that resolves to a hex-encoded string representing the SubmittableExtrinsic.
+* Returns: A Promise that resolves to a hex-encoded string representing the SubmittableExtrinsic.
 
 ### `zkVerifySession.createExtrinsicFromHex`
 
@@ -374,7 +374,7 @@ const extrinsic = await session.createExtrinsicFromHex(api, extrinsicHex);
 
 * `api`: An instance of the Polkadot API used for creating the extrinsic.
 * `extrinsicHex`: A string representing the hex-encoded SubmittableExtrinsic to be reconstructed.
-  Returns: A Promise that resolves to a SubmittableExtrinsic/\</'promise/'/>, allowing you to interact with the reconstructed extrinsic.
+* Returns: A Promise that resolves to a SubmittableExtrinsic/\</'promise/'/>, allowing you to interact with the reconstructed extrinsic.
 
 ### `zkVerifySession.estimateCost`
 
@@ -383,7 +383,7 @@ const extrinsic = await session.estimateCost(extrinsic);
 ```
 
 * `extrinstic`: A submitProof SubmittableExtrinsic.
-  Returns: A Promise that resolves to an ExtrinsicCostEstimate:
+* Returns: A Promise that resolves to an ExtrinsicCostEstimate:
   ```
   partialFee: string;
   estimatedFeeInTokens: string;
