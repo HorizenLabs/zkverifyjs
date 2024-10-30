@@ -3,14 +3,6 @@
 
 The `zkverifyjs` package is a TypeScript library designed to facilitate sending proofs to zkVerify for verification, listening for transaction events, and waiting for transaction finalization. The package is built with an intuitive API that allows developers to handle real-time transaction events and await final results.
 
-Currently the following proof verifiers are supported:
-
-* FFlonk
-* Groth16 (BN128, BN254, BLS12-381 elliptic curves)
-* Risc0
-* Ultraplonk
-* Space and Time
-
 ## Installation
 
 To install the package, use npm or yarn:
