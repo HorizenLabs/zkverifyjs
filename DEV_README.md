@@ -98,3 +98,8 @@ npm run test:file:coverage src/api/connection
 ```shell
 npm run test:coverage
 ```
+
+## DOCS.md
+The `DOCS.md` file gets generated from the README file onpre-commit automatically with husky, utilizing the `ci/generateDocsReadme.js` script. Do not edit `DOCS.md` directly. It will get overwritten.
+
+This file is copied over and used in the [zkVerify docs](https://github.com/HorizenLabs/zkverify-docs). See: https://github.com/HorizenLabs/zkverify-docs/blob/main/scripts/github_readme.js

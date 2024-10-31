@@ -32,6 +32,7 @@
     "test:file:coverage": "node -e 'const path = process.argv[1]; require(\"child_process\").execSync(`jest --coverage --collectCoverageFrom=\"${path}/index.ts\" ${path}/index.test.ts`, { stdio: \"inherit\" });' --",
     "lint": "eslint 'src/**/*.ts' --fix --ignore-pattern '**/*.test.ts'",
     "format": "prettier --write 'src/**/*.ts'",
+    "generate-readme-for-docs": "node ci/generateDocsReadme.js",
     "prepare": "husky"
   },
   "lint-staged": {
@@ -91,9 +92,13 @@
     "lint-staged": "^15.2.10",
     "ls-engines": "^0.9.3",
     "prettier": "^3.3.3",
+    "remark-parse": "11.0.0",
+    "remark-stringify": "11.0.0",
+    "unified": "11.0.5",
     "ts-jest": "^29.2.4",
     "ts-node": "^10.9.2",
     "typescript": "^5.5.4",
-    "typescript-eslint": "^8.2.0"
+    "typescript-eslint": "^8.2.0",
+    "unist-util-visit": "5.0.0"
   }
 }
