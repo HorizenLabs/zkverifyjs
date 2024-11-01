@@ -36,7 +36,6 @@ jobs:
         run: npm run build
 
       - name: Run tests
-        id: run_tests
         run: npm run test
 
       - name: Extract Package Version
