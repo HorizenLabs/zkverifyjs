@@ -99,7 +99,11 @@ const { events, transactionResult } = await session
         .nonce(1)                                  // Set the nonce (optional)
         .waitForPublishedAttestation()             // Wait for the attestation to be published (optional)
         .withRegisteredVk()                        // Indicate that the verification key is already registered (optional)
-        .execute({ proofData: { proof, publicSignals, vk } });  // Execute the verification with the provided proof data
+        .execute({ proofData: { 
+            vk: vk,
+            proof: proof,
+            publicSignals: publicSignals }
+        });  // Execute the verification with the provided proof data
 
 ```
 
@@ -108,7 +112,11 @@ const { events, transactionResult } = await session
 ```typescript
 const { events, transactionResult } = await session.verify()
         .groth16()
-        .execute({ proofData: { proof, publicSignals, vk } });
+        .execute({ proofData: {
+            vk: vk,
+            proof: proof,
+            publicSignals: publicSignals }
+        });
 
 events.on('ErrorEvent', (eventData) => {
   console.error(JSON.stringify(eventData));
@@ -133,7 +141,11 @@ const vkTransactionInfo: VKRegistrationTransactionInfo = await transactionResult
 const {events: verifyEvents, transactionResult: verifyTransactionResult} = await session.verify()
         .fflonk()
         .withRegisteredVk() // Option needs to be specified as we're using the registered statement hash.
-        .execute({ proofData: { proof, publicSignals, vkTransactionInfo.statementHash } });
+        .execute({ proofData: {
+            vk: vkTransactionInfo.statementHash!,
+            proof: proof,
+            publicSignals: publicSignals }
+        });;
 
 const verifyTransactionInfo: VerifyTransactionInfo = await verifyTransactionResult;
 ```
@@ -148,13 +160,11 @@ You can listen for transaction events using the events emitter. Common events in
 * `error`: Triggered if an error occurs during the transaction process.
 
 ```typescript
-const { events, transactionResult } = await session.verify().risc0().execute({
-  proofData: {
-    proof,
-    publicSignals,
-    vk
-  }
-});
+const { events, transactionResult } = await session.verify().risc0().execute({ proofData: {
+    vk: vk,
+    proof: proof,
+    publicSignals: publicSignals }
+});;
 
 events.on('includedInBlock', (eventData) => {
     console.log('Transaction included in block:', eventData);
@@ -180,7 +190,11 @@ To await the final result of the transaction, use the transactionResult promise.
 ```typescript
 const { events, transactionResult } = await session.verify()
   .groth16()
-  .execute({ proofData: { proof, publicSignals, vk } })
+  .execute({ proofData: {
+      vk: vk,
+      proof: proof,
+      publicSignals: publicSignals }
+  });;
 
 const result = await transactionResult;
 console.log('Final transaction result:', result);
@@ -193,7 +207,11 @@ Wait for the NewElement event to be published before the transaction info is ret
 ```typescript
 const { events, transactionResult } = await session.verify().risc0()
     .waitForPublishedAttestation()
-    .execute({ proofData: { proof, publicSignals, vk } });
+    .execute({ proofData: {
+        vk: vk,
+        proof: proof,
+        publicSignals: publicSignals }
+    });;
 
 const transactionInfo: VerifyTransactionInfo = await transactionResult;
 
@@ -215,7 +233,11 @@ async function executeVerificationTransaction(proof: unknown, publicSignals: unk
   // Execute the verification transaction
   const { events, transactionResult } = await session.verify().risc0()
           .waitForPublishedAttestation()
-          .execute({ proofData: { proof, publicSignals, vk } });
+          .execute({ proofData: {
+              vk: vk,
+              proof: proof,
+              publicSignals: publicSignals }
+          });;
 
   // Listen for the 'includedInBlock' event
   events.on(ZkVerifyEvents.IncludedInBlock, (eventData) => {
@@ -295,7 +317,11 @@ const { events, transactionResult } = await session.verify()
         .nonce(1)
         .waitForPublishedAttestation()
         .withRegisteredVk()
-        .execute({ proofData: { proof, publicSignals, vk }  }); // 1. Directly pass proof data
+        .execute({ proofData: {
+            vk: vk,
+            proof: proof,
+            publicSignals: publicSignals }
+        });; // 1. Directly pass proof data
         // .execute({ extrinsic: submittableExtrinsic }); // 2. OR pass in a pre-built SubmittableExtrinsic
 
 ```
