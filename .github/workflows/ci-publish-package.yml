@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  build-package:
+  build-and-publish:
     runs-on: ubuntu-latest
     env:
       SEED_PHRASE_1: ${{ secrets.SEED_PHRASE_1 }}
@@ -36,34 +36,8 @@ jobs:
         run: npm run build
 
       - name: Run tests
+        id: run_tests
         run: npm run test
-
-      - name: Upload build artifacts
-        id: upload_build
-        uses: actions/upload-artifact@v4
-        with:
-          name: build
-          path: ./dist
-
-  publish-package:
-    runs-on: ubuntu-latest
-    needs: build-package
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      - name: Download build artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: build
-          path: ./dist
-          pattern: '**/*'
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: '18.x'
 
       - name: Extract Package Version
         id: extract_version
@@ -74,16 +48,12 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: echo "//registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN}" > ~/.npmrc
 
-      - name: Remove prepare script (Husky)
-        run: |
-          node -e "let pkg = require('./package.json'); delete pkg.scripts.prepare; require('fs').writeFileSync('./package.json', JSON.stringify(pkg, null, 2));"
-
       - name: Publish to npm
         id: publish
         run: npm publish
 
       - name: Send Slack Notification for Publish
-        if: steps.publish.outcome == 'success'
+        if: ${{ steps.publish.outcome == 'success' }}
         uses: slackapi/slack-github-action@v1.25.0
         with:
           payload: |
