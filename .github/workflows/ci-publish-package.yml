@@ -22,6 +22,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
 
       - name: Setup Node.js
         uses: actions/setup-node@v3
@@ -47,6 +49,32 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: echo "//registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN}" > ~/.npmrc
 
+      - name: Generate Release Notes
+        id: generate_release_notes
+        run: |
+          git fetch --tags
+          
+          current_tag="v${{ env.package_version }}"
+          
+          last_tag=$(git tag --sort=-creatordate | grep -B1 "$current_tag" | head -n 1)
+          
+          if [ -z "$last_tag" ]; then
+            echo "No previous tag found. Generating release notes for all history."
+            npx conventional-changelog -p angular -o release_notes.md
+          else
+            echo "Generating release notes from $last_tag to $current_tag."
+            npx conventional-changelog -p angular -o release_notes.md --from "$last_tag" --to "$current_tag"
+          fi
+
+          if [ ! -s release_notes.md ]; then
+            echo "Error: No new conventional commits found to generate release notes."
+            exit 1
+          fi
+          
+          echo "release_notes<<EOF" >> $GITHUB_ENV
+          cat release_notes.md >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+
       - name: Publish to npm
         id: publish
         run: npm publish --ignore-scripts
@@ -62,7 +90,7 @@ jobs:
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": "*:tada:  :zk-logo-icon-square-black:  zkVerifyJS Package v${{ env.package_version }} Published  :zk-logo-icon-square-black:  :tada:*\n\n*Build URL:* <https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}|Click here to view the build>\n\n*Published Package:* <https://www.npmjs.com/package/zkverifyjs/v/${{ env.package_version }}|zkverifyjs@${{ env.package_version }}>"
+                    "text": "*:tada:  :zk-logo-icon-square-black:  zkVerifyJS Package v${{ env.package_version }} Published  :zk-logo-icon-square-black:  :tada:*\n\n*Build URL:* <https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}|Click here to view the build>\n\n*Published Package:* <https://www.npmjs.com/package/zkverifyjs/v/${{ env.package_version }}|zkverifyjs@${{ env.package_version }}>\n\n*Release Notes:*\n```${{ env.release_notes }}```"
                   }
                 }
               ]
