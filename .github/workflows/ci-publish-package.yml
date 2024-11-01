@@ -79,6 +79,13 @@ jobs:
         id: publish
         run: npm publish --ignore-scripts
 
+      - name: Create GitHub Release
+        if: ${{ steps.publish.outcome == 'success' }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "$current_tag" -F release_notes.md -t "Release $current_tag"
+
       - name: Send Slack Notification for Publish
         if: ${{ steps.publish.outcome == 'success' }}
         uses: slackapi/slack-github-action@v1.25.0
