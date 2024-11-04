@@ -33,7 +33,7 @@ jobs:
         run: npm ci
 
       - name: Run commitlint
-        run: npx commitlint --from=origin/main --to=HEAD
+        run: npx commitlint --from origin/main --to HEAD
 
       - name: Lint
         run: npm run lint
