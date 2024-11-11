@@ -72,7 +72,7 @@ act workflow_dispatch -j build-and-test -P ubuntu-latest=ghcr.io/catthehacker/ub
 ### Publish Package
 
 ```shell
-act workflow_dispatch -j publish-package -P ubuntu-latest=ghcr.io/catthehacker/ubuntu:act-latest --network host
+act workflow_dispatch -j build-and-publish -P ubuntu-latest=ghcr.io/catthehacker/ubuntu:act-latest --network host
 ```
 
 ## Run Tests
