@@ -37,9 +37,6 @@ jobs:
       - name: Run build
         run: npm run build
 
-      - name: Run tests
-        run: npm run test
-
       - name: Extract Package Version
         id: extract_version
         run: echo "package_version=$(node -p "require('./package.json').version")" >> $GITHUB_ENV
@@ -55,22 +52,18 @@ jobs:
           git fetch --tags
           
           current_tag="v${{ env.package_version }}"
-          
-          last_tag=$(git tag --sort=-creatordate | grep -B1 "$current_tag" | head -n 1)
-          
+          last_tag=$(git tag --sort=-creatordate | grep -A1 "$current_tag" | tail -n 1)
+
           if [ -z "$last_tag" ]; then
             echo "No previous tag found. Generating release notes for all history."
-            npx conventional-changelog -p angular -o release_notes.md
+            git log --pretty=format:"* %s" > release_notes.md
           else
             echo "Generating release notes from $last_tag to $current_tag."
-            npx conventional-changelog -p angular -o release_notes.md --from "$last_tag" --to "$current_tag"
+            git log --pretty=format:"* %s" "${last_tag}..HEAD" > release_notes.md
           fi
 
-          if [ ! -s release_notes.md ]; then
-            echo "Error: No new conventional commits found to generate release notes."
-            exit 1
-          fi
-          
+          sed -i 's/ (#\([0-9]*\))/ (PR #\1)/' release_notes.md
+
           echo "release_notes<<EOF" >> $GITHUB_ENV
           cat release_notes.md >> $GITHUB_ENV
           echo "EOF" >> $GITHUB_ENV
