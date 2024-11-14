@@ -39,7 +39,9 @@ jobs:
 
       - name: Extract Package Version
         id: extract_version
-        run: echo "package_version=$(node -p "require('./package.json').version")" >> $GITHUB_ENV
+        run: |
+          echo "package_version=$(node -p "require('./package.json').version")" >> $GITHUB_ENV
+          echo "current_tag=v${{ env.package_version }}" >> $GITHUB_ENV
 
       - name: Authenticate to npm registry
         env:
@@ -51,14 +53,13 @@ jobs:
         run: |
           git fetch --tags
           
-          current_tag="v${{ env.package_version }}"
-          last_tag=$(git tag --sort=-creatordate | grep -A1 "$current_tag" | tail -n 1)
+          last_tag=$(git tag --sort=-creatordate | grep -A1 "${{ env.current_tag }}" | tail -n 1)
 
           if [ -z "$last_tag" ]; then
             echo "No previous tag found. Generating release notes for all history."
             git log --pretty=format:"* %s" > release_notes.md
           else
-            echo "Generating release notes from $last_tag to $current_tag."
+            echo "Generating release notes from $last_tag to ${{ env.current_tag }}."
             git log --pretty=format:"* %s" "${last_tag}..HEAD" > release_notes.md
           fi
 
@@ -76,7 +77,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release create "$current_tag" -F release_notes.md -t "Release $current_tag"
+          gh release create "${{ env.current_tag }}" -F release_notes.md -t "Release ${{ env.current_tag }}"
 
       - name: Send Slack Notification for Publish
         if: ${{ steps.publish.outcome == 'success' }}
