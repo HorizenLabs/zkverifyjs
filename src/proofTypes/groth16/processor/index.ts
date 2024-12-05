@@ -1,4 +1,5 @@
 import {
+  Groth16Options,
   Groth16VerificationKey,
   Groth16VerificationKeyInput,
   Proof,
@@ -14,8 +15,8 @@ class Groth16Processor implements ProofProcessor {
    * @param {ProofInput} proof - The raw proof input data.
    * @returns {Proof} - The formatted proof.
    */
-  formatProof(proof: ProofInput): Proof {
-    return formatter.formatProof(proof);
+  formatProof(proof: ProofInput, options: Groth16Options): Proof {
+    return formatter.formatProof(proof, options);
   }
 
   /**
@@ -24,8 +25,11 @@ class Groth16Processor implements ProofProcessor {
    * @param {Groth16VerificationKeyInput} vk - The raw verification key input.
    * @returns {Groth16VerificationKey} - The formatted verification key.
    */
-  formatVk(vk: Groth16VerificationKeyInput): Groth16VerificationKey {
-    return formatter.formatVk(vk);
+  formatVk(
+    vk: Groth16VerificationKeyInput,
+    options: Groth16Options,
+  ): Groth16VerificationKey {
+    return formatter.formatVk(vk, options);
   }
 
   /**
@@ -34,8 +38,8 @@ class Groth16Processor implements ProofProcessor {
    * @param {string[]} pubs - The array of public inputs.
    * @returns {string[]} - The formatted public inputs.
    */
-  formatPubs(pubs: string[]): string[] {
-    return formatter.formatPubs(pubs);
+  formatPubs(pubs: string[], options: Groth16Options): string[] {
+    return formatter.formatPubs(pubs, options);
   }
 }
 

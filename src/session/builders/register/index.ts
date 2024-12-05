@@ -1,4 +1,4 @@
-import { VerifyOptions } from '../../types';
+import { ProofOptions, VerifyOptions } from '../../types';
 import { ProofType } from '../../../config';
 import { EventEmitter } from 'events';
 import { VKRegistrationTransactionInfo } from '../../../types';
@@ -19,9 +19,9 @@ export class RegisterKeyBuilder {
       events: EventEmitter;
       transactionResult: Promise<VKRegistrationTransactionInfo>;
     }>,
-    proofType: ProofType,
+    proofOptions: ProofOptions,
   ) {
-    this.options = { proofType };
+    this.options = { proofOptions };
   }
 
   nonce(nonce: number): this {

@@ -1,3 +1,5 @@
+import { CurveType, Library } from '../../config';
+
 export interface Groth16VerificationKeyInput {
   curve: string;
   vk_alpha_1: string[];
@@ -17,7 +19,6 @@ export interface Groth16VerificationKey {
 }
 
 export interface ProofInput {
-  curve: string;
   pi_a: string[];
   pi_b: string[][];
   pi_c: string[];
@@ -32,4 +33,9 @@ export interface ProofInner {
 export interface Proof {
   curve?: string;
   proof: ProofInner;
+}
+
+export interface Groth16Options {
+  curve: CurveType;
+  library: Library;
 }

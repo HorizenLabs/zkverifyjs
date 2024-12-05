@@ -4,7 +4,7 @@ import {
     TransactionInfo,
     TransactionStatus,
     VerifyTransactionInfo,
-    VKRegistrationTransactionInfo, Groth16CurveType
+    VKRegistrationTransactionInfo, CurveType, Library
 } from '../../src';
 import {
     handleCommonEvents,
@@ -19,9 +19,15 @@ export interface ProofData {
     publicSignals: any;
     vk?: string;
 }
+//TODO uncomment these exports
+// export const proofTypes = Object.keys(ProofType).map((key) => ProofType[key as keyof typeof ProofType]);
+// export const curveTypes = Object.keys(CurveType).map((key) => CurveType[key as keyof typeof CurveType]);
+// export const libraries = Object.keys(Library).map((key) => Library[key as keyof typeof Library]);
 
-export const proofTypes = Object.keys(ProofType).map((key) => ProofType[key as keyof typeof ProofType]);
-export const curveTypes = Object.keys(Groth16CurveType).map((key) => Groth16CurveType[key as keyof typeof Groth16CurveType]);
+//TODO comment these exports (Used for testing)
+export const proofTypes = [ProofType.groth16];
+export const curveTypes = [CurveType.bn128];
+export const libraries = [Library.snarkjs];
 
 // ADD_NEW_PROOF_TYPE
 // One Seed Phrase per proof type / curve combo.  NOTE:  SEED_PHRASE_8 used by unit tests and will need updating when new verifier added.
@@ -85,19 +91,22 @@ export const performVerifyTransaction = async (
     publicSignals: any,
     vk: string,
     withAttestation: boolean,
-    validatePoe: boolean = false
+    validatePoe: boolean = false,
+    library?: Library,
+    curve?: CurveType
 ): Promise<{ eventResults: EventResults; transactionInfo: VerifyTransactionInfo }> => {
     const session = await zkVerifySession.start().Testnet().withAccount(seedPhrase);
 
-    console.log(`${proofType} Executing transaction...`);
-    const verifier = session.verify()[proofType]();
+    console.log(`${proofType} Executing transaction with library: ${library}, curve: ${curve}...`);
+    const verifier = session.verify()[proofType](library, curve);
     const verify = withAttestation ? verifier.waitForPublishedAttestation() : verifier;
 
-    const { events, transactionResult } = await verify.execute({ proofData: {
-        proof: proof,
-        publicSignals: publicSignals,
-        vk: vk
-        }
+    const { events, transactionResult } = await verify.execute({
+        proofData: {
+            proof: proof,
+            publicSignals: publicSignals,
+            vk: vk,
+        },
     });
 
     const eventResults = withAttestation
@@ -118,7 +127,6 @@ export const performVerifyTransaction = async (
 
     return { eventResults, transactionInfo };
 };
-
 
 export const performVKRegistrationAndVerification = async (
     seedPhrase: string,

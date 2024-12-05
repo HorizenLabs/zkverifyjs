@@ -1,9 +1,11 @@
 import {
+  Groth16Options,
   Groth16VerificationKey,
   Groth16VerificationKeyInput,
+  Proof,
   ProofInput,
 } from '../types';
-import { Proof } from '../types';
+import { CurveType } from '../../../config';
 
 /**
  * Recursively converts numeric strings and hexadecimal strings in an object, array, or string
@@ -43,9 +45,12 @@ const unstringifyBigInts = (o: unknown): unknown => {
  * @param {ProofInput} proof - Raw proof data.
  * @returns {Proof<ProofInner>} - Formatted proof data.
  */
-export const formatProof = (proof: ProofInput): Proof => {
+export const formatProof = (
+  proof: ProofInput,
+  options: Groth16Options,
+): Proof => {
   const proofData = unstringifyBigInts(proof) as ProofInput;
-  const curve = extractCurve(proofData);
+  const curve = extractCurve(options.curve);
   const endianess = getEndianess(curve);
 
   return {
@@ -66,9 +71,10 @@ export const formatProof = (proof: ProofInput): Proof => {
  */
 export const formatVk = (
   vk: Groth16VerificationKeyInput,
+  options: Groth16Options,
 ): Groth16VerificationKey => {
   const vkData = unstringifyBigInts(vk) as Groth16VerificationKeyInput;
-  const curve = extractCurve(vkData);
+  const curve = extractCurve(options.curve);
   const endianess = getEndianess(curve);
 
   return {
@@ -102,10 +108,9 @@ export const formatPubs = (pubs: string[]): string[] => {
  * @param {ProofInput | Groth16VerificationKeyInput} input - Input containing curve field.
  * @returns {string} - Normalized curve type ('Bn254' or 'bls12381').
  */
-const extractCurve = (input: { curve: string }): string => {
-  const curve = input.curve.toLowerCase();
-  if (curve === 'bn128' || curve === 'bn254') return 'bn254';
-  if (curve === 'bls12381' || curve === 'bls12_381') return 'Bls12_381';
+const extractCurve = (curve: CurveType): string => {
+  if (curve === CurveType.bn128 || curve === CurveType.bn254) return 'bn254';
+  if (curve === CurveType.bls12381) return 'Bls12_381';
   throw new Error(`Unsupported curve: ${curve}`);
 };
 

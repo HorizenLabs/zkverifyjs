@@ -1,5 +1,5 @@
 import '@polkadot/api-augment'; // Required for api.query.system.account responses
-import { zkVerifySessionOptions, VerifyOptions } from './types';
+import { zkVerifySessionOptions, VerifyOptions, ProofOptions } from './types';
 import { verify } from '../api/verify';
 import { accountInfo } from '../api/accountInfo';
 import { startSession, startWalletSession } from '../api/start';
@@ -33,7 +33,7 @@ import {
 import { ApiPromise, WsProvider } from '@polkadot/api';
 import { KeyringPair } from '@polkadot/keyring/types';
 import { registerVk } from '../api/register';
-import { ProofType, SupportedNetwork } from '../config';
+import { CurveType, Library, ProofType, SupportedNetwork } from '../config';
 import { ProofMethodMap, VerificationBuilder } from './builders/verify';
 import { RegisterKeyBuilder, RegisterKeyMethodMap } from './builders/register';
 import { NetworkBuilder, SupportedNetworkMap } from './builders/network';
@@ -42,6 +42,7 @@ import { SubmittableExtrinsic } from '@polkadot/api/types';
 import { format } from '../api/format';
 import { FormattedProofData } from '../api/format/types';
 import { ExtrinsicCostEstimate } from '../api/estimate/types';
+import { validateProofTypeOptions } from './validator';
 
 /**
  * zkVerifySession class provides an interface to zkVerify, direct access to the Polkadot.js API.
@@ -114,22 +115,30 @@ export class zkVerifySession {
     return builderMethods as SupportedNetworkMap;
   }
 
-  /**
-   * Creates a builder map for different proof types that can be used for verification.
-   * Each proof type returns a `VerificationBuilder` that allows you to chain methods for setting options
-   * and finally executing the verification process.
-   *
-   * @returns {ProofMethodMap} A map of proof types to their corresponding builder methods.
-   */
   verify(): ProofMethodMap {
     const builderMethods: Partial<
-      Record<keyof typeof ProofType, () => VerificationBuilder>
+      Record<
+        keyof typeof ProofType,
+        (library?: Library, curve?: CurveType) => VerificationBuilder
+      >
     > = {};
 
     for (const proofType in ProofType) {
       if (Object.prototype.hasOwnProperty.call(ProofType, proofType)) {
-        builderMethods[proofType as keyof typeof ProofType] = () =>
-          this.createVerifyBuilder(proofType as ProofType);
+        builderMethods[proofType as keyof typeof ProofType] = (
+          library?: Library,
+          curve?: CurveType,
+        ) => {
+          const proofOptions: ProofOptions = {
+            proofType: proofType as ProofType,
+            library,
+            curve,
+          };
+
+          validateProofTypeOptions(proofOptions);
+
+          return this.createVerifyBuilder(proofOptions);
+        };
       }
     }
 
@@ -145,13 +154,26 @@ export class zkVerifySession {
    */
   registerVerificationKey(): RegisterKeyMethodMap {
     const builderMethods: Partial<
-      Record<keyof typeof ProofType, () => RegisterKeyBuilder>
+      Record<
+        keyof typeof ProofType,
+        (library?: Library, curve?: CurveType) => RegisterKeyBuilder
+      >
     > = {};
 
     for (const proofType in ProofType) {
       if (Object.prototype.hasOwnProperty.call(ProofType, proofType)) {
-        builderMethods[proofType as keyof typeof ProofType] = () =>
-          this.createRegisterKeyBuilder(proofType as ProofType);
+        builderMethods[proofType as keyof typeof ProofType] = (
+          library?: Library,
+          curve?: CurveType,
+        ) => {
+          const proofOptions: ProofOptions = {
+            proofType: proofType as ProofType,
+            library: library,
+            curve: curve,
+          };
+
+          return this.createRegisterKeyBuilder(proofOptions);
+        };
       }
     }
 
@@ -163,11 +185,13 @@ export class zkVerifySession {
    * The builder allows for chaining options and finally executing the verification process.
    *
    * @param {ProofType} proofType - The type of proof to be used.
+   * @param {Library} [library] - The optional library to be used, if required by the proof type.
+   * @param {CurveType} [curve] - The optional curve to be used, if required by the proof type.
    * @returns {VerificationBuilder} A new instance of `VerificationBuilder`.
    * @private
    */
-  private createVerifyBuilder(proofType: ProofType): VerificationBuilder {
-    return new VerificationBuilder(this.executeVerify.bind(this), proofType);
+  private createVerifyBuilder(proofOptions: ProofOptions): VerificationBuilder {
+    return new VerificationBuilder(this.executeVerify.bind(this), proofOptions);
   }
 
   /**
@@ -178,10 +202,12 @@ export class zkVerifySession {
    * @returns {RegisterKeyBuilder} A new instance of `RegisterKeyBuilder`.
    * @private
    */
-  private createRegisterKeyBuilder(proofType: ProofType): RegisterKeyBuilder {
+  private createRegisterKeyBuilder(
+    proofOptions: ProofOptions,
+  ): RegisterKeyBuilder {
     return new RegisterKeyBuilder(
       this.executeRegisterVerificationKey.bind(this),
-      proofType,
+      proofOptions,
     );
   }
 
@@ -365,13 +391,13 @@ export class zkVerifySession {
    * @throws {Error} - Throws an error if formatting fails.
    */
   async format(
-    proofType: ProofType,
+    proofOptions: ProofOptions,
     proof: unknown,
     publicSignals: unknown,
     vk: unknown,
     registeredVk?: boolean,
   ): Promise<FormattedProofData> {
-    return format(proofType, proof, publicSignals, vk, registeredVk);
+    return format(proofOptions, proof, publicSignals, vk, registeredVk);
   }
 
   /**

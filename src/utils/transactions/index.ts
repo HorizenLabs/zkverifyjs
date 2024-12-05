@@ -108,7 +108,7 @@ export const handleTransaction = async (
   transactionType: TransactionType,
 ): Promise<VerifyTransactionInfo | VKRegistrationTransactionInfo> => {
   const {
-    proofType,
+    proofOptions: { proofType },
     waitForNewAttestationEvent: shouldWaitForAttestation = false,
     nonce,
   } = options;

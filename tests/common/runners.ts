@@ -1,4 +1,4 @@
-import { Groth16CurveType, ProofType } from "../../src";
+import {CurveType, Library, ProofType} from "../../src";
 import {
     curveTypes,
     getSeedPhrase,
@@ -12,16 +12,35 @@ export const runVerifyTest = async (
     withAttestation: boolean = false,
     checkExistence: boolean = false,
     seedPhrase: string,
-    curve?: string
+    curve?: CurveType,
+    library?: Library
 ) => {
-    if (proofType === ProofType.groth16 && curve) {
-        console.log(`Running ${proofType} test with curve: ${curve}`);
+    if (proofType === ProofType.groth16 && curve && library) {
+        console.log(`Running ${proofType} test with library: ${library}, curve: ${curve}`);
         const { proof, vk } = loadProofAndVK(proofType, curve);
-        await performVerifyTransaction(seedPhrase, proofType, proof.proof, proof.publicSignals, vk, withAttestation, checkExistence);
+        await performVerifyTransaction(
+            seedPhrase,
+            proofType,
+            proof.proof,
+            proof.publicSignals,
+            vk,
+            withAttestation,
+            checkExistence,
+            library,
+            curve
+        );
     } else {
         console.log(`Running ${proofType} test`);
         const { proof, vk } = loadProofAndVK(proofType);
-        await performVerifyTransaction(seedPhrase, proofType, proof.proof, proof.publicSignals, vk, withAttestation, checkExistence);
+        await performVerifyTransaction(
+            seedPhrase,
+            proofType,
+            proof.proof,
+            proof.publicSignals,
+            vk,
+            withAttestation,
+            checkExistence
+        );
     }
 };
 
@@ -41,7 +60,8 @@ export const runVKRegistrationTest = async (proofType: ProofType, seedPhrase: st
 
 export const runAllProofTests = async (
     proofTypes: ProofType[],
-    curveTypes: Groth16CurveType[],
+    curveTypes: CurveType[],
+    libraries: Library[],
     withAttestation: boolean
 ) => {
     const testPromises: Promise<void>[] = [];
@@ -49,10 +69,12 @@ export const runAllProofTests = async (
 
     proofTypes.forEach((proofType) => {
         if (proofType === ProofType.groth16) {
-            curveTypes.forEach((curve) => {
-                console.log(`${proofType} ${curve} Seed Index: ${seedIndex}`);
-                const seedPhrase = getSeedPhrase(seedIndex++);
-                testPromises.push(runVerifyTest(proofType, withAttestation, false, seedPhrase, curve));
+            libraries.forEach((library) => {
+                curveTypes.forEach((curve) => {
+                    console.log(`${proofType} ${library} ${curve} Seed Index: ${seedIndex}`);
+                    const seedPhrase = getSeedPhrase(seedIndex++);
+                    testPromises.push(runVerifyTest(proofType, withAttestation, false, seedPhrase, curve, library));
+                });
             });
         } else {
             console.log(`${proofType} Seed Index: ${seedIndex}`);
@@ -61,10 +83,10 @@ export const runAllProofTests = async (
         }
     });
 
-    await Promise.allSettled(testPromises);
+    await Promise.all(testPromises);
 };
 
-export const runAllVKRegistrationTests = async (proofTypes: ProofType[], curveTypes: Groth16CurveType[]) => {
+export const runAllVKRegistrationTests = async (proofTypes: ProofType[], curveTypes: CurveType[]) => {
     const testPromises: Promise<void>[] = [];
     let seedIndex = 0;
 
@@ -80,5 +102,5 @@ export const runAllVKRegistrationTests = async (proofTypes: ProofType[], curveTy
         }
     });
 
-    await Promise.allSettled(testPromises);
+    await Promise.all(testPromises);
 };

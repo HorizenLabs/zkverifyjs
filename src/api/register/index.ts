@@ -15,7 +15,9 @@ export async function registerVk(
   events: EventEmitter;
   transactionResult: Promise<VKRegistrationTransactionInfo>;
 }> {
-  const { proofType } = options;
+  const {
+    proofOptions: { proofType },
+  } = options;
   const emitter = new EventEmitter();
 
   const processor = await getProofProcessor(proofType);

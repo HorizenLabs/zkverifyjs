@@ -1,11 +1,14 @@
-import { VerifyOptions } from '../../types';
-import { ProofType } from '../../../config';
+import { ProofOptions, VerifyOptions } from '../../types';
+import { CurveType, Library, ProofType } from '../../../config';
 import { EventEmitter } from 'events';
 import { VerifyTransactionInfo } from '../../../types';
 import { VerifyInput } from '../../../api/verify/types';
 
 export type ProofMethodMap = {
-  [K in keyof typeof ProofType]: () => VerificationBuilder;
+  [K in keyof typeof ProofType]: (
+    library?: Library,
+    curve?: CurveType,
+  ) => VerificationBuilder;
 };
 
 export class VerificationBuilder {
@@ -22,9 +25,9 @@ export class VerificationBuilder {
       events: EventEmitter;
       transactionResult: Promise<VerifyTransactionInfo>;
     }>,
-    proofType: ProofType,
+    proofOptions: ProofOptions,
   ) {
-    this.options = { proofType };
+    this.options = { proofOptions };
   }
 
   nonce(nonce: number): this {
