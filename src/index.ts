@@ -1,10 +1,11 @@
 export { zkVerifySession } from './session';
 export {
+  ProofOptions,
   VerifyOptions,
   WalletOptions,
   zkVerifySessionOptions,
 } from './session/types';
-export { ProofType, SupportedNetwork, Groth16CurveType } from './config';
+export { ProofType, SupportedNetwork, Library, CurveType } from './config';
 export { ZkVerifyEvents, TransactionStatus, TransactionType } from './enums';
 export {
   ProofData,

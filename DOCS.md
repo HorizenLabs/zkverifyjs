@@ -7,6 +7,7 @@ Currently the following proof verifiers are supported:
 
 * FFlonk
 * Groth16 (BN128, BN254, BLS12-381 elliptic curves)
+  * Note - Must include `Library` and `CurveType` e.g. `.groth16(Library.gnark, CurveType.bn128)`
 * Risc0
 * Ultraplonk
 * Space and Time
@@ -110,12 +111,16 @@ const { events, transactionResult } = await session
 2. Frontend after establishing a session with `withWallet()`
 
 ```typescript
-const { events, transactionResult } = await session.verify()
-        .groth16()
-        .execute({ proofData: {
+import {CurveType} from "./index";
+
+const {events, transactionResult} = await session.verify()
+        .groth16(Library.snarkjs, CurveType.bn128)
+        .execute({
+          proofData: {
             vk: vk,
             proof: proof,
-            publicSignals: publicSignals }
+            publicSignals: publicSignals
+          }
         });
 
 events.on('ErrorEvent', (eventData) => {
@@ -189,7 +194,7 @@ To await the final result of the transaction, use the transactionResult promise.
 
 ```typescript
 const { events, transactionResult } = await session.verify()
-  .groth16()
+  .groth16(Library.gnark, CurveType.bls12381)
   .execute({ proofData: {
       vk: vk,
       proof: proof,

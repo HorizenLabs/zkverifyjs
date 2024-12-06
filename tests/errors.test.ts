@@ -1,8 +1,7 @@
 import fs from 'fs';
 import path from 'path';
-import { zkVerifySession } from '../src';
-import { ZkVerifyEvents } from "../src";
-import { getSeedPhrase } from "./common/utils";
+import {CurveType, Library, ZkVerifyEvents, zkVerifySession} from '../src';
+import {getSeedPhrase} from "./common/utils";
 
 jest.setTimeout(180000);
 
@@ -32,12 +31,12 @@ describe('verify with bad data - Groth16', () => {
         const { publicSignals, vk } = groth16Data;
 
         // ADD_NEW_PROOF_TYPE
-        // Uses SEED_PHRASE_8 but increment as needed if new proof types have been added, this should run without affecting the other tests.
-        session = await zkVerifySession.start().Testnet().withAccount(getSeedPhrase(7));
+        // Uses SEED_PHRASE_11 but increment as needed if new proof types have been added, this should run without affecting the other tests.
+        session = await zkVerifySession.start().Testnet().withAccount(getSeedPhrase(10));
         let errorEventEmitted = false;
 
         const { events, transactionResult } = await session.verify()
-            .groth16().execute({
+            .groth16(Library.snarkjs, CurveType.bn128).execute({
                 proofData: {
                     proof: badProof,
                     publicSignals: publicSignals,
@@ -64,12 +63,12 @@ describe('verify with bad data - Groth16', () => {
 
         const { proof, publicSignals, vk } = groth16Data;
         // ADD NEW_PROOF_TYPE
-        // Uses SEED_PHRASE_8 - increment after adding new proof types
-        session = await zkVerifySession.start().Testnet().withAccount(getSeedPhrase(7));
+        // Uses SEED_PHRASE_11 - increment after adding new proof types
+        session = await zkVerifySession.start().Testnet().withAccount(getSeedPhrase(10));
         let errorEventEmitted = false;
 
         const { events, transactionResult } = await session.verify()
-            .groth16().execute({
+            .groth16(Library.snarkjs, CurveType.bn254).execute({
                 proofData: {
                     proof: proof,
                     publicSignals: publicSignals,

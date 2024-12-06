@@ -1,4 +1,4 @@
-import { ProofType, SupportedNetwork } from '../config';
+import { CurveType, Library, ProofType, SupportedNetwork } from '../config';
 
 export interface zkVerifySessionOptions {
   host: SupportedNetwork;
@@ -13,8 +13,14 @@ export interface WalletOptions {
 }
 
 export interface VerifyOptions {
-  proofType: ProofType;
-  registeredVk?: boolean;
+  proofOptions: ProofOptions;
   nonce?: number;
   waitForNewAttestationEvent?: boolean;
+  registeredVk?: boolean;
+}
+
+export interface ProofOptions {
+  proofType: ProofType;
+  library?: Library;
+  curve?: CurveType;
 }

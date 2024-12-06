@@ -17,6 +17,9 @@ jobs:
       SEED_PHRASE_6: ${{ secrets.SEED_PHRASE_6 }}
       SEED_PHRASE_7: ${{ secrets.SEED_PHRASE_7 }}
       SEED_PHRASE_8: ${{ secrets.SEED_PHRASE_8 }}
+      SEED_PHRASE_9: ${{ secrets.SEED_PHRASE_9 }}
+      SEED_PHRASE_10: ${{ secrets.SEED_PHRASE_10 }}
+      SEED_PHRASE_11: ${{ secrets.SEED_PHRASE_11 }}
 
     steps:
       - name: Checkout code

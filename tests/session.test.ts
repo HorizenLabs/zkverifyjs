@@ -1,7 +1,7 @@
-import { zkVerifySession } from '../src';
-import { EventEmitter } from 'events';
-import { ProofMethodMap } from "../src/session/builders/verify";
-import { getSeedPhrase } from "./common/utils";
+import {CurveType, Library, zkVerifySession} from '../src';
+import {EventEmitter} from 'events';
+import {ProofMethodMap} from "../src/session/builders/verify";
+import {getSeedPhrase} from "./common/utils";
 
 describe('zkVerifySession class', () => {
     let session: zkVerifySession;
@@ -90,7 +90,7 @@ describe('zkVerifySession class', () => {
         session = await zkVerifySession.start().Testnet().readOnly();
         expect(session.readOnly).toBe(true);
         await expect(
-            session.verify().groth16().execute({ proofData: {
+            session.verify().groth16(Library.snarkjs, CurveType.bn128).execute({ proofData: {
                     proof: 'proofData',
                     publicSignals: 'publicSignals',
                     vk: 'vk'
@@ -166,7 +166,7 @@ describe('zkVerifySession class', () => {
                 vk: 'vk'
                 }
             }),
-            session.verify().groth16().execute({ proofData: {
+            session.verify().groth16(Library.snarkjs, CurveType.bls12381).execute({ proofData: {
                     proof: 'proofData',
                     publicSignals: 'publicSignals',
                     vk: 'vk'

@@ -18,10 +18,6 @@ export const verify = async (
   input: VerifyInput,
 ): Promise<VerifyTransactionInfo> => {
   try {
-    if (!options.proofType) {
-      throw new Error('Proof type is required.');
-    }
-
     const { api } = connection;
     let transaction: SubmittableExtrinsic<'promise'>;
 
@@ -29,7 +25,7 @@ export const verify = async (
       const { proof, publicSignals, vk } = input.proofData as ProofData;
 
       const formattedProofData: FormattedProofData = format(
-        options.proofType,
+        options.proofOptions,
         proof,
         publicSignals,
         vk,
@@ -38,7 +34,7 @@ export const verify = async (
 
       transaction = createSubmitProofExtrinsic(
         api,
-        options.proofType,
+        options.proofOptions.proofType,
         formattedProofData,
       );
     } else if ('extrinsic' in input && input.extrinsic) {
