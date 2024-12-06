@@ -168,8 +168,8 @@ export class zkVerifySession {
         ) => {
           const proofOptions: ProofOptions = {
             proofType: proofType as ProofType,
-            library: library,
-            curve: curve,
+            library,
+            curve,
           };
 
           return this.createRegisterKeyBuilder(proofOptions);

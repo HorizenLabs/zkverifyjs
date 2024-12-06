@@ -1,5 +1,5 @@
-import { ExtrinsicCostEstimate, ProofType, zkVerifySession } from '../src';
-import { getSeedPhrase } from "./common/utils";
+import {CurveType, ExtrinsicCostEstimate, Library, ProofType, zkVerifySession} from '../src';
+import {getSeedPhrase} from "./common/utils";
 import path from "path";
 import fs from "fs";
 
@@ -19,11 +19,11 @@ describe('zkVerifySession - estimateCost', () => {
     });
 
     async function getTestExtrinsic() {
-        const dataPath = path.join(__dirname, 'common/data', 'groth16_bn128.json');
+        const dataPath = path.join(__dirname, 'common/data', 'groth16_snarkjs_bn128.json');
         const groth16Data = JSON.parse(fs.readFileSync(dataPath, 'utf8'));
 
         const formattedProofData = await session.format(
-            ProofType.groth16,
+            { proofType: ProofType.groth16, library: Library.snarkjs, curve: CurveType.bn128 },
             groth16Data.proof,
             groth16Data.publicSignals,
             groth16Data.vk

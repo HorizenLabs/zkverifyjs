@@ -8,11 +8,11 @@ describe('zkVerify proof user journey tests', () => {
         await runAllProofTests(proofTypes, curveTypes, libraries, false);
     });
 
-    // test('should verify all proof types, wait for Attestation event, and then check proof of existence', async () => {
-    //     await runAllProofTests(proofTypes, curveTypes, true);
-    // });
-    //
-    // test('should register VK and verify the proof using the VK hash for all proof types', async () => {
-    //     await runAllVKRegistrationTests(proofTypes, curveTypes);
-    // });
+    test('should verify all proof types, wait for Attestation event, and then check proof of existence', async () => {
+        await runAllProofTests(proofTypes, curveTypes, libraries,true);
+    });
+
+    test('should register VK and verify the proof using the VK hash for all proof types', async () => {
+        await runAllVKRegistrationTests(proofTypes, curveTypes, libraries);
+    });
 });

@@ -15,12 +15,15 @@ class Groth16Processor implements ProofProcessor {
    * @throws {Error} If the library is unsupported or the module cannot be loaded.
    * @returns {Object} The formatter module corresponding to the specified library.
    */
-  private getFormatter(options: ProofOptions): any {
+  private getFormatter(options: ProofOptions): unknown {
     try {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
       const formatter = require(`../formatter/${options.library}`);
       return formatter;
     } catch (error) {
-      throw new Error(`Unsupported or missing library: ${options.library}`);
+      throw new Error(
+        `Unsupported or missing library: ${options.library} : ${error}`,
+      );
     }
   }
 
@@ -43,7 +46,10 @@ class Groth16Processor implements ProofProcessor {
    * @param {ProofOptions} options - The proof options containing the library and other details.
    * @returns {Groth16VerificationKey} The formatted verification key.
    */
-  formatVk(vk: Groth16VerificationKeyInput, options: ProofOptions): Groth16VerificationKey {
+  formatVk(
+    vk: Groth16VerificationKeyInput,
+    options: ProofOptions,
+  ): Groth16VerificationKey {
     const formatter = this.getFormatter(options);
     return formatter.formatVk(vk, options);
   }

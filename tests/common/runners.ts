@@ -1,6 +1,5 @@
 import { CurveType, Library, ProofOptions, ProofType } from "../../src";
 import {
-    curveTypes,
     getSeedPhrase,
     loadProofAndVK,
     performVerifyTransaction,
@@ -27,7 +26,7 @@ export const runVerifyTest = async (
 export const runVKRegistrationTest = async (proofOptions: ProofOptions, seedPhrase: string) => {
     logTestDetails(proofOptions, "VK registration");
     const { proof, vk } = loadProofAndVK(proofOptions);
-    await performVKRegistrationAndVerification(seedPhrase, proofOptions.proofType, proof.proof, proof.publicSignals, vk);
+    await performVKRegistrationAndVerification(seedPhrase, proofOptions, proof.proof, proof.publicSignals, vk);
 };
 
 const generateTestPromises = (

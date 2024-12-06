@@ -19,18 +19,13 @@ export interface ProofData {
     publicSignals: any;
     vk?: string;
 }
-//TODO uncomment these exports
-// export const proofTypes = Object.keys(ProofType).map((key) => ProofType[key as keyof typeof ProofType]);
-// export const curveTypes = Object.keys(CurveType).map((key) => CurveType[key as keyof typeof CurveType]);
-// export const libraries = Object.keys(Library).map((key) => Library[key as keyof typeof Library]);
 
-//TODO comment these exports (Used for testing)
-export const proofTypes = [ProofType.groth16];
-export const curveTypes = [CurveType.bls12381];
-export const libraries = [Library.gnark];
+export const proofTypes = Object.keys(ProofType).map((key) => ProofType[key as keyof typeof ProofType]);
+export const curveTypes = Object.keys(CurveType).map((key) => CurveType[key as keyof typeof CurveType]);
+export const libraries = Object.keys(Library).map((key) => Library[key as keyof typeof Library]);
 
 // ADD_NEW_PROOF_TYPE
-// One Seed Phrase per proof type / curve combo.  NOTE:  SEED_PHRASE_8 used by unit tests and will need updating when new verifier added.
+// One Seed Phrase per proof type / curve combo.  NOTE:  SEED_PHRASE_11 used by unit tests and will need updating when new verifier added.
 const seedPhrases = [
     process.env.SEED_PHRASE_1,
     process.env.SEED_PHRASE_2,
@@ -39,6 +34,9 @@ const seedPhrases = [
     process.env.SEED_PHRASE_5,
     process.env.SEED_PHRASE_6,
     process.env.SEED_PHRASE_7,
+    process.env.SEED_PHRASE_8,
+    process.env.SEED_PHRASE_9,
+    process.env.SEED_PHRASE_10,
 ];
 
 export const getSeedPhrase = (index: number): string => {
@@ -134,40 +132,59 @@ export const performVerifyTransaction = async (
 
 export const performVKRegistrationAndVerification = async (
     seedPhrase: string,
-    proofType: ProofType,
+    proofOptions: ProofOptions,
     proof: any,
     publicSignals: any,
     vk: string
 ): Promise<void> => {
     const session = await zkVerifySession.start().Testnet().withAccount(seedPhrase);
 
-    console.log(`${proofType} Executing VK registration...`);
-    const { events: registerEvents, transactionResult: registerTransactionResult } = await session.registerVerificationKey()[proofType]().execute(vk);
+    console.log(
+        `${proofOptions.proofType} Executing VK registration with library: ${proofOptions.library}, curve: ${proofOptions.curve}...`
+    );
 
-    const registerResults = handleCommonEvents(registerEvents, proofType, 'vkRegistration');
+    const { events: registerEvents, transactionResult: registerTransactionResult } =
+        await session
+            .registerVerificationKey()[proofOptions.proofType](
+            proofOptions.library,
+            proofOptions.curve
+        )
+            .execute(vk);
+
+    const registerResults = handleCommonEvents(
+        registerEvents,
+        proofOptions.proofType,
+        'vkRegistration'
+    );
 
     const vkTransactionInfo: VKRegistrationTransactionInfo = await registerTransactionResult;
-    validateVKRegistrationTransactionInfo(vkTransactionInfo, proofType);
+    validateVKRegistrationTransactionInfo(vkTransactionInfo, proofOptions.proofType);
     validateEventResults(registerResults, false);
 
-    console.log(`${proofType} Executing verification using registered VK...`);
-    const { events: verifyEvents, transactionResult: verifyTransactionResult } = await session.verify()[proofType]()
-        .withRegisteredVk()
-        .execute({ proofData: {
-            proof: proof,
-            publicSignals: publicSignals,
-            vk: vkTransactionInfo.statementHash!
-            }
-        });
-    const verifyResults = handleCommonEvents(verifyEvents, proofType, 'verify');
+    console.log(
+        `${proofOptions.proofType} Executing verification using registered VK with library: ${proofOptions.library}, curve: ${proofOptions.curve}...`
+    );
+
+    const { events: verifyEvents, transactionResult: verifyTransactionResult } =
+        await session
+            .verify()[proofOptions.proofType](proofOptions.library, proofOptions.curve)
+            .withRegisteredVk()
+            .execute({
+                proofData: {
+                    proof: proof,
+                    publicSignals: publicSignals,
+                    vk: vkTransactionInfo.statementHash!,
+                },
+            });
+
+    const verifyResults = handleCommonEvents(verifyEvents, proofOptions.proofType, 'verify');
 
     const verifyTransactionInfo: VerifyTransactionInfo = await verifyTransactionResult;
-    validateVerifyTransactionInfo(verifyTransactionInfo, proofType, false);
+    validateVerifyTransactionInfo(verifyTransactionInfo, proofOptions.proofType, false);
     validateEventResults(verifyResults, false);
 
     await session.close();
 };
-
 
 export const validateTransactionInfo = (
     transactionInfo: TransactionInfo,

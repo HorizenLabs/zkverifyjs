@@ -15,15 +15,13 @@ export async function registerVk(
   events: EventEmitter;
   transactionResult: Promise<VKRegistrationTransactionInfo>;
 }> {
-  const {
-    proofOptions: { proofType },
-  } = options;
+  const { proofOptions } = options;
   const emitter = new EventEmitter();
 
-  const processor = await getProofProcessor(proofType);
+  const processor = await getProofProcessor(proofOptions.proofType);
 
   if (!processor) {
-    throw new Error(`Unsupported proof type: ${proofType}`);
+    throw new Error(`Unsupported proof type: ${proofOptions.proofType}`);
   }
   if (verificationKey == null || verificationKey === '') {
     throw new Error(
@@ -31,10 +29,10 @@ export async function registerVk(
     );
   }
 
-  const formattedVk = processor.formatVk(verificationKey);
-  const pallet = getProofPallet(proofType);
+  const formattedVk = processor.formatVk(verificationKey, proofOptions);
+  const pallet = getProofPallet(proofOptions.proofType);
   if (!pallet) {
-    throw new Error(`Unsupported proof type: ${proofType}`);
+    throw new Error(`Unsupported proof type: ${proofOptions.proofType}`);
   }
 
   const registerExtrinsic: SubmittableExtrinsic<'promise'> =

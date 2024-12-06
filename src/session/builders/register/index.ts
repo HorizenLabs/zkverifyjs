@@ -1,10 +1,13 @@
 import { ProofOptions, VerifyOptions } from '../../types';
-import { ProofType } from '../../../config';
+import { CurveType, Library, ProofType } from '../../../config';
 import { EventEmitter } from 'events';
 import { VKRegistrationTransactionInfo } from '../../../types';
 
 export type RegisterKeyMethodMap = {
-  [K in keyof typeof ProofType]: () => RegisterKeyBuilder;
+  [K in keyof typeof ProofType]: (
+    library?: Library,
+    curve?: CurveType,
+  ) => RegisterKeyBuilder;
 };
 
 export class RegisterKeyBuilder {
