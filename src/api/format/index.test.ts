@@ -111,6 +111,68 @@ describe('format', () => {
     expect(mockProcessor.formatVk).toHaveBeenCalledWith('vk', proofOptions);
   });
 
+  it('should throw a generic error if formatting public signals fails with a non-Error type', () => {
+    (mockProcessor.formatPubs as jest.Mock).mockImplementation(() => {
+      throw 'Non-Error failure in public signals';
+    });
+
+    expect(() => format(proofOptions, 'proof', 'signals', 'vk')).toThrow(
+      'Failed to format groth16 public signals: Unknown error. Public signals snippet: "signals..."',
+    );
+  });
+
+  it('should throw a generic error if formatting verification key fails with a non-Error type', () => {
+    (mockProcessor.formatVk as jest.Mock).mockImplementation(() => {
+      throw 'Non-Error failure in verification key';
+    });
+
+    expect(() => format(proofOptions, 'proof', 'signals', 'vk')).toThrow(
+      'Failed to format groth16 verification key: Unknown error. Verification key snippet: "vk..."',
+    );
+  });
+
+  it('should handle non-string vk object correctly', () => {
+    (mockProcessor.formatVk as jest.Mock).mockImplementation(() => {
+      throw new Error('Object vk formatting error');
+    });
+    expect(() =>
+      format(proofOptions, 'proof', 'signals', { vkField: 'vkValue' }),
+    ).toThrow(
+      'Failed to format groth16 verification key: Object vk formatting error. Verification key snippet: "{"vkField":"vkValue"}..."',
+    );
+  });
+
+  it('should throw a formatted error for non-string proof, publicSignals, and vk', () => {
+    (mockProcessor.formatProof as jest.Mock).mockImplementation(() => {
+      throw new Error('Non-string proof error');
+    });
+    expect(() =>
+      format(proofOptions, { field: 'value' }, 'signals', 'vk'),
+    ).toThrow(
+      'Failed to format groth16 proof: Non-string proof error. Proof snippet: "{"field":"value"}..."',
+    );
+  });
+
+  it('should format public signals correctly when publicSignals is an array', () => {
+    (mockProcessor.formatPubs as jest.Mock).mockImplementation(() => {
+      throw new Error('Array public signals formatting error');
+    });
+    expect(() =>
+      format(proofOptions, 'proof', ['signal1', 'signal2'], 'vk'),
+    ).toThrow(
+      'Failed to format groth16 public signals: Array public signals formatting error. Public signals snippet: "["signal1","signal2"]..."',
+    );
+  });
+
+  it('should handle non-array, non-string publicSignals object correctly', () => {
+    (mockProcessor.formatPubs as jest.Mock).mockImplementation(() => {
+      throw new Error('Object public signals error');
+    });
+    expect(() => format(proofOptions, 'proof', { key: 'value' }, 'vk')).toThrow(
+      'Failed to format groth16 public signals: Object public signals error. Public signals snippet: "[object Object]..."',
+    );
+  });
+
   it('should return formatted values for registered verification key', () => {
     const result = format(proofOptions, 'proof', 'signals', 'vk', true);
 
