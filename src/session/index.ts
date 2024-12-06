@@ -115,6 +115,13 @@ export class zkVerifySession {
     return builderMethods as SupportedNetworkMap;
   }
 
+  /**
+   * Creates a builder map for different proof types that can be used for verification.
+   * Each proof type returns a `VerificationBuilder` that allows you to chain methods for setting options
+   * and finally executing the verification process.
+   *
+   * @returns {ProofMethodMap} A map of proof types to their corresponding builder methods.
+   */
   verify(): ProofMethodMap {
     const builderMethods: Partial<
       Record<
