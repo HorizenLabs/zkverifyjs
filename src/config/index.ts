@@ -71,6 +71,7 @@ export const proofConfigurations: Record<ProofType, ProofConfig> = {
     requiresLibrary: false,
     requiresCurve: false,
   },
+  // ADD_NEW_PROOF_TYPE
 };
 
 export const zkvTypes = {
