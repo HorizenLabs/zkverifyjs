@@ -32,8 +32,6 @@ export const verify = async (
         options.registeredVk,
       );
 
-      console.log(formattedProofData);
-
       transaction = createSubmitProofExtrinsic(
         api,
         options.proofOptions.proofType,

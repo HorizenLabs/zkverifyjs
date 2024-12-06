@@ -4,7 +4,7 @@ import {
     TransactionInfo,
     TransactionStatus,
     VerifyTransactionInfo,
-    VKRegistrationTransactionInfo, CurveType, Library
+    VKRegistrationTransactionInfo, CurveType, Library, ProofOptions
 } from '../../src';
 import {
     handleCommonEvents,
@@ -26,8 +26,8 @@ export interface ProofData {
 
 //TODO comment these exports (Used for testing)
 export const proofTypes = [ProofType.groth16];
-export const curveTypes = [CurveType.bn128];
-export const libraries = [Library.snarkjs];
+export const curveTypes = [CurveType.bls12381];
+export const libraries = [Library.gnark];
 
 // ADD_NEW_PROOF_TYPE
 // One Seed Phrase per proof type / curve combo.  NOTE:  SEED_PHRASE_8 used by unit tests and will need updating when new verifier added.
@@ -51,22 +51,28 @@ export const getSeedPhrase = (index: number): string => {
     return seedPhrase;
 };
 
-export const loadProofData = (proofType: ProofType, curve?: string): ProofData => {
-    const fileName = curve ? `${proofType}_${curve}` : proofType;
+export const loadProofData = (proofOptions: ProofOptions): ProofData => {
+    const { proofType, curve, library } = proofOptions;
+
+    const fileName = [proofType, library, curve].filter(Boolean).join('_');
     const dataPath = path.join(__dirname, 'data', `${fileName}.json`);
+
     return JSON.parse(fs.readFileSync(dataPath, 'utf8'));
 };
 
-export const loadVerificationKey = (proofType: ProofType, curve?: string): string => {
+export const loadVerificationKey = (proofOptions: ProofOptions): string => {
+    const { proofType, curve, library } = proofOptions;
+
     if (proofType === ProofType.ultraplonk) {
         const vkPath = path.join(__dirname, 'data', 'ultraplonk_vk.bin');
         return fs.readFileSync(vkPath).toString('hex');
-    } else {
-        const fileName = curve ? `${proofType}_${curve}` : proofType;
-        const dataPath = path.join(__dirname, 'data', `${fileName}.json`);
-        const proofData: ProofData = JSON.parse(fs.readFileSync(dataPath, 'utf8'));
-        return proofData.vk!;
     }
+
+    const fileName = [proofType, library, curve].filter(Boolean).join('_');
+    const dataPath = path.join(__dirname, 'data', `${fileName}.json`);
+    const proofData: ProofData = JSON.parse(fs.readFileSync(dataPath, 'utf8'));
+
+    return proofData.vk!;
 };
 
 export const validateEventResults = (eventResults: EventResults, expectAttestation: boolean): void => {
@@ -86,19 +92,17 @@ export const validateEventResults = (eventResults: EventResults, expectAttestati
 
 export const performVerifyTransaction = async (
     seedPhrase: string,
-    proofType: ProofType,
+    proofOptions: ProofOptions,
     proof: any,
     publicSignals: any,
     vk: string,
     withAttestation: boolean,
-    validatePoe: boolean = false,
-    library?: Library,
-    curve?: CurveType
+    validatePoe: boolean = false
 ): Promise<{ eventResults: EventResults; transactionInfo: VerifyTransactionInfo }> => {
     const session = await zkVerifySession.start().Testnet().withAccount(seedPhrase);
 
-    console.log(`${proofType} Executing transaction with library: ${library}, curve: ${curve}...`);
-    const verifier = session.verify()[proofType](library, curve);
+    console.log(`${proofOptions.proofType} Executing transaction with library: ${proofOptions.library}, curve: ${proofOptions.curve}...`);
+    const verifier = session.verify()[proofOptions.proofType](proofOptions.library, proofOptions.curve);
     const verify = withAttestation ? verifier.waitForPublishedAttestation() : verifier;
 
     const { events, transactionResult } = await verify.execute({
@@ -110,13 +114,13 @@ export const performVerifyTransaction = async (
     });
 
     const eventResults = withAttestation
-        ? handleEventsWithAttestation(events, proofType, 'verify')
-        : handleCommonEvents(events, proofType, 'verify');
+        ? handleEventsWithAttestation(events, proofOptions.proofType, 'verify')
+        : handleCommonEvents(events, proofOptions.proofType, 'verify');
 
-    console.log(`${proofType} Transaction result received. Validating...`);
+    console.log(`${proofOptions.proofType} Transaction result received. Validating...`);
 
     const transactionInfo: VerifyTransactionInfo = await transactionResult;
-    validateVerifyTransactionInfo(transactionInfo, proofType, withAttestation);
+    validateVerifyTransactionInfo(transactionInfo, proofOptions.proofType, withAttestation);
     validateEventResults(eventResults, withAttestation);
 
     if (validatePoe) {
@@ -223,16 +227,9 @@ export const validatePoE = async (
     expect(proofDetails.leaf).toBeDefined();
 };
 
-export const loadProofAndVK = (proofType: ProofType, curve?: string) => {
-    if (proofType === ProofType.groth16 && curve) {
-        return {
-            proof: loadProofData(proofType, curve),
-            vk: loadVerificationKey(proofType, curve)
-        };
-    } else {
-        return {
-            proof: loadProofData(proofType),
-            vk: loadVerificationKey(proofType)
-        };
-    }
+export const loadProofAndVK = (proofOptions: ProofOptions) => {
+    return {
+        proof: loadProofData(proofOptions),
+        vk: loadVerificationKey(proofOptions)
+    };
 };
