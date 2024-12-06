@@ -5,7 +5,7 @@ import { handleTransaction } from '../../utils/transactions';
 import { AccountConnection } from '../connection/types';
 import { VerifyOptions } from '../../session/types';
 import { TransactionType, ZkVerifyEvents } from '../../enums';
-import { ProofType } from '../../config';
+import { ProofType, Library, CurveType } from '../../config';
 
 jest.mock('../../utils/helpers', () => ({
   getProofPallet: jest.fn(),
@@ -35,7 +35,13 @@ describe('registerVk', () => {
       account: 'mockAccount',
     } as unknown as AccountConnection;
 
-    mockOptions = { proofType: ProofType.fflonk } as VerifyOptions;
+    mockOptions = {
+      proofOptions: {
+        proofType: ProofType.fflonk,
+        library: Library.snarkjs,
+        curve: CurveType.bls12381,
+      },
+    } as VerifyOptions;
     mockVerificationKey = 'mockVerificationKey';
 
     mockProcessor = {
@@ -63,9 +69,16 @@ describe('registerVk', () => {
       mockVerificationKey,
     );
 
-    expect(getProofProcessor).toHaveBeenCalledWith(mockOptions.proofType);
-    expect(getProofPallet).toHaveBeenCalledWith(mockOptions.proofType);
-    expect(mockProcessor.formatVk).toHaveBeenCalledWith(mockVerificationKey);
+    expect(getProofProcessor).toHaveBeenCalledWith(
+      mockOptions.proofOptions.proofType,
+    );
+    expect(getProofPallet).toHaveBeenCalledWith(
+      mockOptions.proofOptions.proofType,
+    );
+    expect(mockProcessor.formatVk).toHaveBeenCalledWith(
+      mockVerificationKey,
+      mockOptions.proofOptions,
+    );
     expect(connection.api.tx[mockPallet].registerVk).toHaveBeenCalledWith(
       'formattedVk',
     );
@@ -88,7 +101,9 @@ describe('registerVk', () => {
 
     await expect(
       registerVk(connection, mockOptions, mockVerificationKey),
-    ).rejects.toThrow(`Unsupported proof type: ${mockOptions.proofType}`);
+    ).rejects.toThrow(
+      `Unsupported proof type: ${mockOptions.proofOptions.proofType}`,
+    );
   });
 
   it('should throw an error for invalid verification key', async () => {
@@ -116,5 +131,15 @@ describe('registerVk', () => {
 
     await expect(transactionResult).rejects.toThrow('Transaction failed');
     expect(errorHandler).toHaveBeenCalledWith(mockError);
+  });
+
+  it('should throw an error if proof pallet is not found', async () => {
+    (getProofPallet as jest.Mock).mockReturnValue(null);
+
+    await expect(
+      registerVk(connection, mockOptions, mockVerificationKey),
+    ).rejects.toThrow(
+      `Unsupported proof type: ${mockOptions.proofOptions.proofType}`,
+    );
   });
 });

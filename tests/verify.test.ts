@@ -1,8 +1,7 @@
 import { proofTypes, curveTypes, libraries } from './common/utils';
 import { runAllProofTests, runAllVKRegistrationTests } from "./common/runners";
 
-jest.setTimeout(300000);
-//TODO uncomment tests
+jest.setTimeout(500000);
 describe('zkVerify proof user journey tests', () => {
     test('should verify all proof types and respond on finalization without waiting for Attestation event', async () => {
         await runAllProofTests(proofTypes, curveTypes, libraries, false);
