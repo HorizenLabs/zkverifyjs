@@ -1,4 +1,5 @@
 import {
+  Formatter,
   Groth16VerificationKey,
   Groth16VerificationKeyInput,
   Proof,
@@ -15,10 +16,10 @@ class Groth16Processor implements ProofProcessor {
    * @throws {Error} If the library is unsupported or the module cannot be loaded.
    * @returns {Object} The formatter module corresponding to the specified library.
    */
-  private getFormatter(options: ProofOptions): unknown {
+  private getFormatter(options: ProofOptions): Formatter {
     try {
       // eslint-disable-next-line @typescript-eslint/no-require-imports
-      const formatter = require(`../formatter/${options.library}`);
+      const formatter = require(`../formatter/${options.library}`) as Formatter;
       return formatter;
     } catch (error) {
       throw new Error(

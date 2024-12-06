@@ -1,4 +1,4 @@
-import { CurveType, Library } from '../../config';
+import { ProofOptions } from '../../session/types';
 
 export interface Groth16VerificationKeyInput {
   curve: string;
@@ -35,7 +35,11 @@ export interface Proof {
   proof: ProofInner;
 }
 
-export interface Groth16Options {
-  curve: CurveType;
-  library: Library;
+export interface Formatter {
+  formatProof(proof: ProofInput, options: ProofOptions): Proof;
+  formatVk(
+    vk: Groth16VerificationKeyInput,
+    options: ProofOptions,
+  ): Groth16VerificationKey;
+  formatPubs(pubs: string[]): string[];
 }
