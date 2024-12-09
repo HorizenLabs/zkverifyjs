@@ -30,6 +30,7 @@ export const createSubmitProofExtrinsic = (
       params.formattedVk,
       params.formattedProof,
       params.formattedPubs,
+      null, // TODO: pass in new domain_id related to aggregate pallet functionality
     );
   } catch (error: unknown) {
     throw new Error(formatError(error, proofType, params));
