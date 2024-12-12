@@ -83,13 +83,13 @@ export const formatG2Point = (
 
   const formatX =
     curve === 'Bls12_381'
-      ? [x2.toString(), x1.toString()] // bls12381 uses (x2, x1)
-      : [x1.toString(), x2.toString()]; // bn254 uses (x1, x2)
+      ? [x2.toString(), x1.toString()]
+      : [x1.toString(), x2.toString()];
 
   const formatY =
     curve === 'Bls12_381'
-      ? [y2.toString(), y1.toString()] // bls12381 uses (y2, y1)
-      : [y1.toString(), y2.toString()]; // bn254 uses (y1, y2)
+      ? [y2.toString(), y1.toString()]
+      : [y1.toString(), y2.toString()];
 
   return (
     formatG1Point(formatX, endianess) +

@@ -44,8 +44,7 @@ npm install ./path-to-package/zkverifyjs-0.2.0.tgz
 
 1. Update `src/config/index.ts`
 2. Add a new proof to src/proofTypes including processor and formatter, and add export to `src/proofTypes/index.ts`
-3. Add new `SEED_PHRASE_*` environment variable to ensure parallel test runs continue to work.  
-4. Also note that the unit tests require an additional seed phrase (proof types / curve combo + 1)
+3. Adding new `SEED_PHRASE_*` environment variables will provide more throughput for tests if they are locked waiting for one to become available from the `WalletPool`
 
 - Search for `ADD_NEW_PROOF_TYPE` in the codebase.
 

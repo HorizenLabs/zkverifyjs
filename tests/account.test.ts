@@ -1,14 +1,26 @@
 import { zkVerifySession } from '../src';
 import { AccountInfo } from "../src";
-import { getSeedPhrase } from "./common/utils";
+import { walletPool } from './common/walletPool';
 
 jest.setTimeout(120000);
 
 describe('zkVerifySession - accountInfo', () => {
+    let wallet: string | undefined;
+
+    afterEach(async () => {
+        if (wallet) {
+            await walletPool.releaseWallet(wallet);
+            wallet = undefined;
+        }
+    });
+
     it('should retrieve the account info including address, nonce, free balance and reserved balance', async () => {
-        const session = await zkVerifySession.start().Testnet().withAccount(getSeedPhrase(0));
+        let session: zkVerifySession | undefined;
 
         try {
+            wallet = await walletPool.acquireWallet();
+            session = await zkVerifySession.start().Testnet().withAccount(wallet);
+
             const accountInfo: AccountInfo = await session.accountInfo();
             expect(accountInfo).toBeDefined();
 
@@ -30,17 +42,25 @@ describe('zkVerifySession - accountInfo', () => {
             console.error('Error fetching account info:', error);
             throw error;
         } finally {
-            await session.close();
+            if (session) {
+                await session.close();
+            }
         }
     });
 
     it('should throw an error if trying to get account info in a read-only session', async () => {
-        const session = await zkVerifySession.start().Testnet().readOnly();
+        let session: zkVerifySession | undefined;
 
         try {
-            await expect(session.accountInfo()).rejects.toThrow('This action requires an active account. The session is currently in read-only mode because no account is associated with it. Please provide an account at session start, or add one to the current session using `addAccount`.');
+            session = await zkVerifySession.start().Testnet().readOnly();
+
+            await expect(session.accountInfo()).rejects.toThrow(
+                'This action requires an active account. The session is currently in read-only mode because no account is associated with it. Please provide an account at session start, or add one to the current session using `addAccount`.'
+            );
         } finally {
-            await session.close();
+            if (session) {
+                await session.close();
+            }
         }
     });
 });

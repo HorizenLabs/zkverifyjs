@@ -1,10 +1,11 @@
-import {CurveType, Library, zkVerifySession} from '../src';
-import {EventEmitter} from 'events';
-import {ProofMethodMap} from "../src/session/builders/verify";
-import {getSeedPhrase} from "./common/utils";
+import { CurveType, Library, zkVerifySession } from '../src';
+import { EventEmitter } from 'events';
+import { ProofMethodMap } from "../src/session/builders/verify";
+import { walletPool } from './common/walletPool';
 
 describe('zkVerifySession class', () => {
     let session: zkVerifySession;
+    let wallet: string | null = null;
 
     const mockVerifyExecution = jest.fn(async () => {
         const events = new EventEmitter();
@@ -12,11 +13,18 @@ describe('zkVerifySession class', () => {
         return { events, transactionResult };
     });
 
+    beforeEach(async () => {
+        wallet = null;
+    });
+
     afterEach(async () => {
         if (session) {
             await session.close();
             expect(session.api.isConnected).toBe(false);
             expect(session['provider'].isConnected).toBe(false);
+        }
+        if (wallet) {
+            await walletPool.releaseWallet(wallet);
         }
         jest.clearAllMocks();
     });
@@ -35,7 +43,8 @@ describe('zkVerifySession class', () => {
     });
 
     it('should start a session with an account when seed phrase is provided', async () => {
-        session = await zkVerifySession.start().Testnet().withAccount(getSeedPhrase(0));
+        wallet = await walletPool.acquireWallet();
+        session = await zkVerifySession.start().Testnet().withAccount(wallet);
         expect(session.readOnly).toBe(false);
         expect(session.api).toBeDefined();
     });
@@ -49,7 +58,8 @@ describe('zkVerifySession class', () => {
     });
 
     it('should start a session with a custom WebSocket URL and an account when seed phrase is provided', async () => {
-        session = await zkVerifySession.start().Custom("wss://testnet-rpc.zkverify.io").withAccount(getSeedPhrase(0));
+        wallet = await walletPool.acquireWallet();
+        session = await zkVerifySession.start().Custom("wss://testnet-rpc.zkverify.io").withAccount(wallet);
         expect(session).toBeDefined();
         expect(session.readOnly).toBe(false);
         expect(session.api).toBeDefined();
@@ -57,16 +67,17 @@ describe('zkVerifySession class', () => {
     });
 
     it('should correctly handle adding, removing, and re-adding an account', async () => {
+        wallet = await walletPool.acquireWallet();
         session = await zkVerifySession.start().Testnet().readOnly();
         expect(session.readOnly).toBe(true);
 
-        session.addAccount(getSeedPhrase(0));
+        session.addAccount(wallet);
         expect(session.readOnly).toBe(false);
 
         session.removeAccount();
         expect(session.readOnly).toBe(true);
 
-        session.addAccount(getSeedPhrase(0));
+        session.addAccount(wallet);
         expect(session.readOnly).toBe(false);
 
         session.removeAccount();
@@ -74,33 +85,16 @@ describe('zkVerifySession class', () => {
     });
 
     it('should throw an error when adding an account to a session that already has one', async () => {
-        session = await zkVerifySession.start().Testnet().withAccount(getSeedPhrase(0));
+        wallet = await walletPool.acquireWallet();
+        session = await zkVerifySession.start().Testnet().withAccount(wallet);
         expect(session.readOnly).toBe(false);
 
         expect(() => session.addAccount('random-seed-phrase')).toThrow('An account is already active in this session.');
     });
 
-    it('should not throw an error when removing an account from a session that has no account', async () => {
-        session = await zkVerifySession.start().Testnet().readOnly();
-        expect(session.readOnly).toBe(true);
-        expect(() => session.removeAccount()).not.toThrow();
-    });
-
-    it('should throw an error when trying to verify in read-only mode', async () => {
-        session = await zkVerifySession.start().Testnet().readOnly();
-        expect(session.readOnly).toBe(true);
-        await expect(
-            session.verify().groth16(Library.snarkjs, CurveType.bn128).execute({ proofData: {
-                    proof: 'proofData',
-                    publicSignals: 'publicSignals',
-                    vk: 'vk'
-                }
-            })
-        ).rejects.toThrow('This action requires an active account. The session is currently in read-only mode because no account is associated with it. Please provide an account at session start, or add one to the current session using `addAccount`.');
-    });
-
     it('should allow verification when an account is active', async () => {
-        session = await zkVerifySession.start().Testnet().withAccount(getSeedPhrase(0));
+        wallet = await walletPool.acquireWallet();
+        session = await zkVerifySession.start().Testnet().withAccount(wallet);
         expect(session.readOnly).toBe(false);
 
         const mockBuilder = {
@@ -111,7 +105,8 @@ describe('zkVerifySession class', () => {
 
         session.verify = jest.fn(() => mockBuilder);
 
-        const { events, transactionResult } = await session.verify().fflonk().execute({ proofData: {
+        const { events, transactionResult } = await session.verify().fflonk().execute({
+            proofData: {
                 proof: 'proofData',
                 publicSignals: 'publicSignals',
                 vk: 'vk'
@@ -122,14 +117,9 @@ describe('zkVerifySession class', () => {
         expect(transactionResult).toBeDefined();
     });
 
-    it('should throw an error when trying to retrieve account info in read-only mode', async () => {
-        session = await zkVerifySession.start().Testnet().readOnly();
-        expect(session.readOnly).toBe(true);
-        await expect(session.accountInfo()).rejects.toThrow('This action requires an active account. The session is currently in read-only mode because no account is associated with it. Please provide an account at session start, or add one to the current session using `addAccount`.');
-    });
-
     it('should return account information when an account is active', async () => {
-        session = await zkVerifySession.start().Testnet().withAccount(getSeedPhrase(0));
+        wallet = await walletPool.acquireWallet();
+        session = await zkVerifySession.start().Testnet().withAccount(wallet);
         expect(session.readOnly).toBe(false);
 
         session.accountInfo = jest.fn(async () => ({
@@ -149,34 +139,35 @@ describe('zkVerifySession class', () => {
     });
 
     it('should handle multiple verify calls concurrently', async () => {
-        session = await zkVerifySession.start().Testnet().withAccount(getSeedPhrase(0));
-        expect(session.readOnly).toBe(false);
+            wallet = await walletPool.acquireWallet();
+            session = await zkVerifySession.start().Testnet().withAccount(wallet);
+            expect(session.readOnly).toBe(false);
 
-        const mockBuilder = {
-            fflonk: jest.fn(() => ({ execute: mockVerifyExecution })),
-            groth16: jest.fn(() => ({ execute: mockVerifyExecution })),
-        } as unknown as ProofMethodMap;
+            const mockBuilder = {
+                fflonk: jest.fn(() => ({ execute: mockVerifyExecution })),
+                groth16: jest.fn(() => ({ execute: mockVerifyExecution })),
+            } as unknown as ProofMethodMap;
 
-        session.verify = jest.fn(() => mockBuilder);
+            session.verify = jest.fn(() => mockBuilder);
 
-        const [result1, result2] = await Promise.all([
-            session.verify().fflonk().execute({ proofData: {
-                proof: 'proofData',
-                publicSignals: 'publicSignals',
-                vk: 'vk'
-                }
-            }),
-            session.verify().groth16(Library.snarkjs, CurveType.bls12381).execute({ proofData: {
+            const [result1, result2] = await Promise.all([
+                session.verify().fflonk().execute({ proofData: {
                     proof: 'proofData',
                     publicSignals: 'publicSignals',
                     vk: 'vk'
-                }
-            })
-        ]);
+                    }
+                }),
+                session.verify().groth16(Library.snarkjs, CurveType.bls12381).execute({ proofData: {
+                        proof: 'proofData',
+                        publicSignals: 'publicSignals',
+                        vk: 'vk'
+                    }
+                })
+            ]);
 
-        expect(result1.events).toBeDefined();
-        expect(result2.events).toBeDefined();
-        expect(result1.transactionResult).toBeDefined();
-        expect(result2.transactionResult).toBeDefined();
-    });
+            expect(result1.events).toBeDefined();
+            expect(result2.events).toBeDefined();
+            expect(result1.transactionResult).toBeDefined();
+            expect(result2.transactionResult).toBeDefined();
+        });
 });

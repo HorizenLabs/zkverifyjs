@@ -90,7 +90,7 @@ export const zkvRpc = {
       description: 'Get the Merkle root and path of a stored proof',
       params: [
         {
-          name: 'attestation_id',
+          name: 'root_id',
           type: 'u64',
         },
         {
@@ -101,6 +101,30 @@ export const zkvRpc = {
           name: 'at',
           type: 'BlockHash',
           isOptional: true,
+        },
+      ],
+      type: 'MerkleProof',
+    },
+  },
+  aggregate: {
+    statementPath: {
+      description: 'Get the Merkle root and path of a aggregate statement',
+      params: [
+        {
+          name: 'at',
+          type: 'BlockHash',
+        },
+        {
+          name: 'domain_id',
+          type: 'u32',
+        },
+        {
+          name: 'aggregation_id',
+          type: 'u64',
+        },
+        {
+          name: 'statement',
+          type: 'H256',
         },
       ],
       type: 'MerkleProof',

@@ -1,21 +1,22 @@
-import {CurveType, ExtrinsicCostEstimate, Library, ProofType, zkVerifySession} from '../src';
-import {getSeedPhrase} from "./common/utils";
+import { CurveType, ExtrinsicCostEstimate, Library, ProofType, zkVerifySession } from '../src';
 import path from "path";
 import fs from "fs";
+import { walletPool } from './common/walletPool';
 
 jest.setTimeout(180000);
 
 describe('zkVerifySession - estimateCost', () => {
     let session: zkVerifySession;
+    let wallet: string;
 
     beforeAll(async () => {
-        // ADD_NEW_PROOF_TYPE
-        // Change seed phrase for parallel tests
-        session = await zkVerifySession.start().Testnet().withAccount(getSeedPhrase(7));
+        wallet = await walletPool.acquireWallet();
+        session = await zkVerifySession.start().Testnet().withAccount(wallet);
     });
 
     afterAll(async () => {
         await session.close();
+        await walletPool.releaseWallet(wallet);
     });
 
     async function getTestExtrinsic() {
