@@ -76,32 +76,38 @@ export const performVerifyTransaction = async (
 
     try {
         console.log(`[IN PROGRESS] ${session.account!.address!} ${proofOptions.proofType} Executing transaction with library: ${proofOptions.library}, curve: ${proofOptions.curve}...`);
-        const verifier = session.verify()[proofOptions.proofType](proofOptions.library, proofOptions.curve);
-        const verify = withAttestation ? verifier.waitForPublishedAttestation() : verifier;
 
-        const { events, transactionResult } = await verify.execute({
-            proofData: {
-                proof: proof,
-                publicSignals: publicSignals,
-                vk: vk,
-            },
-        });
+        const verifyTransaction = async () => {
+            const verifier = session.verify()[proofOptions.proofType](proofOptions.library, proofOptions.curve);
+            const verify = withAttestation ? verifier.waitForPublishedAttestation() : verifier;
 
-        const eventResults = withAttestation
-            ? handleEventsWithAttestation(events, proofOptions.proofType, 'verify')
-            : handleCommonEvents(events, proofOptions.proofType, 'verify');
+            const { events, transactionResult } = await verify.execute({
+                proofData: {
+                    proof: proof,
+                    publicSignals: publicSignals,
+                    vk: vk,
+                },
+            });
 
-        console.log(`[RESULT RECEIVED] ${session.account!.address!} ${proofOptions.proofType} Transaction result received. Validating...`);
+            const eventResults = withAttestation
+                ? handleEventsWithAttestation(events, proofOptions.proofType, 'verify')
+                : handleCommonEvents(events, proofOptions.proofType, 'verify');
 
-        const transactionInfo: VerifyTransactionInfo = await transactionResult;
-        validateVerifyTransactionInfo(transactionInfo, proofOptions.proofType, withAttestation);
-        validateEventResults(eventResults, withAttestation);
+            console.log(`[RESULT RECEIVED] ${session.account!.address!} ${proofOptions.proofType} Transaction result received. Validating...`);
 
-        if (validatePoe) {
-            await validatePoE(session, transactionInfo.attestationId!, transactionInfo.leafDigest!);
-        }
+            const transactionInfo: VerifyTransactionInfo = await transactionResult;
+            validateVerifyTransactionInfo(transactionInfo, proofOptions.proofType, withAttestation);
+            validateEventResults(eventResults, withAttestation);
 
-        return { eventResults, transactionInfo };
+            if (validatePoe) {
+                await validatePoE(session, transactionInfo.attestationId!, transactionInfo.leafDigest!);
+            }
+
+            return { eventResults, transactionInfo };
+        };
+
+        // Wrap the transaction logic in the retry mechanism
+        return await retryWithDelay(verifyTransaction);
     } catch (error) {
         if (error instanceof Error) {
             console.error(
@@ -239,4 +245,32 @@ export const loadProofAndVK = (proofOptions: ProofOptions) => {
         proof: loadProofData(proofOptions),
         vk: loadVerificationKey(proofOptions)
     };
+};
+
+const retryWithDelay = async <T>(
+    fn: () => Promise<T>,
+    retries: number = 5,
+    delayMs: number = 5000
+): Promise<T> => {
+    let attempt = 0;
+    while (attempt < retries) {
+        try {
+            return await fn();
+        } catch (error) {
+            attempt++;
+            const errorMessage = error instanceof Error ? error.message : String(error);
+
+            if (!errorMessage.includes("Priority is too low")) {
+                throw error;
+            }
+
+            if (attempt >= retries) {
+                throw error;
+            }
+
+            console.warn(`Retrying after error: ${errorMessage}. Attempt ${attempt} of ${retries}`);
+            await new Promise(resolve => setTimeout(resolve, delayMs));
+        }
+    }
+    throw new Error("Retries exhausted");
 };
