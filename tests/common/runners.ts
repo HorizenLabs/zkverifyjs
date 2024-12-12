@@ -86,14 +86,6 @@ export const runAllProofTests = async (
     const results = await Promise.allSettled(testPromises);
     const failures = results.filter(result => result.status === 'rejected');
 
-    results.forEach((result, index) => {
-        if (result.status === 'rejected') {
-            console.error(`Test ${index} failed:`, result.reason);
-        } else {
-            console.debug(`Test ${index} succeeded.`);
-        }
-    });
-
     if (failures.length > 0) {
         throw new Error(`${failures.length} test(s) failed. See logs for details.`);
     }
