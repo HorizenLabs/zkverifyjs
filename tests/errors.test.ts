@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
-import {CurveType, Library, ZkVerifyEvents, zkVerifySession} from '../src';
-import {getSeedPhrase} from "./common/utils";
+import { CurveType, Library, ZkVerifyEvents, zkVerifySession } from '../src';
+import { walletPool } from './common/walletPool';
 
 jest.setTimeout(180000);
 
@@ -18,9 +18,15 @@ function checkErrorMessage(error: unknown, expectedMessage: string): void {
 
 describe('verify with bad data - Groth16', () => {
     let session: zkVerifySession;
+    let wallet: string;
+
+    beforeEach(async () => {
+        wallet = await walletPool.acquireWallet();
+    });
 
     afterEach(async () => {
         if (session) await session.close();
+        if (wallet) await walletPool.releaseWallet(wallet);
     });
 
     it('should fail when sending groth16 data that cannot be formatted and emit an error event', async () => {
@@ -30,18 +36,18 @@ describe('verify with bad data - Groth16', () => {
         const badProof = { ...groth16Data.proof, pi_a: 'bad_data' };
         const { publicSignals, vk } = groth16Data;
 
-        // ADD_NEW_PROOF_TYPE
-        // Uses SEED_PHRASE_11 but increment as needed if new proof types have been added, this should run without affecting the other tests.
-        session = await zkVerifySession.start().Testnet().withAccount(getSeedPhrase(10));
+        session = await zkVerifySession.start().Testnet().withAccount(wallet);
+
         let errorEventEmitted = false;
 
         const { events, transactionResult } = await session.verify()
-            .groth16(Library.snarkjs, CurveType.bn128).execute({
+            .groth16(Library.snarkjs, CurveType.bn128)
+            .execute({
                 proofData: {
                     proof: badProof,
                     publicSignals: publicSignals,
-                    vk: vk
-                }
+                    vk: vk,
+                },
             });
 
         events.on(ZkVerifyEvents.ErrorEvent, () => {
@@ -62,18 +68,19 @@ describe('verify with bad data - Groth16', () => {
         const groth16Data = JSON.parse(fs.readFileSync(dataPath, 'utf8'));
 
         const { proof, publicSignals, vk } = groth16Data;
-        // ADD NEW_PROOF_TYPE
-        // Uses SEED_PHRASE_11 - increment after adding new proof types
-        session = await zkVerifySession.start().Testnet().withAccount(getSeedPhrase(10));
+
+        session = await zkVerifySession.start().Testnet().withAccount(wallet);
+
         let errorEventEmitted = false;
 
         const { events, transactionResult } = await session.verify()
-            .groth16(Library.snarkjs, CurveType.bn254).execute({
+            .groth16(Library.snarkjs, CurveType.bn254)
+            .execute({
                 proofData: {
                     proof: proof,
                     publicSignals: publicSignals,
-                    vk: vk
-                }
+                    vk: vk,
+                },
             });
 
         events.on(ZkVerifyEvents.ErrorEvent, (error) => {

@@ -5,6 +5,8 @@ import { AttestationEvent, ProofProcessor } from '../../types';
 import { ZkVerifyEvents } from '../../enums';
 import { proofConfigurations, ProofType } from '../../config';
 import { subscribeToNewAttestations } from '../../api/attestation';
+import { decodeDispatchError } from '../transactions/errors';
+import { DispatchError } from '@polkadot/types/interfaces';
 
 /**
  * Waits for a specific `NewAttestation` event and returns the associated data.
@@ -101,3 +103,43 @@ export function checkReadOnly(readOnly: boolean): void {
     );
   }
 }
+
+/**
+ * Interprets a dry run response and returns whether it was successful and any error message.
+ * @param api - The Polkadot.js API instance.
+ * @param resultHex - The hex-encoded response from a dry run.
+ * @returns An object containing `success` (boolean) and `message` (string).
+ */
+export const interpretDryRunResponse = async (
+  api: ApiPromise,
+  resultHex: string,
+): Promise<{ success: boolean; message: string }> => {
+  try {
+    const responseBytes = Uint8Array.from(
+      Buffer.from(resultHex.replace('0x', ''), 'hex'),
+    );
+
+    if (responseBytes[0] === 0x00 && responseBytes[1] === 0x00) {
+      return { success: true, message: 'Optimistic Verification Successful!' };
+    }
+
+    if (responseBytes[0] === 0x00 && responseBytes[1] === 0x01) {
+      const dispatchError = api.registry.createType(
+        'DispatchError',
+        responseBytes.slice(2),
+      ) as DispatchError;
+      const errorMessage = decodeDispatchError(api, dispatchError);
+      return { success: false, message: errorMessage };
+    }
+
+    return {
+      success: false,
+      message: `Unexpected response format: ${resultHex}`,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: `Failed to interpret dry run result: ${error}`,
+    };
+  }
+};

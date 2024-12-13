@@ -9,15 +9,6 @@ on:
 jobs:
   build-and-publish:
     runs-on: ubuntu-latest
-    env:
-      SEED_PHRASE_1: ${{ secrets.SEED_PHRASE_1 }}
-      SEED_PHRASE_2: ${{ secrets.SEED_PHRASE_2 }}
-      SEED_PHRASE_3: ${{ secrets.SEED_PHRASE_3 }}
-      SEED_PHRASE_4: ${{ secrets.SEED_PHRASE_4 }}
-      SEED_PHRASE_5: ${{ secrets.SEED_PHRASE_5 }}
-      SEED_PHRASE_6: ${{ secrets.SEED_PHRASE_6 }}
-      SEED_PHRASE_7: ${{ secrets.SEED_PHRASE_7 }}
-      SEED_PHRASE_8: ${{ secrets.SEED_PHRASE_8 }}
 
     steps:
       - name: Checkout code
@@ -66,6 +57,7 @@ jobs:
 
           release_notes=$(cat release_notes.md | sed ':a;N;$!ba;s/\n/\\n/g' | sed 's/"/\\"/g')
           echo "release_notes=$release_notes" >> $GITHUB_ENV
+          echo "current_tag=$current_tag" >> $GITHUB_ENV
 
       - name: Publish to npm
         id: publish

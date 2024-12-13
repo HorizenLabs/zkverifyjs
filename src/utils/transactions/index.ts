@@ -110,7 +110,7 @@ export const handleTransaction = async (
   const {
     proofOptions: { proofType },
     waitForNewAttestationEvent: shouldWaitForAttestation = false,
-    nonce,
+    nonce = -1, // accountNextIndex preferred shortcut if not set by user.
   } = options;
 
   const transactionInfo: VerifyTransactionInfo | VKRegistrationTransactionInfo =

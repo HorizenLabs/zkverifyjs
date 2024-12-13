@@ -24,31 +24,6 @@ export const proofTypes = Object.keys(ProofType).map((key) => ProofType[key as k
 export const curveTypes = Object.keys(CurveType).map((key) => CurveType[key as keyof typeof CurveType]);
 export const libraries = Object.keys(Library).map((key) => Library[key as keyof typeof Library]);
 
-// ADD_NEW_PROOF_TYPE
-// One Seed Phrase per proof type / curve combo.  NOTE:  SEED_PHRASE_11 used by unit tests and will need updating when new verifier added.
-const seedPhrases = [
-    process.env.SEED_PHRASE_1,
-    process.env.SEED_PHRASE_2,
-    process.env.SEED_PHRASE_3,
-    process.env.SEED_PHRASE_4,
-    process.env.SEED_PHRASE_5,
-    process.env.SEED_PHRASE_6,
-    process.env.SEED_PHRASE_7,
-    process.env.SEED_PHRASE_8,
-    process.env.SEED_PHRASE_9,
-    process.env.SEED_PHRASE_10,
-];
-
-export const getSeedPhrase = (index: number): string => {
-    const seedPhrase = seedPhrases[index % seedPhrases.length];
-
-    if (!seedPhrase) {
-        throw new Error(`Seed phrase for SEED_PHRASE_${index + 1} is not defined in the environment variables.`);
-    }
-
-    return seedPhrase;
-};
-
 export const loadProofData = (proofOptions: ProofOptions): ProofData => {
     const { proofType, curve, library } = proofOptions;
 
@@ -99,35 +74,56 @@ export const performVerifyTransaction = async (
 ): Promise<{ eventResults: EventResults; transactionInfo: VerifyTransactionInfo }> => {
     const session = await zkVerifySession.start().Testnet().withAccount(seedPhrase);
 
-    console.log(`${proofOptions.proofType} Executing transaction with library: ${proofOptions.library}, curve: ${proofOptions.curve}...`);
-    const verifier = session.verify()[proofOptions.proofType](proofOptions.library, proofOptions.curve);
-    const verify = withAttestation ? verifier.waitForPublishedAttestation() : verifier;
+    try {
+        console.log(`[IN PROGRESS] ${session.account!.address!} ${proofOptions.proofType} Executing transaction with library: ${proofOptions.library}, curve: ${proofOptions.curve}...`);
 
-    const { events, transactionResult } = await verify.execute({
-        proofData: {
-            proof: proof,
-            publicSignals: publicSignals,
-            vk: vk,
-        },
-    });
+        const verifyTransaction = async () => {
+            const verifier = session.verify()[proofOptions.proofType](proofOptions.library, proofOptions.curve);
+            const verify = withAttestation ? verifier.waitForPublishedAttestation() : verifier;
 
-    const eventResults = withAttestation
-        ? handleEventsWithAttestation(events, proofOptions.proofType, 'verify')
-        : handleCommonEvents(events, proofOptions.proofType, 'verify');
+            const { events, transactionResult } = await verify.execute({
+                proofData: {
+                    proof: proof,
+                    publicSignals: publicSignals,
+                    vk: vk,
+                },
+            });
 
-    console.log(`${proofOptions.proofType} Transaction result received. Validating...`);
+            const eventResults = withAttestation
+                ? handleEventsWithAttestation(events, proofOptions.proofType, 'verify')
+                : handleCommonEvents(events, proofOptions.proofType, 'verify');
 
-    const transactionInfo: VerifyTransactionInfo = await transactionResult;
-    validateVerifyTransactionInfo(transactionInfo, proofOptions.proofType, withAttestation);
-    validateEventResults(eventResults, withAttestation);
+            console.log(`[RESULT RECEIVED] ${session.account!.address!} ${proofOptions.proofType} Transaction result received. Validating...`);
 
-    if (validatePoe) {
-        await validatePoE(session, transactionInfo.attestationId!, transactionInfo.leafDigest!);
+            const transactionInfo: VerifyTransactionInfo = await transactionResult;
+            validateVerifyTransactionInfo(transactionInfo, proofOptions.proofType, withAttestation);
+            validateEventResults(eventResults, withAttestation);
+
+            if (validatePoe) {
+                await validatePoE(session, transactionInfo.attestationId!, transactionInfo.leafDigest!);
+            }
+
+            return { eventResults, transactionInfo };
+        };
+
+        // Wrap the transaction logic in the retry mechanism
+        return await retryWithDelay(verifyTransaction);
+    } catch (error) {
+        if (error instanceof Error) {
+            console.error(
+                `[ERROR] Account: ${session.account?.address || 'unknown'}, ProofType: ${proofOptions.proofType}`,
+                error
+            );
+            throw new Error(`Failed to execute transaction. See logs for details: ${error.message}`);
+        } else {
+            console.error(
+                `[ERROR] Account: ${session.account?.address || 'unknown'}, ProofType: ${proofOptions.proofType}, Error: ${JSON.stringify(error)}`
+            );
+            throw new Error(`Failed to execute transaction. See logs for details.`);
+        }
+    } finally {
+        await session.close();
     }
-
-    await session.close();
-
-    return { eventResults, transactionInfo };
 };
 
 export const performVKRegistrationAndVerification = async (
@@ -140,7 +136,7 @@ export const performVKRegistrationAndVerification = async (
     const session = await zkVerifySession.start().Testnet().withAccount(seedPhrase);
 
     console.log(
-        `${proofOptions.proofType} Executing VK registration with library: ${proofOptions.library}, curve: ${proofOptions.curve}...`
+        `${session.account!.address!} ${proofOptions.proofType} Executing VK registration with library: ${proofOptions.library}, curve: ${proofOptions.curve}...`
     );
 
     const { events: registerEvents, transactionResult: registerTransactionResult } =
@@ -249,4 +245,32 @@ export const loadProofAndVK = (proofOptions: ProofOptions) => {
         proof: loadProofData(proofOptions),
         vk: loadVerificationKey(proofOptions)
     };
+};
+
+const retryWithDelay = async <T>(
+    fn: () => Promise<T>,
+    retries: number = 5,
+    delayMs: number = 5000
+): Promise<T> => {
+    let attempt = 0;
+    while (attempt < retries) {
+        try {
+            return await fn();
+        } catch (error) {
+            attempt++;
+            const errorMessage = error instanceof Error ? error.message : String(error);
+
+            if (!errorMessage.includes("Priority is too low")) {
+                throw error;
+            }
+
+            if (attempt >= retries) {
+                throw error;
+            }
+
+            console.warn(`Retrying after error: ${errorMessage}. Attempt ${attempt} of ${retries}`);
+            await new Promise(resolve => setTimeout(resolve, delayMs));
+        }
+    }
+    throw new Error("Retries exhausted");
 };

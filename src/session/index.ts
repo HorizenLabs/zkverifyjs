@@ -1,6 +1,7 @@
 import '@polkadot/api-augment'; // Required for api.query.system.account responses
 import { zkVerifySessionOptions, VerifyOptions, ProofOptions } from './types';
 import { verify } from '../api/verify';
+import { optimisticVerify } from '../api/optimisticVerify';
 import { accountInfo } from '../api/accountInfo';
 import { startSession, startWalletSession } from '../api/start';
 import { closeSession } from '../api/close';
@@ -35,6 +36,10 @@ import { KeyringPair } from '@polkadot/keyring/types';
 import { registerVk } from '../api/register';
 import { CurveType, Library, ProofType, SupportedNetwork } from '../config';
 import { ProofMethodMap, VerificationBuilder } from './builders/verify';
+import {
+  OptimisticProofMethodMap,
+  OptimisticVerificationBuilder,
+} from './builders/optimisticVerify';
 import { RegisterKeyBuilder, RegisterKeyMethodMap } from './builders/register';
 import { NetworkBuilder, SupportedNetworkMap } from './builders/network';
 import { VerifyInput } from '../api/verify/types';
@@ -64,6 +69,12 @@ export class zkVerifySession {
   public readOnly: boolean;
 
   /**
+   * Indicates whether the session is connected to a custom network.
+   * @type {boolean}
+   */
+  public customNetwork: boolean;
+
+  /**
    * An EventEmitter instance used to handle the subscription to NewAttestation events.
    * This emitter is created when the user subscribes to NewAttestation events via
    * `subscribeToNewAttestations` and is cleared when the user unsubscribes or when
@@ -77,12 +88,15 @@ export class zkVerifySession {
   /**
    * Creates an instance of zkVerifySession.
    * @param {AccountConnection | WalletConnection | EstablishedConnection} connection - The connection object that includes API, provider, and optionally an account or injected wallet.
+   * @param customNetwork - is the connection to a custom network.
    */
   constructor(
     connection: AccountConnection | WalletConnection | EstablishedConnection,
+    customNetwork = false,
   ) {
     this.connection = connection;
     this.readOnly = !('account' in connection) && !('injector' in connection);
+    this.customNetwork = customNetwork;
   }
 
   /**
@@ -153,6 +167,43 @@ export class zkVerifySession {
   }
 
   /**
+   * Creates a builder map for different proof types that can be used for optimistic verification.
+   * Each proof type returns an `OptimisticVerificationBuilder` that allows you to chain methods
+   * and finally execute the optimistic verification process.
+   *
+   * @returns {OptimisticProofMethodMap} A map of proof types to their corresponding builder methods.
+   */
+  optimisticVerify(): OptimisticProofMethodMap {
+    const builderMethods: Partial<
+      Record<
+        keyof typeof ProofType,
+        (library?: Library, curve?: CurveType) => OptimisticVerificationBuilder
+      >
+    > = {};
+
+    for (const proofType in ProofType) {
+      if (Object.prototype.hasOwnProperty.call(ProofType, proofType)) {
+        builderMethods[proofType as keyof typeof ProofType] = (
+          library?: Library,
+          curve?: CurveType,
+        ) => {
+          const proofOptions: ProofOptions = {
+            proofType: proofType as ProofType,
+            library,
+            curve,
+          };
+
+          validateProofTypeOptions(proofOptions);
+
+          return this.createOptimisticVerifyBuilder(proofOptions);
+        };
+      }
+    }
+
+    return builderMethods as OptimisticProofMethodMap;
+  }
+
+  /**
    * Creates a builder map for different proof types that can be used for registering verification keys.
    * Each proof type returns a `RegisterKeyBuilder` that allows you to chain methods for setting options
    * and finally executing the registration process.
@@ -202,6 +253,21 @@ export class zkVerifySession {
   }
 
   /**
+   * Factory method to create an `OptimisticVerificationBuilder` for the given proof type.
+   * @param {ProofOptions} proofOptions - The proof options to use.
+   * @returns {OptimisticVerificationBuilder} A new instance of `OptimisticVerificationBuilder`.
+   * @private
+   */
+  private createOptimisticVerifyBuilder(
+    proofOptions: ProofOptions,
+  ): OptimisticVerificationBuilder {
+    return new OptimisticVerificationBuilder(
+      this.executeOptimisticVerify.bind(this),
+      proofOptions,
+    );
+  }
+
+  /**
    * Factory method to create a `RegisterKeyBuilder` for the given proof type.
    * The builder allows for chaining options and finally executing the key registration process.
    *
@@ -235,10 +301,10 @@ export class zkVerifySession {
       }
 
       const connection = await startWalletSession(options);
-      return new zkVerifySession(connection);
+      return new zkVerifySession(connection, !!options.customWsUrl);
     } else {
       const connection = await startSession(options);
-      return new zkVerifySession(connection);
+      return new zkVerifySession(connection, !!options.customWsUrl);
     }
   }
 
@@ -270,13 +336,49 @@ export class zkVerifySession {
     const events = new EventEmitter();
 
     const transactionResult = verify(
-      this.connection as AccountConnection,
+      this.connection as AccountConnection | WalletConnection,
       options,
       events,
       input,
     );
 
     return { events, transactionResult };
+  }
+
+  /**
+   * Executes the optimistic verification process using the provided proof options and input.
+   * This method is intended to be called by the `OptimisticVerificationBuilder`.
+   *
+   * @param {ProofOptions} proofOptions - The proof options, including proof type and associated parameters.
+   * @param {VerifyInput} input - The verification input, which can be:
+   *   - `proofData`: An object containing proof parameters (proof, public signals, and verification key).
+   *   - `extrinsic`: A pre-built `SubmittableExtrinsic` for verification.
+   *
+   * @returns {Promise<{ success: boolean; error?: Error }>} A promise that resolves to an object containing:
+   *   - `success`: A boolean indicating whether the verification was successful.
+   *   - `error`: An optional `Error` object providing details about the failure, if applicable.
+   *
+   * @throws {Error} If the session is in read-only mode.
+   * @throws {Error} If not connected to a Custom Network.
+   * @private
+   */
+  private async executeOptimisticVerify(
+    proofOptions: ProofOptions,
+    input: VerifyInput,
+  ): Promise<{ success: boolean; message: string }> {
+    checkReadOnly(this.readOnly);
+
+    if (!this.customNetwork) {
+      throw new Error(
+        'Optimistic verification is only supported on custom networks.',
+      );
+    }
+
+    return optimisticVerify(
+      this.connection as AccountConnection | WalletConnection,
+      proofOptions,
+      input,
+    );
   }
 
   /**

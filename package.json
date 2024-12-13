@@ -1,6 +1,6 @@
 {
   "name": "zkverifyjs",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "Submit proofs to zkVerify and query proof state with ease using our npm package.",
   "author": "Horizen Labs <research@horizenlabs.io>",
   "license": "GPL-3.0",
@@ -85,6 +85,7 @@
     "@types/web3": "^1.2.2",
     "@typescript-eslint/eslint-plugin": "^8.2.0",
     "@typescript-eslint/parser": "^8.2.0",
+    "async-mutex": "^0.5.0",
     "conventional-changelog-cli": "^5.0.0",
     "eslint": "^9.9.0",
     "eslint-config-prettier": "^9.1.0",
