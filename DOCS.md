@@ -230,12 +230,29 @@ console.log(JSON.stringify(transactionInfo.attestationEvent)) // Attestation Eve
 import { zkVerifySession, ZkVerifyEvents, TransactionStatus, VerifyTransactionInfo } from 'zkverifyjs';
 
 async function executeVerificationTransaction(proof: unknown, publicSignals: unknown, vk: unknown) {
-  // Start a new zkVerifySession on our testnet (replace 'your-seed-phrase' with actual value)
+  // Start a new zkVerifySession on a Custom network (replace 'your-seed-phrase' with actual value)
   const session = await zkVerifySession.start()
-          .Testnet()
+          .Custom('ws://my-custom-node')
           .withAccount('your-seed-phrase');
+  
+  // Optimistically verify the proof (requires Custom node running in unsafe mode for dryRun() call)
+  const { success, message } = session.optimisticVerify()
+          .risc0()
+          .execute({ proofData: {
+              vk: vk,
+              proof: proof,
+              publicSignals: publicSignals }
+          });;
+          
+  if(!success) {
+      throw new Error("Optimistic Proof Verification Failed")
+  }
+  
+  // Add additional dApp logic using fast response from zkVerify
+  // Your logic here
+  // Your logic here
 
-  // Execute the verification transaction
+  // Execute the verification transaction on zkVerify chain
   const { events, transactionResult } = await session.verify().risc0()
           .waitForPublishedAttestation()
           .execute({ proofData: {
