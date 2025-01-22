@@ -156,7 +156,7 @@ export function validateProofVersion(
 ): void {
   const config = proofConfigurations[proofType];
 
-  if (config.supportedVersions) {
+  if (config.supportedVersions.length > 0) {
     if (!version) {
       throw new Error(`Version is required for proof type: ${proofType}`);
     }
