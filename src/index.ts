@@ -6,7 +6,12 @@ export {
   zkVerifySessionOptions,
 } from './session/types';
 export { ProofType, SupportedNetwork, Library, CurveType } from './config';
-export { ZkVerifyEvents, TransactionStatus, TransactionType } from './enums';
+export {
+  ZkVerifyEvents,
+  TransactionStatus,
+  TransactionType,
+  Risc0Version,
+} from './enums';
 export {
   ProofData,
   VerifyTransactionInfo,

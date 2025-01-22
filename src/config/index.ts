@@ -6,6 +6,7 @@ import {
   Risc0Processor,
   UltraPlonkProcessor,
 } from '../proofTypes';
+import { Risc0Version } from '../enums';
 
 export enum SupportedNetwork {
   Testnet = 'wss://testnet-rpc.zkverify.io',
@@ -36,6 +37,7 @@ export enum CurveType {
 interface ProofConfig {
   pallet: string;
   processor: ProofProcessor;
+  supportedVersions: string[];
   requiresLibrary?: boolean;
   requiresCurve?: boolean;
 }
@@ -44,30 +46,37 @@ export const proofConfigurations: Record<ProofType, ProofConfig> = {
   [ProofType.fflonk]: {
     pallet: 'settlementFFlonkPallet',
     processor: FflonkProcessor,
+    supportedVersions: [],
     requiresLibrary: false,
     requiresCurve: false,
   },
   [ProofType.groth16]: {
     pallet: 'settlementGroth16Pallet',
     processor: Groth16Processor,
+    supportedVersions: [],
     requiresLibrary: true,
     requiresCurve: true,
   },
   [ProofType.risc0]: {
     pallet: 'settlementRisc0Pallet',
     processor: Risc0Processor,
+    supportedVersions: Object.keys(Risc0Version).map(
+      (key) => Risc0Version[key as keyof typeof Risc0Version],
+    ),
     requiresLibrary: false,
     requiresCurve: false,
   },
   [ProofType.ultraplonk]: {
     pallet: 'settlementUltraplonkPallet',
     processor: UltraPlonkProcessor,
+    supportedVersions: [],
     requiresLibrary: false,
     requiresCurve: false,
   },
   [ProofType.proofofsql]: {
     pallet: 'settlementProofOfSqlPallet',
     processor: ProofOfSqlProcessor,
+    supportedVersions: [],
     requiresLibrary: false,
     requiresCurve: false,
   },

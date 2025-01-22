@@ -2,7 +2,7 @@ import { TransactionStatus } from './enums';
 import { ProofType } from './config';
 
 export interface ProofProcessor {
-  formatProof(proof: unknown, options?: unknown): unknown;
+  formatProof(proof: unknown, options?: unknown, version?: string): unknown;
   formatVk(vkJson: unknown, options?: unknown): unknown;
   formatPubs(pubs: unknown, options?: unknown): unknown;
 }
@@ -11,6 +11,7 @@ export interface ProofData {
   proof: unknown;
   publicSignals: unknown;
   vk?: unknown;
+  version?: string;
 }
 
 export interface TransactionInfo {

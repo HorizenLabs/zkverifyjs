@@ -3,8 +3,11 @@ import { Risc0Proof, Risc0Vk, Risc0Pubs } from '../types';
 import * as formatter from '../formatter';
 
 class Risc0Processor implements ProofProcessor {
-  formatProof(proof: Risc0Proof['proof']): string {
-    return formatter.formatProof(proof);
+  formatProof(proofData: Risc0Proof): Record<string, string> {
+    const { proof, version } = proofData;
+    const formattedProof = formatter.formatProof(proof);
+
+    return { [version]: formattedProof };
   }
 
   formatVk(vk: Risc0Vk['vk']): string {

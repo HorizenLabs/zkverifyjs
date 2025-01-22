@@ -1,5 +1,6 @@
 export interface Risc0Proof {
   proof: string;
+  version: string;
 }
 
 export interface Risc0Vk {

@@ -6,7 +6,18 @@ Currently the following proof verifiers are supported:
 - FFlonk
 - Groth16 (BN128, BN254, BLS12-381 elliptic curves)
   - Note - Must include `Library` and `CurveType` e.g. `.groth16(Library.gnark, CurveType.bn128)`
-- Risc0
+- Risc0 `V1_0`, `V1_1`, `V1_2`
+  - Note - Version must be included as a ProofData input for Risc0
+
+  ```typescript
+  .execute({ proofData: { 
+      vk: vk,
+      proof: proof,
+      publicSignals: publicSignals,
+      version: 'V1_2' }
+  })
+  ```
+
 - Ultraplonk
 - Space and Time
 
