@@ -12,6 +12,7 @@ export function format(
   registeredVk?: boolean,
 ): FormattedProofData {
   validateProofVersion(options.proofType, version);
+
   const processor: ProofProcessor = getProofProcessor(options.proofType);
 
   if (!processor) {
@@ -49,7 +50,6 @@ export function format(
       `Failed to format ${options.proofType} proof: ${error instanceof Error ? error.message : 'Unknown error'}. Proof snippet: "${proofSnippet}..."`,
     );
   }
-
   try {
     formattedPubs = processor.formatPubs(publicSignals, options);
   } catch (error) {

@@ -5,6 +5,7 @@ import { format } from './index';
 
 jest.mock('../../utils/helpers', () => ({
   getProofProcessor: jest.fn(),
+  validateProofVersion: jest.fn(),
 }));
 
 describe('format', () => {
@@ -18,7 +19,12 @@ describe('format', () => {
 
   beforeEach(() => {
     mockProcessor = {
-      formatProof: jest.fn().mockReturnValue('formattedProof'),
+      formatProof: jest.fn().mockImplementation((proof, options, version) => {
+        if (version) {
+          return `formattedProof-${version}`;
+        }
+        return 'formattedProof';
+      }),
       formatPubs: jest.fn().mockReturnValue('formattedPubs'),
       formatVk: jest.fn().mockReturnValue('formattedVk'),
     };
@@ -95,14 +101,15 @@ describe('format', () => {
   });
 
   it('should return formatted values for non-registered verification key', () => {
-    const result = format(proofOptions, 'proof', 'signals', 'vk');
+    const result = format(proofOptions, 'proof', 'signals', 'vk', 'v1');
 
-    expect(result.formattedVk).toEqual({ Vk: 'formattedVk' });
-    expect(result.formattedProof).toBe('formattedProof');
+    expect(result.formattedProof).toBe('formattedProof-v1');
     expect(result.formattedPubs).toBe('formattedPubs');
+    expect(result.formattedVk).toEqual({ Vk: 'formattedVk' });
     expect(mockProcessor.formatProof).toHaveBeenCalledWith(
       'proof',
       proofOptions,
+      'v1',
     );
     expect(mockProcessor.formatPubs).toHaveBeenCalledWith(
       'signals',
@@ -174,14 +181,15 @@ describe('format', () => {
   });
 
   it('should return formatted values for registered verification key', () => {
-    const result = format(proofOptions, 'proof', 'signals', 'vk', true);
+    const result = format(proofOptions, 'proof', 'signals', 'vk', 'v1', true);
 
-    expect(result.formattedVk).toEqual({ Hash: 'vk' });
-    expect(result.formattedProof).toBe('formattedProof');
+    expect(result.formattedProof).toBe('formattedProof-v1');
     expect(result.formattedPubs).toBe('formattedPubs');
+    expect(result.formattedVk).toEqual({ Hash: 'vk' });
     expect(mockProcessor.formatProof).toHaveBeenCalledWith(
       'proof',
       proofOptions,
+      'v1',
     );
     expect(mockProcessor.formatPubs).toHaveBeenCalledWith(
       'signals',

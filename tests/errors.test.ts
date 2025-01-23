@@ -16,7 +16,7 @@ function checkErrorMessage(error: unknown, expectedMessage: string): void {
     }
 }
 
-describe('verify with bad data - Groth16', () => {
+describe('verify with bad data', () => {
     let session: zkVerifySession;
     let wallet: string;
 
