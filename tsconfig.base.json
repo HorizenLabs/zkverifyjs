@@ -4,11 +4,11 @@
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "sourceMap": true,
     "forceConsistentCasingInFileNames": true,
-    "declaration": true,
-    "declarationMap": true,
+    "sourceMap": false,
     "moduleResolution": "node",
     "lib": ["DOM", "ES2020"]
-  }
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist", "**/*.spec.ts", "**/*.test.ts"]
 }

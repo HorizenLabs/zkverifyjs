@@ -20,6 +20,9 @@
       "import": "./dist/esm/index.js",
       "default": "./dist/commonjs/index.js",
       "types": "./dist/types/index.d.ts"
+    },
+    "./types/*": {
+      "types": "./dist/types/*.d.ts"
     }
   },
   "files": [
@@ -33,7 +36,8 @@
     "node": ">= 18"
   },
   "scripts": {
-    "build": "run-s build:commonjs build:esm build:types",
+    "clean": "rm -rf dist",
+    "build": "npm run clean && npm run build:commonjs && npm run build:esm && npm run build:types",
     "build:commonjs": "tsc -p tsconfig.commonjs.json",
     "build:esm": "tsc -p tsconfig.esm.json",
     "build:types": "tsc -p tsconfig.types.json",
