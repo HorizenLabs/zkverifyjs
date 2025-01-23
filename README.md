@@ -6,7 +6,18 @@ Currently the following proof verifiers are supported:
 - FFlonk
 - Groth16 (BN128, BN254, BLS12-381 elliptic curves)
   - Note - Must include `Library` and `CurveType` e.g. `.groth16(Library.gnark, CurveType.bn128)`
-- Risc0
+- Risc0 `V1_0`, `V1_1`, `V1_2`
+  - Note - Version must be included as a ProofData input for Risc0
+
+  ```typescript
+  .execute({ proofData: { 
+      vk: vk,
+      proof: proof,
+      publicSignals: publicSignals,
+      version: 'V1_2' }
+  })
+  ```
+
 - Ultraplonk
 - Space and Time
 
@@ -25,6 +36,7 @@ Currently the following proof verifiers are supported:
     - [zkVerifySession.start](#zkverifysessionstart)
     - [zkVerifySession.close](#zkverifysessionclose)
     - [zkVerifySession.verify](#zkverifysessionverify)
+    - [zkVerifySession.optimisticVerify](#zkverifysessionoptimisticverify)
     - [zkVerifySession.registerVerificationKey](#zkverifysessionregisterverificationkey)
     - [zkVerifySession.poe](#zkverifysessionpoe)
     - [zkVerifySession.format](#zkverifysessionformat)
@@ -242,6 +254,36 @@ console.log(transactionInfo.attestationConfirmed); // Expect 'true'
 console.log(JSON.stringify(transactionInfo.attestationEvent)) // Attestation Event details.
 ```
 
+## Optimistic Proof Verification
+
+In order to get a quick response on whether a proof is valid or not without waiting for the network / block inclusion / finality, the `optimisticVerify` function is provided.
+
+Under the hood this is a wrapper around the `dryRun()` call and requires a `Custom` zkVerify session and the target node to be running with the unsafe flags.
+
+**⚠ WARNING:**
+**Bear in mind unlike regular transactions, dryRun does not consume gas or fees, meaning it can be called repeatedly without cost to the user - consuming CPU and memory resources on the node and leaving it exposed to denial of service.**
+
+```shell
+--rpc-methods Unsafe --unsafe-rpc-external
+```
+
+Connect to your custom node that has the unsafe flags set, and send the proof:
+
+```typescript
+  // Optimistically verify the proof (requires Custom node running in unsafe mode for dryRun() call)
+  const session = await zkVerifySession.start()
+          .Custom('ws://my-custom-node')
+          .withAccount('your-seed-phrase');
+
+  const { success, message } = session.optimisticVerify()
+          .risc0()
+          .execute({ proofData: {
+              vk: vk,
+              proof: proof,
+              publicSignals: publicSignals }
+          });;
+```
+
 ## Example Usage
 
 ```typescript
@@ -372,6 +414,22 @@ const { events, transactionResult } = await session.verify()
 - Execute:  You can either send in the raw proof details using `{ proofData: ... }` or verify a prebuilt extrinsic `{ extrinsic: ... }`
 - Returns: An object containing an EventEmitter for real-time events and a Promise that resolves with the final transaction result, including waiting for the `poe.NewElement` attestation confirmation if waitForPublishedAttestation is specified.
 
+## `zkVerifySession.optimisticVerify`
+
+```typescript
+  const { success, message } = session.optimisticVerify()
+          .risc0()
+          .execute({ proofData: {
+              vk: vk,
+              proof: proof,
+              publicSignals: publicSignals }
+          });;
+```
+
+- Proof Type: `.risc0()` specifies the type of proof to be used. Options available for all supported proof types.
+- Execute:  You can either send in the raw proof details using `{ proofData: ... }` or verify a prebuilt extrinsic `{ extrinsic: ... }`
+- Returns: A result containing a boolean `success`.  If success is false the response will also contain a `message` with further details related to the failure.
+
 ## `zkVerifySession.registerVerificationKey`
 
 ```typescript
@@ -395,7 +453,7 @@ const proofDetails = await session.poe(attestationId, leafDigest, blockHash);
 ## `zkVerifySession.format`
 
 ```typescript
-const {formattedVk, formattedProof, formattedPubs} = await session.format(proofType, proof, publicSignals, vk, registeredVk);
+const { formattedVk, formattedProof, formattedPubs } = await session.format(proofType, proof, publicSignals, vk, registeredVk);
 
 ```
 - `proofType`: An enum value representing the type of proof being formatted (e.g., ProofType.groth16).

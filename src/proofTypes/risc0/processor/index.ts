@@ -1,10 +1,16 @@
 import { ProofProcessor } from '../../../types';
-import { Risc0Proof, Risc0Vk, Risc0Pubs } from '../types';
+import { Risc0Vk, Risc0Pubs } from '../types';
 import * as formatter from '../formatter';
+import { ProofOptions } from '../../../session/types';
 
 class Risc0Processor implements ProofProcessor {
-  formatProof(proof: Risc0Proof['proof']): string {
-    return formatter.formatProof(proof);
+  formatProof(
+    proof: string,
+    options: ProofOptions,
+    version: string,
+  ): Record<string, string> {
+    const formattedProof = formatter.formatProof(proof);
+    return { [version]: formattedProof };
   }
 
   formatVk(vk: Risc0Vk['vk']): string {

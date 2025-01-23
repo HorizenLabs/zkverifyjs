@@ -1,5 +1,5 @@
 import { ProofProcessor } from '../../types';
-import { getProofProcessor } from '../../utils/helpers';
+import { getProofProcessor, validateProofVersion } from '../../utils/helpers';
 import { FormattedProofData } from './types';
 import { ProofOptions } from '../../session/types';
 
@@ -8,8 +8,11 @@ export function format(
   proof: unknown,
   publicSignals: unknown,
   vk: unknown,
+  version?: string,
   registeredVk?: boolean,
 ): FormattedProofData {
+  validateProofVersion(options.proofType, version);
+
   const processor: ProofProcessor = getProofProcessor(options.proofType);
 
   if (!processor) {
@@ -37,7 +40,7 @@ export function format(
   let formattedProof, formattedPubs, formattedVk;
 
   try {
-    formattedProof = processor.formatProof(proof, options);
+    formattedProof = processor.formatProof(proof, options, version);
   } catch (error) {
     const proofSnippet =
       typeof proof === 'string'
@@ -47,7 +50,6 @@ export function format(
       `Failed to format ${options.proofType} proof: ${error instanceof Error ? error.message : 'Unknown error'}. Proof snippet: "${proofSnippet}..."`,
     );
   }
-
   try {
     formattedPubs = processor.formatPubs(publicSignals, options);
   } catch (error) {

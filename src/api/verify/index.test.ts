@@ -14,6 +14,7 @@ import { createSubmitProofExtrinsic } from '../extrinsic';
 jest.mock('../../utils/helpers', () => ({
   getProofPallet: jest.fn(),
   getProofProcessor: jest.fn(),
+  validateProofVersion: jest.fn(),
 }));
 jest.mock('../../utils/transactions', () => ({
   handleTransaction: jest.fn(),

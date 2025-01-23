@@ -334,7 +334,6 @@ export class zkVerifySession {
     checkReadOnly(this.readOnly);
 
     const events = new EventEmitter();
-
     const transactionResult = verify(
       this.connection as AccountConnection | WalletConnection,
       options,
@@ -491,10 +490,11 @@ export class zkVerifySession {
   /**
    * Formats proof details for the specified proof type.
    *
-   * @param {ProofType} proofType - The type of proof to format.
+   * @param proofOptions
    * @param {unknown} proof - The proof data to format.
    * @param {unknown} publicSignals - The public signals to format.
    * @param {unknown} vk - The verification key to format.
+   * @param {string} version - Optional version of the proving system e.g. `V1_1`
    * @param {boolean} [registeredVk] - Optional flag indicating if the verification key is registered.
    * @returns {Promise<FormattedProofData>} A promise that resolves to an object containing formatted verification key, proof, and public signals.
    * @throws {Error} - Throws an error if formatting fails.
@@ -504,9 +504,17 @@ export class zkVerifySession {
     proof: unknown,
     publicSignals: unknown,
     vk: unknown,
+    version?: string,
     registeredVk?: boolean,
   ): Promise<FormattedProofData> {
-    return format(proofOptions, proof, publicSignals, vk, registeredVk);
+    return format(
+      proofOptions,
+      proof,
+      publicSignals,
+      vk,
+      version,
+      registeredVk,
+    );
   }
 
   /**
