@@ -3,7 +3,7 @@ import { VerificationManager } from './managers/verification';
 import { VerificationKeyRegistrationManager } from './managers/register';
 import { EventManager } from './managers/events';
 import { ExtrinsicManager } from './managers/extrinsic';
-import { SessionMethods, zkVerifySessionOptions } from './types';
+import { zkVerifySessionOptions } from './types';
 import { SupportedNetwork } from '../config';
 import { NetworkBuilder, SupportedNetworkMap } from './builders/network';
 import { PoEManager } from './managers/poe';
@@ -17,24 +17,24 @@ import {
 } from '../api/connection/types';
 import { bindMethods } from '../utils/helpers';
 
-export class zkVerifySession implements SessionMethods {
+export class zkVerifySession {
   private readonly connectionManager: ConnectionManager;
 
-  verify!: VerificationManager['verify'];
-  optimisticVerify!: VerificationManager['optimisticVerify'];
-  registerVerificationKey!: VerificationKeyRegistrationManager['registerVerificationKey'];
-  format!: FormatManager['format'];
-  poe!: PoEManager['poe'];
-  subscribeToNewAttestations!: EventManager['subscribe'];
-  unsubscribe!: EventManager['unsubscribe'];
-  estimateCost!: ExtrinsicManager['estimateCost'];
-  createSubmitProofExtrinsic!: ExtrinsicManager['createSubmitProofExtrinsic'];
-  createExtrinsicHex!: ExtrinsicManager['createExtrinsicHex'];
-  createExtrinsicFromHex!: ExtrinsicManager['createExtrinsicFromHex'];
-  close!: ConnectionManager['close'];
-  accountInfo!: ConnectionManager['getAccountInfo'];
-  addAccount!: ConnectionManager['addAccount'];
-  removeAccount!: ConnectionManager['removeAccount'];
+  declare verify: VerificationManager['verify'];
+  declare optimisticVerify: VerificationManager['optimisticVerify'];
+  declare registerVerificationKey: VerificationKeyRegistrationManager['registerVerificationKey'];
+  declare format: FormatManager['format'];
+  declare poe: PoEManager['poe'];
+  declare subscribeToNewAttestations: EventManager['subscribe'];
+  declare unsubscribe: EventManager['unsubscribe'];
+  declare estimateCost: ExtrinsicManager['estimateCost'];
+  declare createSubmitProofExtrinsic: ExtrinsicManager['createSubmitProofExtrinsic'];
+  declare createExtrinsicHex: ExtrinsicManager['createExtrinsicHex'];
+  declare createExtrinsicFromHex: ExtrinsicManager['createExtrinsicFromHex'];
+  declare close: ConnectionManager['close'];
+  declare accountInfo: ConnectionManager['getAccountInfo'];
+  declare addAccount: ConnectionManager['addAccount'];
+  declare removeAccount: ConnectionManager['removeAccount'];
 
   constructor(connectionManager: ConnectionManager) {
     this.connectionManager = connectionManager;
@@ -45,36 +45,11 @@ export class zkVerifySession implements SessionMethods {
       new EventManager(connectionManager),
       new ExtrinsicManager(connectionManager),
       new PoEManager(connectionManager),
-      new FormatManager(connectionManager),
+      new FormatManager(),
       connectionManager,
     ];
 
     managers.forEach((manager) => bindMethods(this, manager));
-  }
-
-  static start(): SupportedNetworkMap {
-    const builderMethods: Partial<
-      Record<
-        keyof typeof SupportedNetwork,
-        (customWsUrl?: string) => NetworkBuilder
-      >
-    > = {};
-
-    for (const network in SupportedNetwork) {
-      if (Object.prototype.hasOwnProperty.call(SupportedNetwork, network)) {
-        builderMethods[network as keyof typeof SupportedNetwork] = (
-          customWsUrl?: string,
-        ) => {
-          return new NetworkBuilder(
-            zkVerifySession._startSession.bind(zkVerifySession),
-            SupportedNetwork[network as keyof typeof SupportedNetwork],
-            customWsUrl,
-          );
-        };
-      }
-    }
-
-    return builderMethods as SupportedNetworkMap;
   }
 
   get api(): ApiPromise {
@@ -96,10 +71,32 @@ export class zkVerifySession implements SessionMethods {
     return this.connectionManager.connectionDetails;
   }
 
+  static start(): SupportedNetworkMap {
+    return Object.fromEntries(
+      Object.entries(SupportedNetwork).map(([networkKey, networkValue]) => [
+        networkKey,
+        (customWsUrl?: string) =>
+          new NetworkBuilder(
+            zkVerifySession._startSession.bind(zkVerifySession),
+            networkValue,
+            customWsUrl,
+          ),
+      ]),
+    ) as SupportedNetworkMap;
+  }
+
   private static async _startSession(
     options: zkVerifySessionOptions,
   ): Promise<zkVerifySession> {
-    const connectionManager = await ConnectionManager.createSession(options);
-    return new zkVerifySession(connectionManager);
+    try {
+      const connectionManager = await ConnectionManager.createSession(options);
+      return new zkVerifySession(connectionManager);
+    } catch (error) {
+      console.error(
+        `❌ Failed to start session for network: ${options.host}`,
+        error,
+      );
+      throw error;
+    }
   }
 }

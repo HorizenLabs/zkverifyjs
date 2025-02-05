@@ -176,13 +176,32 @@ export function validateProofVersion(
   }
 }
 
+/**
+ * Binds all methods from the source object to the target object,
+ * preserving the original `this` context.
+ *
+ * Throws an error if a method with the same name already exists on the target.
+ *
+ * @param target - The object to bind methods to.
+ * @param source - The object containing the methods to bind.
+ *
+ * @throws {Error} If a method with the same name already exists on the target.
+ */
 export function bindMethods<T extends object>(target: T, source: object): void {
   const propertyNames = Object.getOwnPropertyNames(
     Object.getPrototypeOf(source),
   );
+
   for (const name of propertyNames) {
     const method = (source as Record<string, unknown>)[name];
+
     if (typeof method === 'function' && name !== 'constructor') {
+      if (name in target) {
+        throw new Error(
+          `❌ Method collision detected: "${name}". Binding aborted.`,
+        );
+      }
+
       (target as Record<string, unknown>)[name] = method.bind(source);
     }
   }

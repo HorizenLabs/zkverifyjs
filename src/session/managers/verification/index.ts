@@ -19,10 +19,10 @@ import {
 } from '../../../api/connection/types';
 
 export class VerificationManager {
-  private readonly connection: ConnectionManager;
+  private readonly connectionManager: ConnectionManager;
 
-  constructor(connection: ConnectionManager) {
-    this.connection = connection;
+  constructor(connectionManager: ConnectionManager) {
+    this.connectionManager = connectionManager;
   }
 
   /**
@@ -145,11 +145,13 @@ export class VerificationManager {
     events: EventEmitter;
     transactionResult: Promise<VerifyTransactionInfo>;
   }> {
-    checkReadOnly(this.connection);
+    checkReadOnly(this.connectionManager.connectionDetails);
 
     const events = new EventEmitter();
     const transactionResult = verify(
-      this.connection.connectionDetails as AccountConnection | WalletConnection,
+      this.connectionManager.connectionDetails as
+        | AccountConnection
+        | WalletConnection,
       options,
       events,
       input,

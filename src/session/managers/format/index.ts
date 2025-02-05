@@ -1,18 +1,11 @@
 import { ProofOptions } from '../../types';
 import { FormattedProofData } from '../../../api/format/types';
 import { format } from '../../../api/format';
-import { ConnectionManager } from '../connection';
 
 /**
  * Manages proof formatting operations.
  */
 export class FormatManager {
-  private readonly connectionManager: ConnectionManager;
-
-  constructor(connectionManager: ConnectionManager) {
-    this.connectionManager = connectionManager;
-  }
-
   /**
    * Formats proof details for the specified proof type.
    *

@@ -12,10 +12,10 @@ import { EventEmitter } from 'events';
 import { ConnectionManager } from '../connection';
 
 export class VerificationKeyRegistrationManager {
-  private readonly connection: ConnectionManager;
+  private readonly connectionManager: ConnectionManager;
 
-  constructor(connection: ConnectionManager) {
-    this.connection = connection;
+  constructor(connectionManager: ConnectionManager) {
+    this.connectionManager = connectionManager;
   }
 
   /**
@@ -84,10 +84,10 @@ export class VerificationKeyRegistrationManager {
     events: EventEmitter;
     transactionResult: Promise<VKRegistrationTransactionInfo>;
   }> {
-    checkReadOnly(this.connection);
+    checkReadOnly(this.connectionManager.connectionDetails);
 
     return registerVk(
-      this.connection as AccountConnection,
+      this.connectionManager.connectionDetails as AccountConnection,
       options,
       verificationKey,
     );
