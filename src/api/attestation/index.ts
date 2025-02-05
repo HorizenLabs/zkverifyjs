@@ -1,4 +1,5 @@
 import { ApiPromise } from '@polkadot/api';
+import { EventRecord } from '@polkadot/types/interfaces/system';
 import { EventEmitter } from 'events';
 import { AttestationEvent } from '../../types';
 import { ZkVerifyEvents } from '../../enums';
@@ -21,8 +22,8 @@ export function subscribeToNewAttestations(
   const emitter = new EventEmitter();
 
   api.query.system
-    .events((events) => {
-      events.forEach((record) => {
+    .events((events: EventRecord[]) => {
+      events.forEach((record: EventRecord) => {
         const { event } = record;
 
         if (event.section === 'poe' && event.method === 'NewAttestation') {
@@ -37,7 +38,6 @@ export function subscribeToNewAttestations(
               });
 
               unsubscribeFromNewAttestations(emitter);
-
               return;
             }
 
