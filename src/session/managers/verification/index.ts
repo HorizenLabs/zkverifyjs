@@ -181,16 +181,16 @@ export class VerificationManager {
     proofOptions: ProofOptions,
     input: VerifyInput,
   ): Promise<{ success: boolean; message: string }> {
-    checkReadOnly(this.connection);
+    checkReadOnly(this.connectionManager.connectionDetails);
 
-    if (!this.connection.customNetwork) {
+    if (!this.connectionManager.customNetwork) {
       throw new Error(
         'Optimistic verification is only supported on custom networks.',
       );
     }
 
     return optimisticVerify(
-      this.connection.connectionDetails as AccountConnection | WalletConnection,
+      this.connectionManager.connectionDetails as AccountConnection | WalletConnection,
       proofOptions,
       input,
     );

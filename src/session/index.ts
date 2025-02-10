@@ -9,13 +9,13 @@ import { NetworkBuilder, SupportedNetworkMap } from './builders/network';
 import { PoEManager } from './managers/poe';
 import { FormatManager } from './managers/format';
 import { ApiPromise, WsProvider } from '@polkadot/api';
-import { KeyringPair } from '@polkadot/keyring/types';
 import {
   AccountConnection,
   WalletConnection,
   EstablishedConnection,
 } from '../api/connection/types';
 import { bindMethods } from '../utils/helpers';
+import { AccountInfo } from "../types";
 
 export class zkVerifySession {
   private readonly connectionManager: ConnectionManager;
@@ -32,7 +32,6 @@ export class zkVerifySession {
   declare createExtrinsicHex: ExtrinsicManager['createExtrinsicHex'];
   declare createExtrinsicFromHex: ExtrinsicManager['createExtrinsicFromHex'];
   declare close: ConnectionManager['close'];
-  declare accountInfo: ConnectionManager['getAccountInfo'];
   declare addAccount: ConnectionManager['addAccount'];
   declare removeAccount: ConnectionManager['removeAccount'];
 
@@ -52,6 +51,20 @@ export class zkVerifySession {
     managers.forEach((manager) => bindMethods(this, manager));
   }
 
+  static start(): SupportedNetworkMap {
+    return Object.fromEntries(
+        Object.entries(SupportedNetwork).map(([networkKey, networkValue]) => [
+          networkKey,
+          (customWsUrl?: string) =>
+              new NetworkBuilder(
+                  zkVerifySession._startSession.bind(zkVerifySession),
+                  networkValue,
+                  customWsUrl,
+              ),
+        ]),
+    ) as SupportedNetworkMap;
+  }
+
   get api(): ApiPromise {
     return this.connectionManager.api;
   }
@@ -60,29 +73,19 @@ export class zkVerifySession {
     return this.connectionManager.provider;
   }
 
-  get account(): KeyringPair | undefined {
-    return this.connectionManager.account;
+  get accountInfo(): Promise<AccountInfo> {
+    return this.connectionManager.getAccountInfo();
   }
 
   get connection():
     | AccountConnection
     | WalletConnection
     | EstablishedConnection {
-    return this.connectionManager.connectionDetails;
+    return this.connectionManager;
   }
 
-  static start(): SupportedNetworkMap {
-    return Object.fromEntries(
-      Object.entries(SupportedNetwork).map(([networkKey, networkValue]) => [
-        networkKey,
-        (customWsUrl?: string) =>
-          new NetworkBuilder(
-            zkVerifySession._startSession.bind(zkVerifySession),
-            networkValue,
-            customWsUrl,
-          ),
-      ]),
-    ) as SupportedNetworkMap;
+  get readOnly(): boolean {
+    return this.connectionManager.readOnly;
   }
 
   private static async _startSession(

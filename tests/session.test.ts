@@ -122,19 +122,13 @@ describe('zkVerifySession class', () => {
         session = await zkVerifySession.start().Testnet().withAccount(wallet);
         expect(session.readOnly).toBe(false);
 
-        session.accountInfo = jest.fn(async () => ({
-            address: 'some-address',
-            nonce: 1,
-            freeBalance: '1000',
-            reservedBalance: '500',
-        }));
 
-        const accountInfo = await session.accountInfo();
-        expect(accountInfo).toEqual({
-            address: 'some-address',
-            nonce: 1,
-            freeBalance: '1000',
-            reservedBalance: '500',
+        const accountInfo = await session.accountInfo;
+        expect(accountInfo).toMatchObject({
+            address: expect.any(String),
+            nonce: expect.any(Number),
+            freeBalance: expect.any(String),
+            reservedBalance: expect.any(String),
         });
     });
 

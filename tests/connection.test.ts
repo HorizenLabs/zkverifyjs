@@ -21,7 +21,7 @@ describe('zkVerifySession - accountInfo', () => {
             wallet = await walletPool.acquireWallet();
             session = await zkVerifySession.start().Testnet().withAccount(wallet);
 
-            const accountInfo: AccountInfo = await session.accountInfo();
+            const accountInfo: AccountInfo = await session.accountInfo;
             expect(accountInfo).toBeDefined();
 
             expect(accountInfo.address).toBeDefined();
@@ -48,19 +48,29 @@ describe('zkVerifySession - accountInfo', () => {
         }
     });
 
-    it('should throw an error if trying to get account info in a read-only session', async () => {
+    it('should handle adding and removing accounts and throw an error if trying to get account info in a read-only session', async () => {
         let session: zkVerifySession | undefined;
 
         try {
+            wallet = await walletPool.acquireWallet();
             session = await zkVerifySession.start().Testnet().readOnly();
-
-            await expect(session.accountInfo()).rejects.toThrow(
+            await expect(session.accountInfo).rejects.toThrow(
                 'This action requires an active account. The session is currently in read-only mode because no account is associated with it. Please provide an account at session start, or add one to the current session using `addAccount`.'
             );
+
+            session.addAccount(wallet);
+            const accountInfo = await session.accountInfo;
+            expect(accountInfo).toBeDefined();
+            expect(accountInfo.address).toBeDefined();
+            expect(typeof accountInfo.address).toBe('string');
+
+            session.removeAccount();
+            await expect(session.accountInfo).rejects.toThrow(
+                'This action requires an active account. The session is currently in read-only mode because no account is associated with it. Please provide an account at session start, or add one to the current session using `addAccount`.'
+            );
+
         } finally {
-            if (session) {
-                await session.close();
-            }
+            if (session) await session.close();
         }
     });
 });
