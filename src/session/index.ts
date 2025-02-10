@@ -15,7 +15,7 @@ import {
   EstablishedConnection,
 } from '../api/connection/types';
 import { bindMethods } from '../utils/helpers';
-import { AccountInfo } from "../types";
+import { AccountInfo } from '../types';
 
 export class zkVerifySession {
   private readonly connectionManager: ConnectionManager;
@@ -53,15 +53,15 @@ export class zkVerifySession {
 
   static start(): SupportedNetworkMap {
     return Object.fromEntries(
-        Object.entries(SupportedNetwork).map(([networkKey, networkValue]) => [
-          networkKey,
-          (customWsUrl?: string) =>
-              new NetworkBuilder(
-                  zkVerifySession._startSession.bind(zkVerifySession),
-                  networkValue,
-                  customWsUrl,
-              ),
-        ]),
+      Object.entries(SupportedNetwork).map(([networkKey, networkValue]) => [
+        networkKey,
+        (customWsUrl?: string) =>
+          new NetworkBuilder(
+            zkVerifySession._startSession.bind(zkVerifySession),
+            networkValue,
+            customWsUrl,
+          ),
+      ]),
     ) as SupportedNetworkMap;
   }
 

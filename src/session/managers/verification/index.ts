@@ -190,7 +190,9 @@ export class VerificationManager {
     }
 
     return optimisticVerify(
-      this.connectionManager.connectionDetails as AccountConnection | WalletConnection,
+      this.connectionManager.connectionDetails as
+        | AccountConnection
+        | WalletConnection,
       proofOptions,
       input,
     );
