@@ -6,10 +6,12 @@ jest.setTimeout(120000);
 
 describe('zkVerifySession - accountInfo', () => {
     let wallet: string | undefined;
+    let envVar: string | undefined;
 
     afterEach(async () => {
-        if (wallet) {
-            await walletPool.releaseWallet(wallet);
+        if (envVar) {
+            await walletPool.releaseWallet(envVar);
+            envVar = undefined
             wallet = undefined;
         }
     });
@@ -18,7 +20,7 @@ describe('zkVerifySession - accountInfo', () => {
         let session: zkVerifySession | undefined;
 
         try {
-            wallet = await walletPool.acquireWallet();
+            [envVar, wallet] = await walletPool.acquireWallet();
             session = await zkVerifySession.start().Testnet().withAccount(wallet);
 
             const accountInfo: AccountInfo = await session.accountInfo;
@@ -52,7 +54,7 @@ describe('zkVerifySession - accountInfo', () => {
         let session: zkVerifySession | undefined;
 
         try {
-            wallet = await walletPool.acquireWallet();
+            [envVar, wallet] = await walletPool.acquireWallet();
             session = await zkVerifySession.start().Testnet().readOnly();
             await expect(session.accountInfo).rejects.toThrow(
                 'This action requires an active account. The session is currently in read-only mode because no account is associated with it. Please provide an account at session start, or add one to the current session using `addAccount`.'

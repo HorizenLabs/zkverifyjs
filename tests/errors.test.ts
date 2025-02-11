@@ -18,15 +18,18 @@ function checkErrorMessage(error: unknown, expectedMessage: string): void {
 
 describe('verify with bad data', () => {
     let session: zkVerifySession;
-    let wallet: string;
+    let wallet: string | undefined;
+    let envVar: string | undefined;
 
     beforeEach(async () => {
-        wallet = await walletPool.acquireWallet();
+        [envVar, wallet] = await walletPool.acquireWallet();
     });
 
     afterEach(async () => {
         if (session) await session.close();
-        if (wallet) await walletPool.releaseWallet(wallet);
+        if (envVar) await walletPool.releaseWallet(envVar);
+        wallet = undefined;
+        envVar = undefined;
     });
 
     it('should fail when sending groth16 data that cannot be formatted and emit an error event', async () => {
