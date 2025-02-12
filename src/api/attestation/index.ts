@@ -30,6 +30,15 @@ export function subscribeToNewAttestations(
           const currentAttestationId = Number(event.data[0]);
 
           if (attestationId) {
+            if (currentAttestationId < attestationId) {
+              emitter.emit(ZkVerifyEvents.AttestationBeforeExpected, {
+                expectedId: attestationId,
+                receivedId: currentAttestationId,
+                event: record.event,
+              });
+
+              return;
+            }
             if (currentAttestationId === attestationId + 1) {
               scanLastNBlocksForAttestation(api, attestationId, 20)
                 .then((found) => {
