@@ -1,4 +1,3 @@
-import { mnemonicValidate } from '@polkadot/util-crypto';
 import { Mutex } from 'async-mutex';
 
 class WalletPool {
@@ -41,11 +40,6 @@ class WalletPool {
                 const formattedValue = words.join(" ");
                 if (value !== formattedValue) {
                     console.error(`❌ ERROR: ${key} has extra spaces before, after, or between words.`);
-                    return null;
-                }
-
-                if (!mnemonicValidate(value)) {
-                    console.error(`❌ ERROR: ${key} is not a valid mnemonic.`);
                     return null;
                 }
 
