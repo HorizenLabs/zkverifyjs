@@ -1,3 +1,4 @@
+import { mnemonicValidate } from '@polkadot/util-crypto';
 import { Mutex } from 'async-mutex';
 
 class WalletPool {
@@ -19,8 +20,36 @@ class WalletPool {
                 return numA - numB;
             })
             .map((key) => {
-                const value = process.env[key];
-                return value ? [key, value] as [string, string] : null;
+                let value = process.env[key]?.trim();
+
+                if (!value) {
+                    console.error(`❌ ERROR: ${key} is missing or empty.`);
+                    return null;
+                }
+
+                const words = value.split(/\s+/);
+                if (words.length !== 12) {
+                    console.error(`❌ ERROR: ${key} should have 12 words but has ${words.length}.`);
+                    return null;
+                }
+
+                if (value.includes('\n')) {
+                    console.error(`❌ ERROR: ${key} contains newline characters.`);
+                    return null;
+                }
+
+                const formattedValue = words.join(" ");
+                if (value !== formattedValue) {
+                    console.error(`❌ ERROR: ${key} has extra spaces before, after, or between words.`);
+                    return null;
+                }
+
+                if (!mnemonicValidate(value)) {
+                    console.error(`❌ ERROR: ${key} is not a valid mnemonic.`);
+                    return null;
+                }
+
+                return [key, value] as [string, string];
             })
             .filter((entry): entry is [string, string] => entry !== null);
 
